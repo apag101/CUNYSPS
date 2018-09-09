@@ -1,0 +1,48 @@
+---
+title: "IS607 Assignement 2"
+author: "Anthony Pagan"
+date: "September 6, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###Read movies csv data into a dataframe
+
+```{r}
+movies <-read.csv(file = 'C:/temp/movies.csv', header = FALSE, sep = ",")
+```
+
+###Initial data has generic column names
+
+```{r}
+str(movies)
+```
+
+###Add headers
+
+```{r}
+names(movies)<- c('Movie','Name','Rating')
+```
+
+###Table now has headers
+
+```{r}
+str(movies)
+head(movies)
+```
+
+###Graphs of Movie Ratings
+```{r}
+tmovies<-table(movies$Movie, movies$Rating)
+barplot(tmovies, main="Movie Ratings",
+  xlab="Ratings", col=c("darkblue","red", "yellow", "orange", "black", "green"),
+  legend = rownames(tmovies), beside = TRUE) 
+
+attach(movies)
+plot(Movie,Rating, data=movies,
+   main="Movie Ratings")
+
+```
