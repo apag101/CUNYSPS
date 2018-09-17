@@ -106,12 +106,12 @@ data.frame(stringx, stringx.logic)
 ```{r echo=TRUE}
 j <-"clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5 fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
 
-m<-as.data.frame(str_extract_all(j, "[[:alnum:] ]*\\.?"), stringasfactor = FALSE)
-f<-str_extract_all(m, "[[:upper:]]")
+m<-str_extract_all(j, "[[:alnum:] ]*\\.?")
+f<-str_c(str_extract_all(m, "[[:upper:]]"), sep = ".")
 mf<- str_replace_all(f, "\" ?,? ?" , "")
 mft<-str_replace_all(str_c(mf[1:5],sep = " "),"c\\(|\\)","")
 mfts<-str_c(mft[1:5], sep = " ")
-as.array(mfts)
+mfts[1]
 ```
 
 
