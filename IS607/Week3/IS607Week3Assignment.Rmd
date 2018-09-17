@@ -109,9 +109,7 @@ j <-"clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo Uwi
 m<-str_extract_all(j, "[[:alnum:] ]*\\.?")
 f<-str_c(str_extract_all(m, "[[:upper:]]"), sep = ".")
 mf<- str_replace_all(f, "\" ?,? ?" , "")
-mft<-str_replace_all(str_c(mf[1:5],sep = " "),"c\\(|\\)","")
-mfts<-str_c(mft[1:5], sep = " ")
-mfts[1]
+str_replace_all(mf,"c\\(|\\)","")
 ```
 
 
