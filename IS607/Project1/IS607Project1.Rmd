@@ -1,0 +1,94 @@
+---
+title: "IS607 Project1"
+author: "Anthony Pagan"
+date: "September 23, 2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+####Import preformatted tmt2.csv file 
+
+
+```{r}
+library(stringr)
+tst<-data.frame(read.csv(file = 'C:/temp/tmt2.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
+```
+
+####Data preparation
+Copy original dataframe to new list. Use gsub to partially format Ratings data. Remove front and end digits, spaces and miscellanous characters
+
+```{r}
+tst2<-tst
+
+tst2$Rating<-str_trim(gsub(",>\\d*", "", gsub("^ \\d* ", "", gsub("\\d*/ R: ", "", tst$Rating))))
+```
+
+####Additional Data preparation
+Copy dataframe to another dataframe. Clean up the remaing Rating unwanted strings that included characters, spaces and numbers. 
+
+```{r}
+tst3<-tst2
+tst3$Rating<- str_trim(str_sub(tst2$Rating, start = 1 ,end =(str_locate(tst2$Rating, pattern = "(.?P. ?.)|( .)")[,1])))
+```
+
+####Clean and move Data
+Insert data from tst2 to tst3 where tst3 ratings is NA
+
+```{r}
+for(i in 1:nrow(tst3))
+{
+    if (is.na(tst3$Rating[i]))
+            {
+               tst3$Rating[i] <-tst2$Rating[i]
+            }
+      
+}
+```
+
+####Get Mean Data
+Extracted numbers from each round by extracting digits only. Binded data to a dataframe and removed any data with NA. Took average of all rounds and added to a new column in tst2 dataframe.
+```{r}
+for(k in 1:nrow(tst3))
+{
+    k.w <-as.integer(str_extract(tst3[k,6:12], "\\d{1,2}"))
+    df<- data.frame(x=numeric())
+    for (m in k.w)
+    {
+      df<- rbind(df, data.frame(sum(as.integer(tst3[m,4], na.rm = TRUE))))
+      sf<-sum(df, na.rm = TRUE)
+      mn <- round(sf/na.omit(nrow(df)))
+    }
+    tst3$AvgPreChessRating[k]<-mn
+}
+```
+
+####Update Columns
+Updated column names with columns names listed in Project notes
+
+```{r}
+library(dplyr)
+
+tst4 =rename(tst3, 
+       "Player's Name" = "Player.Name", 
+       "Player's State" = "State",
+       "Total Number of Points" = "RoundTotal",
+       "Player's Pre-Rating" = "Rating",
+       "Average Pre Chess Ratings of Opponents" = "AvgPreChessRating")
+```
+
+####Display Data
+Display a subset of data with only columns listed in Project notes.
+
+```{r}
+sdata<-subset(tst4, select = c(str_trim("Player's Name"), str_trim("Player's State"),str_trim("Total Number of Points"),
+str_trim("Player's Pre-Rating"), "Average Pre Chess Ratings of Opponents"))
+sdata
+```
+
+####Write data to CSV file
+
+```{r}
+write.csv(sdata, file="sdata.csv")
+```
