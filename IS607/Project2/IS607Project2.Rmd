@@ -1,7 +1,7 @@
 ---
 title: "IS607 Project 2"
 author: "Anthony Pagan"
-date: "October 4, 2018"
+date: "October 7, 2018"
 output: html_document
 ---
 
@@ -81,7 +81,7 @@ tddata1.2
 ####GGPlot
 
 ```{r message=FALSE, warning=FALSE}
-lbls <- paste(tddata1.2$County, round(tddata1.2$pctallcrime,0)) 
+lbls <- paste(tddata1.2$County, round(tddata1.1$pctallcrime,0)) 
 lbls <- paste(lbls,"%",sep="") 
 pie(tddata1.2$value, labels = lbls, col = rainbow(length(tddata1.2$value)),  main="Pie Chart by Top 10 County")
 
@@ -126,32 +126,45 @@ tddata2<-thedata2%>%
     gather(year, total, "1980":"2013")%>%
     filter(total != "..")
 
-tddata2$total<- as.numeric(tddata2$total)
+tddata2$total<- as.integer(tddata2$total)
     
 tddata2<- tddata2%>%
     group_by(CntName,year)%>%
     summarise_each(funs(sum), total)%>%
     arrange(year)#%>%
     #filter(CntName %in% c("United States of America","Germany","France"))
+#
 #View(tddata2)
 #tddata2 = NULL
 ```
 
 ####GGPlot
+####1990 -1991 USSR Colapses, USSR Migration Explodes.
+#### 2008 Black Market, Market Crashes, Germany migration Declines
 
-```{r message=FALSE, warning=FALSE, fig.width=10, fig.height=6}
+```{r message=FALSE, warning=FALSE, fig.width=10, fig.height=7}
 require(plotly)
-p <- ggplot(tddata2, aes(total, year, color = CntName)) +
+p <- ggplot(tddata2, aes(total/1000000, year, color = reorder(CntName, -total)))+
   geom_point(aes(size = total, frame = year, ids = CntName))+
-  scale_fill_continuous()
-    
+  scale_fill_continuous()+
+  labs(color = "Country Names", x = "Migration by Millions", y = "Years")
+
 p <- ggplotly(p) %>%
-    animation_opts(
-    2000, easing = "circle", redraw = TRUE
-  )
+    animation_opts(2000, easing = "elastic", redraw = TRUE)%>%
+    add_annotations(
+    yref="paper", 
+    xref="paper", 
+    y=1.1, 
+    x=0, 
+    text="Migration By Year/Country", 
+    showarrow=F, 
+    font=list(size=17)
+  ) %>% 
+  layout(title=FALSE)
 p
 # p = NULL
 ```
+
 
 ####Data2 posted by Ravi Itwaru (Airline Safety)
 #### https://raw.githubusercontent.com/fivethirtyeight/data/master/airline-safety/airline-safety.csv
@@ -165,14 +178,14 @@ glimpse(thedata3)
 ```
 
 ####Tidy Data by Airline Incident Counts
-Gather all incident totals and dipsplay GGPlot with Top 10 Airlines Incidents, then compare incidents to kilometers per week.
+Gather all incident totals and dipsplay GGPlot with Top 10 Airlines Incidents,then compare incidents to kilometers per week.
 
 ```{r message=FALSE, warning=FALSE}
 head(thedata3)
 tddata3<-thedata3%>%
     gather(incidents, count, 3:8)
     
-tddata3$count<- as.numeric(tddata3$count)
+tddata3$count<- as.integer(tddata3$count)
 
 tddata3<-tddata3%>%
     filter(count > 0)%>%
@@ -187,7 +200,7 @@ tddata3<-tddata3%>%
 
 ```{r message=FALSE, warning=FALSE}
 ggplot(data= tddata3) +
-    geom_bar(mapping = aes(x = airline, y = count, fill= airline), stat = "identity", position = "identity", show.legend = FALSE)+
+    geom_bar(mapping = aes(x = reorder(airline, -count), y = count, fill= airline), stat = "identity", position = "identity", show.legend = FALSE)+
 theme(axis.text.x=element_text(angle=-90))
 
 ggplot(data= tddata3) +
