@@ -81,7 +81,7 @@ tddata1.2
 ####GGPlot
 
 ```{r message=FALSE, warning=FALSE}
-lbls <- paste(tddata1.2$County, round(tddata1.1$pctallcrime,0)) 
+lbls <- paste(tddata1.2$County, round(tddata1.2$pctallcrime,0)) 
 lbls <- paste(lbls,"%",sep="") 
 pie(tddata1.2$value, labels = lbls, col = rainbow(length(tddata1.2$value)),  main="Pie Chart by Top 10 County")
 
