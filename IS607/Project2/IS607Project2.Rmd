@@ -33,6 +33,7 @@ glimpse(thedata)
 ```
 
 ####Tidy Data Offense
+Gather all offense totals and display GGPlots
 
 ```{r message=FALSE, warning=FALSE}
 head(thedata)
@@ -64,6 +65,7 @@ theme(axis.text.x = element_blank())
 ```
 
 ####Tidy Data by Top 10 Counties
+Gather all offense totals and display GGplots by Counties
 ```{r message=FALSE, warning=FALSE}
 tddata1.2<-thedata%>%
     select( -Felony.Total, -Misdemeanor.Total, -Year, -Total) %>%
@@ -116,6 +118,7 @@ glimpse(thedata2)
 ```
 
 ####Tidy Data by Year Totals
+Gather all year totals and display dynamic year to year changes in plotly
 
 ```{r message=FALSE, warning=FALSE}
 head(thedata2)
@@ -162,6 +165,7 @@ glimpse(thedata3)
 ```
 
 ####Tidy Data by Airline Incident Counts
+Gather all incident totals and dipsplay GGPlot with Top 10 Airlines Incidents, then compare incidents to kilometers per week.
 
 ```{r message=FALSE, warning=FALSE}
 head(thedata3)
