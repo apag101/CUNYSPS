@@ -1,0 +1,48 @@
+---
+title: "Projec3 Play"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+##Load libraries
+library(dplyr) #all data
+library(tidyr) #all data
+library(readxl)#Import data 2
+library(ggplot2)#all data
+library(plotrix) #data1
+library(plotly) #data 2 https://plot.ly/ggplot2/animations/
+library(gapminder) #data2 https://plot.ly/ggplot2/animations/
+```
+
+```{r}
+EdStatsCountry<-data.frame(read.csv(file = 'EdStatsCountry.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
+EdStatsCountrySeries<-data.frame(read.csv(file = 'EdStatsCountry-Series.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
+EdStatsData<-data.frame(read.csv(file = 'EdStatsData.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
+EdStatsFootNote<-data.frame(read.csv(file = 'EdStatsFootNote.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
+EdStatsSeries<-data.frame(read.csv(file = 'EdStatsSeries.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
+
+```
+
+```{r}
+glimpse(EdStatsCountry)
+```
+
+```{r}
+glimpse(EdStatsCountrySeries)
+```
+
+```{r}
+glimpse(EdStatsData)
+```
+
+```{r}
+glimpse(EdStatsFootNote)
+```
+
+```{r}
+glimpse(EdStatsSeries)
+```
