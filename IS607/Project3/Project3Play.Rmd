@@ -9,40 +9,81 @@ output:
 
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 ##Load libraries
-library(dplyr) #all data
-library(tidyr) #all data
-library(readxl)#Import data 2
-library(ggplot2)#all data
-library(plotrix) #data1
-library(plotly) #data 2 https://plot.ly/ggplot2/animations/
-library(gapminder) #data2 https://plot.ly/ggplot2/animations/
+library(dplyr)
+library(tidyr)
+library(readxl)
+library(ggplot2)
+library(plotrix)
+library(plotly)
+library(gapminder) 
+library(RMySQL)
 ```
 
-```{r}
-EdStatsCountry<-data.frame(read.csv(file = 'EdStatsCountry.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
-EdStatsCountrySeries<-data.frame(read.csv(file = 'EdStatsCountry-Series.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
-EdStatsData<-data.frame(read.csv(file = 'EdStatsData.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
-EdStatsFootNote<-data.frame(read.csv(file = 'EdStatsFootNote.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
-EdStatsSeries<-data.frame(read.csv(file = 'EdStatsSeries.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE))
 
+```{r}
+EdStatsData<-data.frame(read.csv(file = 'EdStatsData.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE, numerals = "no.loss"))
+
+EdStatsCountry<-data.frame(read.csv(file = 'EdStatsCountry.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE, numerals = "no.loss"))
+
+EdStatsCountrySeries<-data.frame(read.csv(file = 'EdStatsCountry-Series.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE, numerals = "no.loss"))
+
+EdStatsFootNote<-data.frame(read.csv(file = 'EdStatsFootNote.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE, numerals = "no.loss"))
+
+EdStatsSeries<-data.frame(read.csv(file = 'EdStatsSeries.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE, numerals = "no.loss"))
+
+```
+
+
+```{r}
+mydb = dbConnect(MySQL(), user='root', password='123456', dbname='education', host='localhost')
+
+dbListTables(mydb)
+
+dbRemoveTable(mydb, "edustats")
+dbWriteTable(mydb, "edustats",EdStatsData, overwrite = TRUE)
+EdStatsData<-dbGetQuery(mydb, "select * from edustats")
+
+dbRemoveTable(mydb, "edustatscntr")
+dbWriteTable(mydb, "edustatscntr",EdStatsCountry, overwrite = TRUE)
+EdStatsCountry<-dbGetQuery(mydb, "select * from edustatscntr")
+
+dbRemoveTable(mydb, "edustatscntrser")
+dbWriteTable(mydb, "edustatscntrser",EdStatsCountrySeries, overwrite = TRUE)
+EdStatsCountrySeries<-dbGetQuery(mydb, "select * from edustatscntrser")
+
+dbRemoveTable(mydb, "edustatsfn")
+dbWriteTable(mydb, "edustatsfn",EdStatsFootNote, overwrite = TRUE)
+EdStatsFootNote<-dbGetQuery(mydb, "select * from edustatsfn")
+
+dbRemoveTable(mydb, "edustatser")
+dbWriteTable(mydb, "edustatser",EdStatsSeries, overwrite = TRUE)
+EdStatsSeries<-dbGetQuery(mydb, "select * from edustatser")
+
+dbListTables(mydb)
+dbDisconnect(mydb)
 ```
 
 ```{r}
 glimpse(EdStatsCountry)
+head(EdStatsCountry)
 ```
 
 ```{r}
 glimpse(EdStatsCountrySeries)
+head(EdStatsCountrySeries)
 ```
 
 ```{r}
 glimpse(EdStatsData)
+head(EdStatsData)
 ```
 
 ```{r}
 glimpse(EdStatsFootNote)
+head(EdStatsFootNote)
 ```
 
 ```{r}
 glimpse(EdStatsSeries)
+head(EdStatsSeries)
 ```
