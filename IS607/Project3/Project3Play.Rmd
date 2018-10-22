@@ -23,6 +23,10 @@ library(RMySQL)
 ```{r}
 EdStatsData<-data.frame(read.csv(file = 'EdStatsData.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE, numerals = "no.loss"))
 
+names(EdStatsData)
+ncol(EdStatsData)
+names(EdStatsData$Country.Code)<-c("Countrycode")
+
 EdStatsCountry<-data.frame(read.csv(file = 'EdStatsCountry.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE, numerals = "no.loss"))
 
 EdStatsCountrySeries<-data.frame(read.csv(file = 'EdStatsCountry-Series.csv', header = TRUE, sep= ",", stringsAsFactors = FALSE, numerals = "no.loss"))
@@ -76,6 +80,10 @@ head(EdStatsCountrySeries)
 ```{r}
 glimpse(EdStatsData)
 head(EdStatsData)
+test<-EdStatsData%>%
+    top_n(100)%>%
+    gather(Year, value, X1970:X2095)%>%
+    na.omit()
 ```
 
 ```{r}
