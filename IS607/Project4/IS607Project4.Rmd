@@ -59,7 +59,7 @@ stf_idf<-stf_idf%>%
 ```    
 
 ####GGPLOT 
-* List top 25 word count less than 500
+* List top 25 word count
 * Words with less than 20 characers
 
 ```{r message=FALSE, warning=FALSE}
@@ -134,4 +134,19 @@ htf_idf%>%
 wordcloud(htf_idf$word, max = 400)
 ```
 
+####Extracting emails that have SPAM words 
+```{r}
+#pass rawdata to a data frame
+df<-rawdata
 
+#Find Emails with Spam words and add column with y or n
+for (i in stf_idf$word)
+{
+    df$spam <- ifelse(grepl(i,df$text),'y','n')
+}
+
+#Filter for emails that have spam column as y
+sdf<-df %>%
+    filter(spam =="y")
+sdf
+```
