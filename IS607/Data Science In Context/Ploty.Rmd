@@ -1,0 +1,273 @@
+---
+title: "Interactive Plots"
+author: "Anthony Pagan"
+date: "October 28, 2018"
+output: 
+  slidy_presentation: 
+    keep_md: yes
+    smaller: yes
+    widescreen: yes
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## Introduction - Buiding Interactive Plots in R
+    - Using Plotly
+    - Plotly Examples
+    - Using Shiny App
+    - Shiny Examples
+    - Shiny with Plotly Example
+    - Recap
+    - Questions
+
+## Plotly Overview
+
+- What is Plotly
+
+    - An open source javascript library
+    - Allows you to create web based interactive Graphs
+    - Intial goal was to suport 3D and Mesh chart that types ggplot2 did not support. 
+    -plotly uses the htmlwidget framework, which allows plots to work seamlessly and consistently in various contexts  
+    - Works with the most basic charts to advance statistical or scientific charts
+    - Can be use with local browser or published to a ploty web service
+
+## Shiny Overview
+    
+- What is Shiny
+
+    - Also interactive same as Plotly
+    - Shiny can be used as app and can be servered directly from the web
+    - Ploty can be in conjuction with Shiny app.
+    
+    
+
+## Using Plotly
+
+- URL
+
+    - Documentation:  https://plot.ly/r/
+    - Online Book: https://plotly-book.cpsievert.me/index.html
+    - Cheatsheet: https://images.plot.ly/plotly-documentation/images/r_cheat_sheet.pdf?_ga=2.137841968.128055842.1542046850-981781115.1542046850
+
+- Library
+
+    - install.packages("plotly") or
+    
+    - install the latest development version (on Github) via devtools:devtools::install_github("ropensci/plotly")
+    
+    - 2 ways to initiate:
+            - plot_ly() function for datasets
+            - ggplotly() function totransforms a ggplot object into a plotly                  - ggplotly has a dependency on ggplot2 while plot_ly does not.
+
+## Basic Example 1
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(plotly)
+library(ggplot2)
+plot_ly(z = ~volcano)
+
+```
+
+
+## Basic Example 2
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#options(browser = 'FALSE')
+t<-plot_ly(midwest, x = ~percollege, color = ~state, 
+type = "box",width = 800, height = 300)%>%
+layout(margin = list(l = 100))
+t
+rangeslider(t)
+```
+
+## Using Plotly with GGPlotly: GGPLOT  
+
+```{r echo= TRUE, message=FALSE, warning=FALSE}
+
+p <- ggplot(txhousing, aes(date, median,
+    width = 800, height = 300)) +
+    geom_line(aes(group=city), alpha = 0.2)
+p
+
+```
+
+
+## Using Plotly with GGPlotly
+
+```{r echo= TRUE, message=FALSE, warning=FALSE}
+
+#options(browser = 'FALSE')
+subplot(
+    p, ggplotly(p, tooltip = "city",
+                width = 800, height = 300),
+    ggplot(txhousing, aes(date, median)) + geom_bin2d(),
+    ggplot(txhousing, aes(date, median)) + geom_hex(),
+    nrows =2, shareX= TRUE, shareY = TRUE,
+    titleY = FALSE, titleX = FALSE
+    )
+
+```
+   
+
+## Statistical Example
+
+
+```{r echo= TRUE, message=FALSE, warning=FALSE}
+library(plotly)
+library(GGally)
+pm<- ggpairs(iris)
+ggplotly(pm,width = 800, height = 300)
+
+```
+
+## Plotly online example
+
+    - Setup Account in https://plot.ly
+    - Get username and secret api key from https://plot.ly/settings/api#/
+    - Use Sys.setenv to setup username and passowrd keys
+    - Api_create to upload file.
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+Sys.setenv("plotly_username"="apag101")
+Sys.setenv("plotly_api_key"="OyQslu5MKVQcEjx7aVJV")
+api_create(t, filename = c("test"))
+
+```
+
+## Using Plotly Web Figures
+
+    - Use api_dowload(id, username) to download plot from site
+    - Example of dowloading from my account and another public account.
+    
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#Download from current account
+api_download_plot("8","apag101")
+
+#Download from https://plot.ly/~cpsievert/559/_1-vs-2/#/
+api_download_plot("559", "cpsievert")
+
+```
+
+## Using Shiny
+    
+    - URL
+    
+        - Documentation:  https://www.rstudio.com/products/shiny/
+        - Online Book and Videoes: http://shiny.rstudio.com/tutorial/
+        - Cheatsheet: https://www.rstudio.com/resources/cheatsheets/#shiny
+
+- Library
+
+    - install.packages("shiny") 
+    - install.packages('rsconnect')
+
+## App R Shiny Example
+
+    - Uses app.R file to run
+    - app.R has three components:
+        - UI is theuser interface object
+        - server function has to instructions to run build the app
+        - shinyApp function takes the UI and Server object and creates shiny app
+
+    
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(shiny)
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+   # Application title
+   titlePanel("Old Faithful Geyser Data"),
+   # Sidebar with a slider input for number of bins 
+   sidebarLayout(
+      sidebarPanel(
+         sliderInput("bins",
+                     "Number of bins:",
+                     min = 1,
+                     max = 50,
+                     value = 30)
+      ),
+      
+      # Show a plot of the generated distribution
+      mainPanel(
+         plotOutput("distPlot")
+      )
+   )
+)
+
+# Define server logic required to draw a histogram
+server <- function(input, output) {
+   
+   output$distPlot <- renderPlot({
+      # generate bins based on input$bins from ui.R
+      x    <- faithful[, 2] 
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
+      # draw the histogram with the specified number of bins
+      hist(x, breaks = bins, col = 'darkgray', border = 'white')
+   })
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+```
+
+## Shiny Online Example
+
+    - Setup a shiny account https://www.shinyapps.io
+    - Get username and user key from https://www.shinyapps.io/admin/#/dashboard
+    - install rconnect library(rsconnect)
+    - Deploy web app: rsconnect::deployApp('path/to/your/app')
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+#install.packages('rsconnect')
+
+rsconnect::setAccountInfo(name='apag101', token='98AFD680E6AB821CF1F430EF2A6DABFC', secret='rgMjLtYC8JcXgTFRb5TWOSzKlLXk4W4Nkp4fr1eU')
+
+library(rsconnect)
+rsconnect::deployApp('C:/Users/apagan/Documents/test2')
+
+```
+
+## Shiny App With Plotly 
+
+    - Render Ploty plot in shiny app
+
+    
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+ui2 <- fluidPage(
+  plotlyOutput("plot"),
+  verbatimTextOutput("event")
+)
+
+server2 <- function(input, output) {
+
+  # renderPlotly() also understands ggplot2 objects!
+  output$plot <- renderPlotly({
+    plot_ly(mtcars, x = ~mpg, y = ~wt)
+  })
+
+  output$event <- renderPrint({
+    d <- event_data("plotly_hover")
+    if (is.null(d)) "Hover on a point!" else d
+  })
+}
+
+shinyApp(ui2, server2)
+
+```
+
+## Recap
+
+
+
+
+## QUESTIONS?
