@@ -80,13 +80,14 @@ function update_table(data,columns) {
 
 function refresh(){
   var pres = document.getElementById('word').value
-  var dat = 'presidents.csv'
+  var table = d3.select('#target').selectAll('table').remove();
+  var dat = 'https://raw.githubusercontent.com/apag101/CUNYSPS/master/presidents.csv'
   var t = d3.csv(dat,function (data) {
     var columns = ['Name','Height','Weight'];
-    var subset = data.filter( function(d) { return d.Name.toLowerCase().indexOf( pres ) !== -1 } ); 
+    var subset = data.filter( function(d) { return d.Name.indexOf( pres ) !== -1 } ); 
     update_table(subset,columns) });
 }
 
 function clear() {
-  var table = d3.select('target').selectAll("table").remove();
+  var table = d3.select('#click').selectAll('table').remove();
 }
