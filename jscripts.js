@@ -87,7 +87,3 @@ function refresh(){
     var subset = data.filter( function(d) { return d.Name.indexOf( pres ) !== -1 } ); 
     update_table(subset,columns) });
 }
-
-function clear() {
-  var table = d3.select('#click').selectAll('table').remove();
-}
