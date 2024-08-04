@@ -1,0 +1,28 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+ 
+
+```{r}
+#Geometric distribution
+choose(6,4)*choose(19,1)/choose(25,5)
+
+#Hypergeometric distribution
+#mean = n * a/n
+#Urn with 400 red marbles, 600 blue marbles. Sample 10 marbles without replacement. What is probability of choosing 3 red marbles
+# N
+choose(400,3)*choose(600,7)/choose(1000,10)
+```
+
+
+```{r}
+p0 <- 0*.2
+p1 <- 1*.5
+p2 <- 2*.3
+pr <- p0+p1+p2
+e <- 1.837
+p0^0+p2^2
+pr
+```

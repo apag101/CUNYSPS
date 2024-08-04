@@ -1,0 +1,17 @@
+"SHSS","CAHS","NUMBER"
+"Low","Low",32
+"Low","Med",14
+"Low","Hi",2
+"Low","VHi",0
+"Med","Low",11
+"Med","Med",14
+"Med","Hi",6
+"Med","VHi",0
+"Hi","Low",6
+"Hi","Med",14
+"Hi","Hi",19
+"Hi","VHi",3
+"VHi","Low",0
+"VHi","Med",2
+"VHi","Hi",4
+"VHi","VHi",3

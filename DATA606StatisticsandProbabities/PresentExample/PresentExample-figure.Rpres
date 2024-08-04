@@ -1,0 +1,37 @@
+PresentExample
+========================================================
+author: 
+date: 
+autosize: true
+
+First Slide
+========================================================
+
+
+* 6.28 Sleep deprivation, CA vs. OR, Part I. 
+
+     - According to a report on sleep deprivation by the Centers for Disease Control and Prevention, the proportion of California residents who reported insucient rest or sleep during each of the preceding 30 days is 8.0%, while this proportion is 8.8% for Oregon residents. These data are based on simple random samples of 11,545 California and 4,691 Oregon residents. Calculate a 95% con???dence interval for the di???erence between the proportions of Californians and Oregonians who are sleep deprived and interpret it in context of the data.53
+
+
+
+Slide With Code
+========================================================
+- We use the Confidence interval for the difference between the 2 Proportions which in this case:
+
+    - POr - PCa +or- z * Sqrt(Por(1-PCa)/POr + PCa(1-POr)/PCa)
+
+```{r}
+
+deplower<-.088-.08-(1.96*(sqrt((.088*(1-.088)/4691)+(.08*(1-.08)/11545))))
+depupper<-.088-.08+(1.96*(sqrt((.088*(1-.088)/4691)+(.08*(1-.08)/11545))))
+c(deplower, depupper)
+```
+Slide With Plot
+========================================================
+
+- We are 95% confident that the difference between proportion of sleep deprived residents Of California as compare to residents of Oregon will fall between a `r ceiling(c(deplower*100, depupper*100))`%
+
+```{r, echo=FALSE}
+plot(deplower, depupper)
+
+```

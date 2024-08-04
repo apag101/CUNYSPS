@@ -1,0 +1,211 @@
+---
+title: "IS607 Project 2"
+author: "Anthony Pagan"
+date: "October 7, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+####Load Required Libraries
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+##Load libraries
+library(dplyr) #all data
+library(tidyr) #all data
+library(readxl)#Import data 2
+library(ggplot2)#all data
+library(plotrix) #data1
+library(plotly) #data 2 https://plot.ly/ggplot2/animations/
+library(gapminder) #data2 https://plot.ly/ggplot2/animations/
+```
+
+#####Data1 posted by Michael Silva (Adult Arrests)
+##### https://data.ny.gov/Public-Safety/Adult-Arrests-by-County-Beginning-1970/rikd-mt35/data. 
+
+####Get Data 1
+
+```{r data1, message=FALSE, warning=FALSE, paged.print=TRUE}
+theurl <- "https://data.ny.gov/api/views/rikd-mt35/rows.csv?accessType=DOWNLOAD"
+thedata <- read.table(file = theurl, header = TRUE, sep = ",")
+glimpse(thedata)
+```
+
+####Tidy Data Offense
+Gather all offense totals and display GGPlots
+
+```{r message=FALSE, warning=FALSE}
+head(thedata)
+tddata1.1<-thedata%>%
+    select( -Felony.Total, -Misdemeanor.Total, -Year, -Total) %>%
+    gather(offense, value, 2:9)%>%
+    group_by(offense)%>%
+    summarise_each(funs(sum), value)%>%
+    mutate(pctallcrime = round(value/sum(thedata$Total)*100,5))%>%
+    arrange(desc(value))
+tddata1.1
+```
+
+####GGPlot
+
+```{r message=FALSE, warning=FALSE}
+options("scipen" = 20)
+lbls <- paste(tddata1.1$offense, round(tddata1.1$pctallcrime,0)) 
+lbls <- paste(lbls,"%",sep="") 
+pie(tddata1.1$value, labels = lbls, col = rainbow(length(tddata1.1$value)),  main="Pie Chart of Offenses")
+ 
+ggplot(data= tddata1.1) +
+    geom_point(mapping = aes(x = pctallcrime, y = value, size = pctallcrime, color = offense))
+
+ggplot(data= tddata1.1) +
+    geom_bar(mapping = aes(x = offense, y = value, fill= offense), stat = "identity", position = "identity")+
+#theme(axis.text.x=element_text(angle=-90))
+theme(axis.text.x = element_blank())
+```
+
+####Tidy Data by Top 10 Counties
+Gather all offense totals and display GGplots by Counties
+```{r message=FALSE, warning=FALSE}
+tddata1.2<-thedata%>%
+    select( -Felony.Total, -Misdemeanor.Total, -Year, -Total) %>%
+    gather(offense, value, 2:9)%>%
+    group_by(County)%>%
+    summarise_each(funs(sum), value)%>%
+    mutate(pctallcrime = round(value/sum(thedata$Total)*100,5))%>%
+    arrange(desc(value))%>%
+    top_n(10, value)
+tddata1.2
+```
+
+####GGPlot
+
+```{r message=FALSE, warning=FALSE}
+lbls <- paste(tddata1.2$County, round(tddata1.1$pctallcrime,0)) 
+lbls <- paste(lbls,"%",sep="") 
+pie(tddata1.2$value, labels = lbls, col = rainbow(length(tddata1.2$value)),  main="Pie Chart by Top 10 County")
+
+ggplot(data= tddata1.2) +
+    geom_point(mapping = aes(x = pctallcrime, y = value, size = pctallcrime, color = County))
+```
+
+
+```{r message=FALSE, warning=FALSE, fig.width=10, fig.height=6}
+tddata1.3<-thedata%>%
+    select( -Felony.Total, -Misdemeanor.Total, -Year, -Total) %>%
+    gather(offense, value, 2:9)%>%
+    group_by(County, offense)%>%
+    summarise_each(funs(sum), value)%>%
+    mutate(pctallcrime = round(value/sum(thedata$Total)*100,5))%>%
+    arrange(desc(value))
+
+ggplot(data= tddata1.3) +
+    geom_bar(mapping = aes(x = County, y = value, fill= offense), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(angle=-90, size=9))
+```
+
+####Data2 posted by Juanelle Marks (Population Migration)
+#### http://www.un.org/en/development/desa/population/migration/data/estimates2/estimates17.shtml
+ 
+####Get Data 2
+
+```{r data2, message=FALSE, warning=FALSE}
+theurl2 <- "http://www.un.org/en/development/desa/population/migration/data/empirical2/data/UN_MigFlow_Totals.xlsx"
+destfile <- "UN_MigFlow_Totals.xlsx"
+download.file(theurl2, destfile, mode = "wb")
+thedata2<-read_xlsx("UN_MigFlow_Totals.xlsx", skip = 16)
+glimpse(thedata2)
+```
+
+####Tidy Data by Year Totals
+Gather all year totals and display dynamic year to year changes in plotly
+
+```{r message=FALSE, warning=FALSE}
+head(thedata2)
+tddata2<-thedata2%>%
+    gather(year, total, "1980":"2013")%>%
+    filter(total != "..")
+
+tddata2$total<- as.integer(tddata2$total)
+    
+tddata2<- tddata2%>%
+    group_by(CntName,year)%>%
+    summarise_each(funs(sum), total)%>%
+    arrange(year)#%>%
+    #filter(CntName %in% c("United States of America","Germany","France"))
+#
+#View(tddata2)
+#tddata2 = NULL
+```
+
+####GGPlot
+####1990 -1991 USSR Colapses, USSR Migration Explodes.
+#### 2008 Black Market, Market Crashes, Germany migration Declines
+
+```{r message=FALSE, warning=FALSE, fig.width=10, fig.height=7}
+require(plotly)
+p <- ggplot(tddata2, aes(total/1000000, year, color = reorder(CntName, -total)))+
+  geom_point(aes(size = total, frame = year, ids = CntName))+
+  scale_fill_continuous()+
+  labs(color = "Country Names", x = "Migration by Millions", y = "Years")
+
+p <- ggplotly(p) %>%
+    animation_opts(2000, easing = "elastic", redraw = TRUE)%>%
+    add_annotations(
+    yref="paper", 
+    xref="paper", 
+    y=1.1, 
+    x=0, 
+    text="Migration By Year/Country", 
+    showarrow=F, 
+    font=list(size=17)
+  ) %>% 
+  layout(title=FALSE)
+p
+# p = NULL
+
+```
+
+
+####Data2 posted by Ravi Itwaru (Airline Safety)
+#### https://raw.githubusercontent.com/fivethirtyeight/data/master/airline-safety/airline-safety.csv
+
+####Get data 3
+
+```{r data3, message=FALSE, warning=FALSE}
+theurl3<-"https://raw.githubusercontent.com/fivethirtyeight/data/master/airline-safety/airline-safety.csv"
+thedata3 <- read.table(file = theurl3, header = TRUE, sep = ",") 
+glimpse(thedata3)
+```
+
+####Tidy Data by Airline Incident Counts
+Gather all incident totals and dipsplay GGPlot with Top 10 Airlines Incidents,then compare incidents to kilometers per week.
+
+```{r message=FALSE, warning=FALSE}
+head(thedata3)
+tddata3<-thedata3%>%
+    gather(incidents, count, 3:8)
+    
+tddata3$count<- as.integer(tddata3$count)
+
+tddata3<-tddata3%>%
+    filter(count > 0)%>%
+    select(airline, count, avail_seat_km_per_week)%>%
+    group_by(airline)%>%
+    summarise_each(funs(sum), count, avail_seat_km_per_week)%>%
+    arrange(desc(count))%>%
+    top_n(10)
+```
+
+####GGPlot Top 10 Airport Incidents
+
+```{r message=FALSE, warning=FALSE}
+ggplot(data= tddata3) +
+    geom_bar(mapping = aes(x = reorder(airline, -count), y = count, fill= airline), stat = "identity", position = "identity", show.legend = FALSE)+
+theme(axis.text.x=element_text(angle=-90))
+
+ggplot(data= tddata3) +
+    geom_point(mapping = aes(x = avail_seat_km_per_week, y =count, color = airline, size = count))
+ 
+#theme(axis.text.x = element_blank())
+```

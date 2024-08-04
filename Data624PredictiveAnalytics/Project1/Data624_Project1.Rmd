@@ -1,0 +1,644 @@
+---
+title: "Data 624 Project 1"
+author: "Anthony Pagan"
+date: "3/29/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 5
+        css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+knitr::opts_chunk$set(echo = TRUE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(mlbench)
+library(e1071)
+library(fpp2)
+library(lubridate)
+library(readxl)
+library(MASS)
+library(reshape)
+library(urca)
+library(tseries)
+library(tidyr)
+library(ZIM)
+```
+
+# Project 1 Description 
+
+This project consists of 3 parts - two required and one bonus and is worth 15% of your grade.  The project is due at 11:59 PM on Sunday March 31.  I will accept late submissions with a penalty until the meetup after that when we review some projects.
+Part A – ATM Forecast, ATM624Data.xlsx
+ 
+In part A, I want you to forecast how much cash is taken out of 4 different ATM machines for May 2010.  The data is given in a single file.  The variable ‘Cash’ is provided in hundreds of dollars, other than that it is straight forward.   I am being somewhat ambiguous on purpose to make this have a little more business feeling.  Explain and demonstrate your process, techniques used and not used, and your actual forecast.  I am giving you data via an excel file, please provide your written report on your findings, visuals, discussion and your R code via an RPubs link along with the actual.rmd file  Also please submit the forecast which you will put in an Excel readable file. 
+
+# Functions
+
+In this section we begin by creating the 3 functions that will be use throughout this project:
+
+* Check Data
+* Model Data
+* Train Data
+
+## CheckData
+
+In this chunck we create a checkdata function to display all the plots for each data set. The plots include:
+
+* Autoplot
+* Check Residuals
+* PCF Plot
+* GGSeasonal
+* GG Series
+* Auto and Checkresiduals plots with Box Cox Lambda Transform
+* Additive Seasonality Plot
+* KPSS test data
+
+```{r CheckdataFunction, message=FALSE, warning=FALSE}
+
+checkdata<- function (x)
+    {
+    print("Plot Data, Check Residuals , ACF ,PCF, seasonal and series Plots")
+    print(autoplot(x)) #Plot data
+    print(checkresiduals(x)) # Check residuals
+    print(ggPacf(x))# Add ggPacf details
+    print(ggsubseriesplot(x))#seasonal plots
+    print(ggseasonplot(x, xlab = "Daily")+ theme(legend.title = element_blank()))#series plot
+    
+    print("Box Cox plots with Lambda")
+    l<-BoxCox.lambda(x) # Get lambda value for boxcox
+    print(autoplot(BoxCox(x, l))) # Plot boxcox wiht lambda
+    print(checkresiduals(BoxCox(x, l))) # check residuals with boxcox transform
+    
+    print("Plot data and seasonality Trends")
+    print(BoxCox(x, l) %>% decompose(type="additive")%>%
+    autoplot(frequency = frequency(atm)) + xlab("Month") +
+    ggtitle("Monthy ATM Cash in Thousands"))
+    
+    print("Check if data or diff data is stationary")
+    print(x %>% ur.kpss() %>% summary) # Check if data is stationary
+    print(x %>% diff() %>%ur.kpss() %>% summary) # add a difference
+    print(kpss.test(atm1, null = "Trend")) # KPSS test
+    
+    }
+```
+
+## Model Functon
+
+In this section we build a basic functions to generate following 6 models:
+
+* Mean
+* NAIVE
+* SNAIVE
+* Simple Exponential Smoothing (SES)
+* Error Trend Seasonality (ETS)
+* Autoregressive Integrated Moving Average (ARIMA)
+    
+
+```{r ModFunction}
+#Prepare 6 models
+modfunc<- function (x, h)
+    { 
+    l<-BoxCox.lambda(x)
+    m1<<-meanf(x,h=h,lambda=l)
+    m2<<-rwf(x,h=h,lambda=l)
+    m3<<-snaive(x,h=h,lambda=l)
+    m4<<- ses(x,h=h,lambda=l)
+    m5<<- ets(x,lambda=l)
+    m6<<- auto.arima(x,lambda=l)
+    
+    
+    #Print plots for all models with forecast
+    print(autoplot(window(x))+
+      autolayer(m1, series = "Mean", PI=FALSE) +
+      autolayer(m2, series = "Naive", PI=FALSE) +
+      autolayer(m3, series = "Seasonal naive", PI=FALSE) +
+      autolayer(m4, series = "Simple Exp Smoothing", PI=FALSE) +
+      xlab("Year") + ylab("ATM") +
+      ggtitle("Forecasts for ATM") +
+      guides(colur=guide_legend(title="Forecast")))
+    
+    print(autoplot(forecast(m5, h=h)))
+    print(autoplot(forecast(m6, h=h)))
+    }
+```
+
+## Train Function
+
+In this section we begin with with functions for ETS and ARIMA models to caculate the Mean Squared Errors. The trainst function create training datasets, models and extracts stastics for final analysis.
+
+```{r TrainstFunction}
+
+#ETS ARIMA functions
+fets<- function(x, h)
+{
+    forecast(ets(x), h=h)
+}
+
+arima1<- function(x, h)
+{
+    forecast(Arima(x, order=m6tr$arma[1:3]), h=h)
+}
+
+#Setup Training Model and extract RMSE and Acuracy Info
+traintst<- function(x,h)
+{   l<<-BoxCox.lambda(x)
+    train<- subset(x, end = nrow(x)*.7)
+    m1tr<<-meanf(train,h=h,lambda=l)
+    m2tr<<-rwf(train,h=h, lambda=l)
+    m3tr<<-snaive(train,h=h, lambda=l)
+    m4tr<<-ses(train,h=h, lambda=l)
+    m5tr<<-ets(train)
+    m6tr<<-auto.arima(train, lambda = l)
+    
+    e<-tsCV(x, forecastfunction = meanf, h = h) 
+    print ( c('MEAN MSE:', round(mean(e^2 , na.rm = TRUE),2)))
+    f<-tsCV(x, forecastfunction = rwf, h = h) 
+    print ( c('NAIVE MSE:', round(mean(f^2 , na.rm = TRUE),2)))
+    g<-tsCV(x, forecastfunction = snaive, h = h) 
+    print ( c('SNAIVE MSE:', round(mean(g^2 , na.rm = TRUE),2)))
+    s<-tsCV(x, forecastfunction = ses, h=h)
+    print ( c('Simple Exp Smooth MSE:', round(mean(s^2 , na.rm = TRUE),2)))
+    #t<-window(x)
+    e1<-tsCV(x, fets, h=h)
+    e2<-tsCV(x, arima, h=h, window=1)
+    print(c('ETS MSE:', round(mean(e1^2, na.rm=TRUE),2)))
+    print(c('ARIMA MSE:', round(mean(e2^2, na.rm=TRUE),2)))
+    print(c('ETS AIC/BIC:',m5tr$aicc, m5tr$bic))
+    print(c('ARIMA AIC/BIC:',m6tr$aicc, m6tr$bic))
+
+    print(list('Model1 MEAN:',m1tr%>%forecast(h)%>%accuracy(x),
+               'Model2 NAIVE:',m2tr%>%forecast(h)%>%accuracy(x),
+               'Model3 SNAIVE:',m3tr%>%forecast(h)%>%accuracy(x),
+               'Model4 SES:',m4tr%>%forecast(h)%>%accuracy(x),
+               'Model5 ETS:',m5tr%>%forecast(h)%>%accuracy(x),
+               'Model6 ARIMA:',m6tr%>%forecast(h)%>%accuracy(x)))
+}
+
+```
+
+# ATM 
+
+## ATM Data Preparation
+
+### ( Step 1)
+
+We begin by preparing the data and generatin some summary data and preliminary plots. The summary data show a couple of rows with no data. We also see that ATM numbers are in each row rather than being listed by column. 
+
+```{r ATMDataPrepare1}
+atmn <- read_excel("ATM624Data.xlsx")
+summary(atmn)
+atm<-atmn[complete.cases(atmn),]
+ggplot(atm, aes(Cash)) + geom_histogram() + scale_x_log10()
+```
+
+### (Step 2)
+
+In this chunk we used spread to set the ATM rows as columns. We run a summary which shows there are a couple of rows with no data so we use complete.cases function to only use rows with complete data, then run another summary to confirm.  
+
+```{r ATMDataPrepare2}
+atm<-spread(atm, ATM, Cash)
+summary(atm)
+atm<-atm[complete.cases(atm),]
+summary(atm)
+```
+
+### (Step 3)
+
+We now now run the TS funciton to set the Time series to a fequency of 365 and a start of year 2009 with 120 to set to may. We run an autoplot with all ATMs together and another plot with ATM separate by setting facets to true. 
+
+```{r ATMDataPrepare3}
+atmt<-ts(atm[,-1],frequency=365, start = c(2009,120))
+autoplot(atmt)
+autoplot(atmt, facets = TRUE)
+```
+
+### (Step 4)
+
+In this section we are splitting the dataset based on ATM1 - ATM4. We set frequency to 30 days for 30 days , as start of 5 for May and 12 for monthly.
+
+```{r ATMDataPrepare4}
+
+atm1 <- ts(atm[,"ATM1"],frequency=30, start=c(5,12))
+atm2 <- ts(atm[,"ATM2"],frequency=30, start=c(5,12))
+atm3 <- ts(atm[,"ATM3"],frequency=30, start=c(5,12))
+atm4 <- ts(atm[,"ATM4"],frequency=30, start=c(5,12))
+
+```
+
+## Diagnostics ATM1
+
+### Check Data
+
+In the check data portion for ATM1, we can see the basic autoplot for the original data shows some seasonality while regression plot shows a residuals are left skewed. The ACF plot shows a decreasing  trend while PAcf is fairly stationary. The series plot is an up and down trend. The second checkresddual plot includes a Box Cox transformation based on box.cox.lambda function. The residual seems to stabalize a bit. The seasonal additive plot confirms the seasonality of the data with no trend. The KPSS unit test shows that the original data is significant with 1 difference added. 
+
+```{r ATM1CheckData}
+checkdata(atm1)
+
+```
+
+### Model Data
+
+Visually modeling plots point to SNaive as the possible best model for this dataset when comparing MEAN, NAIVE, SNAIVE and SES. In the  visual comparison of ETS and ARIMA, ETS results in an additive model and ARIMA results in a 2,0,2 non-zero mean model. The plot hints that ARIMA may follow the forecast better. 
+
+
+```{r ATM1ModFunc}
+modfunc(atm1,30)
+
+```
+
+### Train and Forecast
+
+The forecast statistics for ATM1 shows that when comparing MSE of MEAN, NAIVE, SNAIVE and SES, the MEAN MSE is the lowest so would be the preferred model. The comparison of ETS and ARIMA, the low AIC/BIC values in ARIMA points to ARIMA as the best model. When looking at all of the training and test sets modeling stats MEAN and ARIMA appear to be the better models again. 
+
+```{r ATM1trainst}
+traintst(atm1,30)
+
+train<- subset(atm1, end = nrow(atm1)*.7)
+
+autoplot(forecast(m1,h=30))
+autoplot(forecast(m6,h=30))
+autoplot(forecast(Arima(train, order= c(0,1,3)),h=30))
+```
+
+## Model Selection ATM1
+
+Adding the differecing found in the KPSS function lowers the RMSE value. The final will use ARIMA with a level of differencing.
+
+```{r ATM1ModelSelect}
+print("MEAN MODEL")
+accuracy(m1)
+print("ARIMA MODEL")
+accuracy(m6)
+print("ARIMA MODEL with Differencing")
+accuracy(Arima(train, order= c(0,1,3)))
+
+m7<-Arima(train, order= c(0,1,3),lambda =l)
+
+write.csv(forecast(m7, h=30),"atm1.csv")
+```
+ 
+## Diagnostics ATM2
+
+### Check Data
+
+In the check data portion for ATM2, we can see the basic autoplot for the original data shows some seasonality with a slight downtrend. The regression plot shows a residuals are farily symetrical. The ACF plot has a decreasing range while PAcf has several logs out out of the critical range. The series plot is an up and down trend for several months. The second checkresddual plot includes a Box Cox transformation based on box.cox.lambda function. The residual seems to stabalize a bit. The seasonal additive plot confirms the seasonality of the data with a downword trend and what appears to be a stationary remainder plot. The KPSS unit test shows that the original data is significant with 1 difference added. 
+
+```{r ATM2CheckData, message=FALSE, warning=FALSE}
+checkdata(atm2)
+```
+
+### Model Data
+
+Visually modeling plots point to SNaive as the possible best model for this dataset when comparing MEAN, NAIVE, SNAIVE and SES. In the  visual comparison of ETS and ARIMA, ETS results in an additive model and ARIMA results in a 2,1,1 non-zero mean model. The plot hints that ARIMA may follow the forecast better.
+
+```{r ATM2ModFunc}
+modfunc(atm2,30)
+
+```
+
+### Train and Forecast
+
+The forecast statistics for ATM2 shows that when comparing MSE of MEAN, NAIVE, SNAIVE and SES, the SES MSE is the lowest so would be the preferred model. When comparing the ETS and ARIMA models, the low AIC/BIC values in ARIMA points to ARIMA as the best model. When looking at all of the training and test sets modeling stats SES and ARIMA appear to be the better models again. 
+
+```{r ATM2Trainst}
+traintst(atm2,30)
+
+autoplot(forecast(m4, h=30))
+autoplot(forecast(m6, h=30))
+```
+
+## Model Selection ATM2
+
+Unlike ATM1 there is no need to add the differecing found in the KPSS function since the existing ARIMA Model alerady has it added. The final will use ARIMA model from m6.
+
+```{r ATM2ModelSelect}
+print("SES MODEL")
+accuracy(m4)
+print("ARIMA MODEL")
+accuracy(m6)
+
+write.csv(forecast(m6, h=30),"atm2.csv")
+```
+ 
+## Diagnostics ATM3
+
+### Check Data
+
+In ATM3 we are using all data to determine and average across all ATMS. . The regression plot shows a residuals are farily symetrical. The ACF plot has a decreasing range while PAcf has several logs out out of the critical range. The series plot is an up and down trend for several months. The second checkresddual plot includes a Box Cox transformation based on box.cox.lambda function. The residual seems to stabalize a bit. The seasonal additive plot confirms the seasonality of the data with a downword trend and what appears to be a stationary remainder plot. The KPSS unit test shows that the original data is significant with 1 difference added. 
+
+```{r ATM3CheckData}
+atmn<-atmn[complete.cases(atmn),]
+atmn3<-ts(atmn[3],frequency=365, start = c(2009,120))
+
+checkdata(atmn3)
+```
+
+### Model Data
+
+Visually modeling plots point to SNaive or ARIMA model as the possible models for this dataset when comparing MEAN, NAIVE, SNAIVE and SES. 
+
+
+```{r ATM3ModFunc}
+modfunc(atmn3,30)
+
+```
+
+### Train and forecast
+
+The forecast statistics for ATM shows that when comparing MSE of MEAN, NAIVE, SNAIVE and SES, the SES MSE is the lowest so would be the preferred model. When comparing the ETS and ARIMA models, the low AIC/BIC values in ARIMA points to ETS as the best model. When looking at all of the training and test sets modeling stats SES and ETS appear to be the better models again. 
+
+```{r ATM3Trainst}
+traintst(atmn3,30)
+
+autoplot(forecast(m4, h=30))
+autoplot(forecast(m5, h=30))
+autoplot(forecast(m6, h=30))
+
+```
+
+## Model Selection ATM3
+
+Unlike ATM1, in ATM3 there is no need to add the differecing found in the KPSS function since the existing ARIMA Model alerady has it added. ARIMA is slightly better than SES although plots are similar. The final will use ARIMA model from m6.
+
+```{r ATM3ModelSelect}
+print("SES MODEL")
+accuracy(m4)
+print("ETS MODEL")
+accuracy(m5)
+print("ARIMA MODEL")
+accuracy(m6)
+
+write.csv(forecast(m6, h=30),"atm3.csv")
+
+```
+ 
+## Diagnostics ATM4
+
+### Check Data
+
+In the check data portion for ATM4, we can see the basic autoplot for the original data shows some seasonality with an anomaly between months 14 and 15. The regression plot shows a residuals are farily symetrical, but to left of the plot. The ACF and PAcf shows that data is stationary. The series plot has a month to month that are mostly identical except the anomaly. The second checkresddual plot includes a Box Cox transformation based on box.cox.lambda function. The residual seems go to the high end of the plot. The seasonal additive plot confirms the seasonality of the data with no trend and what appears to be a stationary remainder plot with an anomaly spike. The KPSS unit test shows that the original data is significant with 1 difference added. 
+
+
+```{r ATM4CheckData}
+checkdata(atm4)
+```
+
+### Model Data
+
+Visually modeling plots point to SNaive as the possible best model for this dataset when comparing MEAN, NAIVE, SNAIVE and SES. In the  visual comparison of ETS and ARIMA, ETS results in an additive model and ARIMA results in a 0,0,0 non-zero mean model. Both models are identical.
+
+```{r ATM4ModFunc}
+modfunc(atm4,30)
+
+```
+
+### Train and forecast
+
+The forecast statistics for ATM2 shows that when comparing MSE of MEAN, NAIVE, SNAIVE and SES, the MEAN MSE is the lowest so would be the preferred model. When comparing the ETS and ARIMA models, the low AIC/BIC values in ARIMA points to ARIMA as the best model. However, when looking at all of the training and test sets modeling stats SNAIVE and ETS appear to be the better models. 
+
+
+```{r ATM4Trainst}
+traintst(atm4,30)
+
+autoplot(forecast(m4, h=30))
+autoplot(forecast(m6, h=30))
+autoplot(forecast(m7, h=30))
+```
+
+## Model Selection ATM4
+
+With the visual anomaly we add a log transformation to differencing and see SNAIVE and ARIMA are now the better models visually. After comparing the RMSE the ARIMA model is the final model we will use for ATM4.
+
+```{r ATM4ModelSelect}
+datm4<-log(atm4)
+#datm4<-subset(atm4,atm4<mean(atm4)+sd(atm4)*2)
+checkresiduals(datm4)
+describe(atm4)
+modfunc(datm4, 30)
+traintst(datm4, 30)
+
+m7<-Arima(datm4, order= c(1,1,0),seasonal=c(1,1,0))
+
+print("SNAIVE MODEL")
+accuracy(m4)
+print("ARIMA MODEL")
+accuracy(m6)
+print("ARIMA Diff MODEL")
+accuracy(m7)
+
+write.csv(forecast(auto.arima(train, lambda = l), h=30),"atm4.csv")
+```
+ 
+
+Part B – Forecasting Power, ResidentialCustomerForecastLoad-624.xlsx
+ 
+Part B consists of a simple dataset of residential power usage for January 1998 until December 2013.  Your assignment is to model these data and a monthly forecast for 2014.  The data is given in a single file.  The variable ‘KWH’ is power consumption in Kilowatt hours, the rest is straight forward.    Add this to your existing files above.
+
+# Power 
+
+## Power Data Preparation
+
+In data prepartion, we set run a few autplots and summary functions and note there are a few rows with NA. We set any NA values ot mean values of KWH. We set the time series based on data from autplot, with a start date of 1998 and a monthly frequency.
+
+```{r PowerDataPrepare}
+power <- readxl::read_excel("ResidentialCustomerForecastLoad-624.xlsx")
+autoplot(ts(power$KWH))
+summary(power)
+power$KWH<-replace_na(power$KWH, mean(power$KWH, na.rm = TRUE))
+summary(power)
+ggplot(power, aes(KWH)) + geom_histogram() + scale_x_log10()
+
+powert<-ts(power[,-1:-2],frequency=12, start = c(1998,1))
+
+```
+
+## Diagnostics Power
+
+### Check data
+
+In the check data portion for Power, we can see the basic autoplot for the original data shows some seasonality with a tail end trend while regression plot shows a residuals are right skewed. There is a downward spike anomaly in 2011. The ACF plot shows an up and down trend which also shows in Pacf plot although it diminishes. The series plot confirms these trends. The second checkresddual plot includes a Box Cox transformation based on box.cox.lambda function. The residual seems to stabalize a bit. The seasonal additive plot confirms the seasonality of the data with a slight upward trend at the end of the series. The KPSS unit test shows that the original data is significant with 1 difference added. 
+
+```{r PowerDataCheck}
+checkdata(powert)
+
+```
+
+### Model Data
+
+Visually modeling plots point to SNaive as the possible best model for this dataset when comparing MEAN, NAIVE, SNAIVE and SES. In the  visual comparison of ETS and ARIMA, ETS results in an additive model and ARIMA results in a (0,1,2)(0,0,2)[12] model. The plots seem to hint both model are possibly adequate to use. 
+
+```{r PowerModel}
+modfunc(powert,12)
+
+```
+
+### Train and Forecast
+
+The forecast statistics for Power dat shows that when comparing MSE of MEAN, NAIVE, SNAIVE and SES, the SNAVE MSE is the lowest so would be the preferred model. When comparing the ETS and ARIMA models, the low AIC/BIC values in ARIMA points to ARIMA as the best model. When looking at all of the training and test sets modeling stats it confirms that SNAIVE and ARMIMA would be the better models. 
+
+```{r PowerTrainst}
+traintst(powert,12)
+
+autoplot(forecast(m3, h=12))
+autoplot(forecast(m6, h=12))
+```
+
+## Model Selection Power
+
+With the visual anomaly we add a log transformation to differencing and see MEAN and ETS are now the better models visually. We also added a ARIMA model with a differencing for ordering and seasonal. After comparing the RMSE the ETS model is the final model we will use for Power.
+
+```{r PowerModelSelect}
+
+lpowert<-log(powert)
+#datm4<-subset(atm4,atm4<mean(atm4)+sd(atm4)*2)
+
+checkresiduals(lpowert)
+describe(powert)
+ndiffs(lpowert)
+nsdiffs(lpowert)
+modfunc(lpowert, 12)
+traintst(lpowert, 12)
+
+m7<-Arima(lpowert, order= c(0,1,2),seasonal=c(0,1,2))
+
+print("SNAIVE MODEL")
+accuracy(m3)
+print("ETS MODEL")
+accuracy(m5)
+print("ARIMA")
+accuracy(m6)
+print("ARIMA Diff MODEL")
+accuracy(m7)
+
+autoplot(forecast(m3, h=12))
+autoplot(forecast(m5, h=12))
+autoplot(forecast(m6, h=12))
+autoplot(forecast(m7, h=12))
+
+
+write.csv(forecast(ets(train, lambda = l), h=12),"power.csv")
+
+```
+
+Part C – BONUS, optional (part or all), Waterflow_Pipe1.xlsx and Waterflow_Pipe2.xlsx
+ 
+Part C consists of two data sets.  These are simple 2 columns sets, however they have different time stamps.  Your optional assignment is to time-base sequence the data and aggregate based on hour (example of what this looks like, follows).  Note for multiple recordings within an hour, take the mean.  Then to determine if the data is stationary and can it be forecast.  If so, provide a week forward forecast and present results via Rpubs and .rmd and the forecast in an Excel readable file
+
+# Water 
+
+## Water Data Preparation
+
+In the data preparation we begin with separate water datasets. We set water1 to a frequency of 60 since the data has minute by minute data. Water2 dataset was hourly so it was set to 24. The summary of data shows no NA in either dataset. GGPlot show both datasets are symetrical. The time series for each dataset is set to a frequency of 24 for 24 hours. The final ts dataset sets mean hourly data to twater.
+ 
+```{r WaterDataPrepare}
+water1 <- readxl::read_excel("Waterflow_Pipe1.xlsx", col_types = c("date", "numeric"))
+water2 <- readxl::read_excel("Waterflow_Pipe2.xlsx", col_types = c("date", "numeric"))
+
+autoplot(ts(water1[,-1], frequency=60))
+autoplot(ts(water2[,-1], frequency=24))
+
+summary(water1)
+summary(water2)
+
+ggplot(water1, aes(WaterFlow)) + geom_histogram()
+ggplot(water2, aes(WaterFlow)) + geom_histogram()
+
+watert1<-ts(water1[,-1],frequency=24)
+watert2<-ts(water2[,-1],frequency=24)
+
+twater<-ts(tapply(watert2, cycle(watert2), mean) +
+tapply(watert1, cycle(watert1), mean)/2)
+
+```
+
+## Diagnostics Water
+
+### Check Data
+
+In the check data portion for Water, see residuals are normally distributed and ACF/PACF plots show data is stationary. 
+
+```{r WaterDataCheck}
+
+checkresiduals(twater)
+ggPacf(twater)
+
+autoplot(twater)
+
+```
+
+### Model Data
+
+Visually modeling plots to not give any  best model for this dataset when comparing MEAN, NAIVE, SNAIVE and SES. In the  visual comparison of ETS and ARIMA, ETS results in an multiplicative model and ARIMA results in a 0,0,0 non-zero mean model. 
+
+```{r WaterModel}
+a<-auto.arima(twater)
+s<-ses(twater)
+e<-ets(twater)
+m<-meanf(twater)
+
+autoplot(forecast(a))
+autoplot(forecast(s))
+autoplot(forecast(e))
+autoplot(forecast(m))
+
+```
+
+### Train and Forecast
+
+The forecast statistics for Water shows that when comparing MSE of MEAN and SES, the MEAN MSE is the lowest so would be the preferred model. When comparing the ETS and ARIMA models, RMSE in ARIMA points to ARIMA as the best model. 
+
+```{r WaterTrainst}
+train<- subset(twater ,end = nrow(twater)*.7)
+
+a<-auto.arima(train)
+s<-ses(train)
+e<-ets(train)
+m<-meanf(train)
+
+accuracy(forecast(a))
+accuracy(forecast(s))
+accuracy(forecast(e))
+accuracy(forecast(m))
+  
+```
+
+## Model Selection Water
+
+With the visual anomaly we add a log transformation to differencing and see SNAIVE and ARIMA are now the better models visually. After comparing the RMSE the ARIMA model is the final model we will use for ATM4.
+
+```{r WaterModelSelect}
+
+autoplot(forecast(a))
+autoplot(forecast(m))
+
+write.csv(forecast(a, h=7),"water.csv")
+```
+
+# Appendix
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+

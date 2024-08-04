@@ -1,0 +1,42 @@
+---
+title: "Data 608 Module3"
+author: "Anthony Pagan"
+date: "10/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## Get Data and Import Modules
+
+
+```{r cars}
+library(dplyr) 
+library(tidyr) 
+library(readxl)
+library(ggplot2)
+library(plotly)
+library(shiny)
+library(rsconnect)
+
+```
+
+## Shiny Connection Details
+
+```{r shinyonline, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE}
+#install.packages('rsconnect')
+
+rsconnect::setAccountInfo(name='apag101', token='98AFD680E6AB821CF1F430EF2A6DABFC', secret='rgMjLtYC8JcXgTFRb5TWOSzKlLXk4W4Nkp4fr1eU')
+
+library(rsconnect)
+rsconnect::deployApp('..\\module3\\Module3_2')
+
+
+```
+

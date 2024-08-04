@@ -1,0 +1,17 @@
+"CONDITION","TRIAL","SWITCH","NUMBER"
+"Empty","First","Yes",10
+"Empty","First","No",17
+"Vanish","First","Yes",3
+"Vanish","First","No",24
+"Steroids","First","Yes",5
+"Steroids","First","No",22
+"Steroids2","First","Yes",8
+"Steroids2","First","No",19
+"Empty","Last","Yes",23
+"Empty","Last","No",4
+"Vanish","Last","Yes",12
+"Vanish","Last","No",15
+"Steroids","Last","Yes",21
+"Steroids","Last","No",6
+"Steroids2","Last","Yes",19
+"Steroids2","Last","No",8

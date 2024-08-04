@@ -1,0 +1,55 @@
+---
+title: "Week1AssignmentR"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+###AUTHOR : ANTHONY PAGAN
+###Write a loop that calculates a 12 Factorial
+```
+fac <- 1
+for (i in 12:1){
+    if(i >0)
+    {
+       fac <- fac * i
+     
+    }
+    }
+    print(fac)
+```
+
+###Show how to create a numeric vector that contains the sequence from 20 to 50 by 5
+```
+fives <- seq(20,50,5)
+fives
+```
+
+###Create the function "factorial" that takes a trio of input numbers a, b, c and solve the quadratic equation. The function should print as output the 2 solutions
+```
+factorial <- function(){
+    a.num<- readline(prompt = "Enter A variable of quadratic equation: ")
+    b.num<- readline(prompt = "Enter B variable of quadratic equation: ")
+    c.num<- readline(prompt = "Enter C variable of quadratic equation: ")
+    
+    a.num <- as.integer(a.num)
+    b.num <- as.integer(b.num)
+    c.num <- as.integer(c.num)
+    
+    factp <- (- b.num + sqrt(b.num ^ 2 - 4 * a.num * c.num)) / 2 * a.num
+    factm <- (- b.num - sqrt(b.num ^ 2 - 4 * a.num * c.num)) / 2 * a.num
+    
+    sprintf ("X values are %s and %s", factp, factm)
+    
+}
+``` 
+

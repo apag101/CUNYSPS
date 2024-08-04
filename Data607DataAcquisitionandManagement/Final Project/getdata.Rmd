@@ -1,0 +1,25 @@
+---
+title: "GetData"
+author: "Anthony Pagan"
+date: "December 5, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Get Data
+
+
+```{r getdata}
+#install.packages("taskscheduleR", repos = "http://www.datatailor.be/rcube", type = "source")
+
+raw_aot_url <-getURL("https://api.arrayofthings.org/api/raw-observations")
+df.raw_aot_url<-fromJSON(raw_aot_url)
+df.raw_aot<-as.data.frame(df.raw_aot_url$data)
+write.csv(df.raw_aot, file=paste(format(Sys.time(), "%Y-%m-%d %I-%p"), "csv", sep = "."))
+```
+
+
+

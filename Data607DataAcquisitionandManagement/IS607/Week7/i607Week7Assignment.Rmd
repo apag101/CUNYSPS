@@ -1,0 +1,59 @@
+---
+title: "IS607Week7Assignment"
+author: "Anthony Pagan"
+date: "October 13, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## I607 Week 7 Assignment
+
+####Import Libraries
+```{r message=FALSE, warning=FALSE}
+library(XML)
+library(RJSONIO)
+library(dplyr)
+
+```
+
+####HTML Parse
+```{r}
+options(stringsAsFactors = FALSE)
+phtml <- htmlParse(file = "book.html")
+phtml
+t.phtml<-readHTMLTable(phtml)
+glimpse(t.phtml)
+t.phtml
+```
+
+####XML Parse
+```{r}
+pxml <- xmlParse("book.xml")
+pxml
+rpxml <-xmlRoot(pxml)
+rpxml
+df.pxml<-xmlToDataFrame(rpxml, stringsAsFactors = FALSE)
+glimpse(df.pxml)
+df.pxml
+
+#xmlName(rpxml)
+#xmlSApply(rpxml, xmlValue)
+```
+
+####Json Parse
+```{r message=FALSE, warning=FALSE}
+library(jsonlite)
+options(stringsAsFactors = FALSE)
+isValidJSON("book.json")
+df.pjson<-data.frame()
+df.pjson<-fromJSON("book.json")
+glimpse(df.pjson)
+df.pjson
+```
+
+####Are the 3 Files similar?
+
+##### All are similar except XML adds quotes to the attribute with 2 authors.

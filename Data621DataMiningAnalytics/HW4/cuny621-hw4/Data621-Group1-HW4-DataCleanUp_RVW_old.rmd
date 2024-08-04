@@ -1,0 +1,550 @@
+---
+title: 'Data 621 Homework 3: Insurance'
+author: "Tommy Jenkins, Violeta Stoyanova, Todd Weigel, Peter Kowalchuk, Eleanor R-Secoquian, Anthony Pagan"
+date: "November 6, 2019"
+output:
+  pdf_document: default
+  html_document:
+    number_sections: yes
+    theme: paper
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Get the data. Added na.strings to add na for records that have a blank value
+#TJ Edit
+InsTrain <- read.csv("insurance_training_data.csv",na.strings="",header=TRUE)#, stringsAsFactors=FALSE)
+InsEval <- read.csv("insurance-evaluation-data.csv",na.strings="",header=TRUE)#, stringsAsFactors=FALSE)
+InsEval <- subset(InsEval, select=-c(TARGET_FLAG,TARGET_AMT))
+```
+
+# OVERVIEW
+
+In this homework assignment, you will explore, analyze and model a data set containing approximately 8000 records representing a customer at an auto insurance company. Each record has two response variables. The first response variable, TARGET_FLAG, is a 1 or a 0. A “1” means that the person was in a car crash. A zero means that the person was not in a car crash. The second response variable is TARGET_AMT. This value is zero if the person did not crash their car. But if they did crash their car, this number will be a value greater than zero representing the cost of the crash.
+
+## Objective: 
+
+Your objective is to build multiple linear regression and binary logistic regression models on the training data to predict the probability that a person will crash their car and also the amount of money it will cost if the person does crash their car.
+
+# DATA EXPLORATION
+
+## Data Summary 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ins1 <- describe(InsTrain, na.rm = F)
+ins1$na_count <- sapply(InsTrain, function(y) sum(length(which(is.na(y)))))
+ins1$na_count_perc <- sapply(InsTrain, function(x) round(sum(is.na(x))/nrow(InsTrain)*100,1))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+colsTrain<-ncol(InsTrain)
+colsEval<-ncol(InsEval)
+missingCol<-colnames(InsTrain)[!(colnames(InsTrain) %in% colnames(InsEval))]
+```
+
+The dataset consists of two data files: training and evaluation. The training dataset contains `r colsTrain` columns, while the evaluation dataset contains `r colsEval`. The evaluation dataset is missing columns `r missingCol` which represent our response variables, respectively whether the person was in a car crash and the cost of the car crash if the person was in an accident. We will start by exploring the training data set since it will be the one used to generate the models.
+
+The columns in the data set are:    
+![](dataTable.png)
+
+## Missing Data
+
+An important aspect of any dataset is to determine how much, if any, data is missing. We look at all the variables to see which if any have missing data. We look at the basic descriptive statistics as well as the missing data and percentages. 
+
+We start by looking at the dataset as a whole and determine how many complete rows, that is rows with data for all predictors, do we have.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cc<-summary(complete.cases(InsTrain))
+cInsTrain<-subset(InsTrain, complete.cases(InsTrain))
+cc
+```
+
+With these results, if we remove all rows with incomplete rows, there will be a total of `r as.integer(cc[3])` rows out of `r nrow(InsTrain)` .If we eliminate all non-complete rows and keep only rows with data for all the predictors in the dataset, our new dataset will results in `r round(as.integer(cc[3])/nrow(InsTrain),2)*100`% of the total dataset. We create a subset of data with complete cases only to use later in our analysis.
+
+
+```{r}
+glimpse(cInsTrain)
+```
+
+
+But we can also look at what specific predictors are missing in our dataset. If we do this we can see how there is much more data available, as we find only 5 predictors with missing data. Data missing for these predictors also only accounts for less than 7% of the respective predictors total.
+
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+#sapply(InsTrain, function(x) round(sum(is.na(x))/nrow(InsTrain)*100,1))
+vis_miss(InsTrain)
+```
+
+We look closer at the missing data and look at the intersection of predictors with missing data. We find that the bulk of the missing data is for predictors with no intersection with other missing predictor data.
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+gg_miss_upset(InsTrain)
+```
+
+Having this detail in missing data might be of importance when looking at models. In the next Data Preparation section we will handle these missing cases and build a data set with data for all predictors in all rows.
+
+## Data Exploration 
+
+Using TARGET_FLAG as response variables we confirm  when TARGET_FLAG is 1  TARGET_AMOUNT >0 and when TARGET_FLAG is 0 when TARGET_AMOUNT  = 0
+
+```{r echo=TRUE}
+
+nrow(subset(InsTrain,TARGET_FLAG == 0))
+nrow(subset(InsTrain,TARGET_AMT == 0))
+nrow(subset(InsTrain,TARGET_FLAG > 0))
+nrow(subset(InsTrain,TARGET_AMT > 0))
+```
+
+A glimpse of the data shows that the following columns should be integers and not Factors:
+
+* INCOME
+* HOME_VAL
+* BLUEBOOK
+* OLDCLAIM
+* JOB
+
+We display and view data with all cases and only complete cases
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+glimpse(InsTrain)
+```
+
+We use Sapply function to review which columns have NA Values. It display columns and percent of values that are missing.  
+
+```{r}
+sapply(InsTrain, function(x) round(sum(is.na(x))/nrow(InsTrain)*100,1))
+```
+
+## Data Preperation
+
+As revealed earlier there were a list of columns that were factors that should be integers. We start by 
+
+
+
+```{r}
+
+#TJ explanation
+c<-c('INCOME','HOME_VAL','BLUEBOOK','OLDCLAIM', 'JOB')
+older_instrain <- InsTrain
+new_InsTrain<-InsTrain
+
+older_instrain[,colnames(older_instrain) %in% c]<-data.frame(sapply(older_instrain[,colnames(older_instrain) %in% c], function(x) as.numeric(x)))
+if(c %in% colnames(new_InsTrain)){
+
+  new_InsTrain[1,]
+  # https://r.789695.n4.nabble.com/Converting-dollar-value-factors-to-numeric-td2130536.html
+  # This way negative quantities and numbers without dollar signs are handled correctly. 
+  
+  new_InsTrain[,c] <- sapply(new_InsTrain[,(colnames(new_InsTrain) %in% c)], 
+                         function(x) as.numeric(gsub('[$,]','',as.character(x))))
+  new_InsTrain[,(c)]
+  older_instrain[1,]
+  new_InsTrain[1,]
+}
+```
+
+```{r}
+# TJ edit
+c<-c('INCOME','HOME_VAL','BLUEBOOK','OLDCLAIM', 'JOB')
+
+if(c %in% colnames(InsTrain)){
+  
+  glimpse(InsTrain[,(c)])
+  InsTrain[,c] <- sapply(InsTrain[,(c)], 
+                         function(x) as.numeric(gsub('[$,]','',as.character(x))))
+  
+  glimpse(InsTrain[,(c)])
+}
+
+```
+
+Both boxplot and summary stats with the square root transform of Home_val and Income to confirm we can use median or mean values to replace NA values if we chose.
+
+```{r}
+r <- colnames(InsTrain)[ apply(InsTrain, 2, anyNA)]
+
+par(mar=c(9.5,3.5,.5,.5))
+
+boxplot(InsTrain$AGE,InsTrain$YOJ, InsTrain$CAR_AGE, sqrt(InsTrain$INCOME), sqrt(InsTrain$HOME_VAL), InsTrain$JOB,names = r,las = 2,col = c("orange","red", "blue", "yellow", "brown", "green"))
+
+describe(subset(InsTrain, select =r))
+
+```
+
+We next replace all NA values with mean values for cases that are missing values and rerun sapply function to confirm there are no longer any missing values.
+
+```{r}
+
+InsTrain[,colnames(InsTrain) %in% r]<-data.frame(sapply(InsTrain[,colnames(InsTrain) %in% r],
+      function(x) ifelse(is.na(x),
+            mean(x, na.rm = TRUE),
+            x)))
+
+sapply(InsTrain, function(x) round(sum(is.na(x))/nrow(InsTrain)*100,1))
+vis_miss(InsTrain)
+describe(subset(InsTrain, select =r))
+#View(InsTrain)
+```
+
+We have this way derived a dataset with no missing values. We can use this set of data for our modeling design. We chose to work with this data as opposed to the first "complete" set in which rows with missing data were eliminated.
+
+# Build Model
+
+Modeling design will be divided in two phases. First we will design a model to predict if the person is in a car crash, that is predict TARGET_FLAG. In a second phase, we will predict TARGET_AMT, the cost of the crash.
+
+##TARGET_FLAG Modeling
+
+This response variable being binary, o or 1, we will be looking at logistic regression models to find a good fit. We will start with a naive model with all the predictors included as a baseline. First approach will be to simply the model by reducing the predictors used. We will look at several model metrics such as AIC, BIC. We will also include confusion tables and ROC plot to better understand each model.
+
+**Model 1: all predictors**
+
+We start out with a straightforward logit logistical regression with all predictors included. As a note, we need to make sure we do not include the TARGET_AMT responce variable in our model as a predictor.
+
+```{r}
+m1<-glm(TARGET_FLAG~.-INDEX-TARGET_AMT,data=InsTrain,family="binomial"(link="logit"))
+summary(m1)
+```
+
+From the model's summary itself we see that there are several predictors which are not statistically relevant, which suggestes a simpler model should be possible.We build a second model without these the non-significant predictors.
+
+**Model 2: reduced predictors**
+
+```{r}
+m2<-glm(TARGET_FLAG~.-INDEX-TARGET_AMT-AGE-INCOME-JOB-BLUEBOOK-CAR_AGE-RED_CAR,data=InsTrain,family="binomial"(link="logit"))
+summary(m2)
+```
+
+The new model has a slightly higher AIC which would tells us the first model is slightly less complex.
+
+### AIC Step Method Model 3
+
+Another way of selecting which predictors to use in the model is by calculating the AIC of the model. This metric is similar to the adjusted R-square of a model in that it penalizes models with more predictors over simpler model with few predictors. We use Stepwise function in r to find the lowest AIC with different predictors.
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+m3 <- step(m1)
+summary(m3)
+```
+
+This reduces the predictors used tp 25 from 30. The AIC improvesfrom 7482.66 (our original general model) to 7478.5, and we also benefit by having a simpler model less prone to overfitting.
+
+Also, the predictors in the model now are all signficant (under 0.05 pr level) and all but one under .02 or very significant. Which is much improved over the first model.
+
+### BIC Method  Model 4
+
+To determine the number of predictors and which predictors to be used we will use the Bayesian Information Criterion (BIC).
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+InsTrainM4<-InsTrain[ , !(names(InsTrain) %in% c('INDEX','TARGET_AMT'))]
+regfit.full <- regsubsets(factor(TARGET_FLAG) ~ ., data=InsTrainM4)
+par(mfrow = c(1,2))
+reg.summary <- summary(regfit.full)
+plot(reg.summary$bic, xlab="Number of Predictors", ylab="BIC", type="l", main="Subset Selection Using BIC")
+BIC_num <- which.min(reg.summary$bic) 
+points(BIC_num, reg.summary$bic[BIC_num], col="red", cex=2, pch=20)
+
+```
+
+```{r echo=FALSE,message=FALSE,warning=FALSE,fig.height=4,fig.width=8}
+plot(regfit.full, scale="bic", main="Predictors vs. BIC")
+```
+
+The plot on the right shows that the number of predictors with the lowest BIC are `PARENT` , `HOMEVAL`, `CAR_USE`, 'CAR_TYPE', 'REVOKED', 'MVR_PTS' and 'URBANICITY'. We will use those predictors to build the next model
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+m4 <- glm(TARGET_FLAG ~ PARENT1 + HOME_VAL + CAR_USE + CAR_TYPE + REVOKED + MVR_PTS + URBANICITY, family=binomial, data = InsTrain)
+InsTrain$predicted_m3<- predict(m4, InsTrain, type='response')
+InsTrain$target_m4$target <- ifelse(InsTrain$predicted_m4>0.5, 1, 0)
+pander::pander(summary(m4))
+```
+
+### Select Model
+### Compare Model Statistics
+
+### Model 1 - General Model
+
+**ROC Curve**
+
+The ROC Curve helps measure true positives and true negative. A high AUC or area under the curve tells us the model is predicting well. 
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+targethat<-predict(m1,type="response")
+g<-roc(TARGET_FLAG~targethat,data=InsTrain)
+plot(g)
+```
+ 
+The AUC value of `r round(g$auc,2)`, tells us this model predicted values are acurate.
+
+**Confusion Matrix**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+targethat[targethat<0.5]<-0
+targethat[targethat>=0.5]<-1
+table(targethat,InsTrain$TARGET_FLAG)
+```
+
+**Create a binned diagnostic plot of residuals vs prediction**
+There are definite patterns here, which bear investigating.
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+InsMut <- mutate(InsTrain, Residuals = residuals(m1), linPred = predict(m1))
+grpIns <- group_by(InsMut, cut(linPred, breaks=unique(quantile(linPred, (0:25/26)))))
+diagIns <- summarise(grpIns, Residuals = mean(Residuals), linPred = mean(linPred))
+plot(Residuals ~ linPred, data = diagIns, xlab="Linear Predictor")
+```
+
+**Plot leverages.**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+halfnorm(hatvalues(m1))
+```
+
+We don't see any strong outliers with the leverage plot.  The points identified (3608,5686) are essentially in the plot of the line formed, so they are not likely pulling our model in any direction.
+
+**Plot Goodness of fit**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+linPred <- predict(m1)
+InsMut <- mutate(InsTrain, predProb = predict(m1, type = "response"))
+grpIns <- group_by(InsMut, cut(linPred, breaks = unique(quantile(linPred, (0:25)/26))))
+#hosmer-lemeshow stat
+hlDf <- summarise(grpIns, y= sum(TARGET_FLAG), pPred=mean(predProb), count = n())
+hlDf <- mutate(hlDf, se.fit=sqrt(pPred * (1-(pPred)/count)))
+ggplot(hlDf,aes(x=pPred,y=y/count,ymin=y/count-2*se.fit,ymax=y/count+2*se.fit)) +
+    geom_point()+geom_linerange(color=grey(0.75))+geom_abline(intercept=0,slope=1) +
+    xlab("Predicted Probability") +
+    ylab("Observed Proportion")
+```
+
+We see that our predictors fall close to the line. 
+
+### Model 2 - Reduced General Model
+
+**ROC Curve**
+
+The ROC Curve helps measure true positives and true negative. A high AUC or area under the curve tells us the model is predicting well. 
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+targethat<-predict(m2,type="response")
+g<-roc(TARGET_FLAG~targethat,data=InsTrain)
+plot(g)
+```
+ 
+The AUC value of `r round(g$auc,2)`, tells us this model predicted values are acurate.
+
+**Confusion Matrix**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+targethat[targethat<0.5]<-0
+targethat[targethat>=0.5]<-1
+table(targethat,InsTrain$TARGET_FLAG)
+```
+
+**Create a binned diagnostic plot of residuals vs prediction**
+There are definite patterns here, which bear investigating.
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+InsMut <- mutate(InsTrain, Residuals = residuals(m2), linPred = predict(m2))
+grpIns <- group_by(InsMut, cut(linPred, breaks=unique(quantile(linPred, (0:25/26)))))
+diagIns <- summarise(grpIns, Residuals = mean(Residuals), linPred = mean(linPred))
+plot(Residuals ~ linPred, data = diagIns, xlab="Linear Predictor")
+```
+
+**Plot leverages.**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+halfnorm(hatvalues(m2))
+```
+
+We don't see any strong outliers with the leverage plot.  The points identified (3608,5686) are essentially in the plot of the line formed, so they are not likely pulling our model in any direction.
+
+**Plot Goodness of fit**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+linPred <- predict(m2)
+InsMut <- mutate(InsTrain, predProb = predict(m2, type = "response"))
+grpIns <- group_by(InsMut, cut(linPred, breaks = unique(quantile(linPred, (0:25)/26))))
+#hosmer-lemeshow stat
+hlDf <- summarise(grpIns, y= sum(TARGET_FLAG), pPred=mean(predProb), count = n())
+hlDf <- mutate(hlDf, se.fit=sqrt(pPred * (1-(pPred)/count)))
+ggplot(hlDf,aes(x=pPred,y=y/count,ymin=y/count-2*se.fit,ymax=y/count+2*se.fit)) +
+    geom_point()+geom_linerange(color=grey(0.75))+geom_abline(intercept=0,slope=1) +
+    xlab("Predicted Probability") +
+    ylab("Observed Proportion")
+```
+
+We see that our predictors fall close to the line. 
+
+### Model 3 - Srep AIC Model
+
+**ROC Curve**
+
+The ROC Curve helps measure true positives and true negative. A high AUC or area under the curve tells us the model is predicting well. 
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+targethat<-predict(m3,type="response")
+g<-roc(TARGET_FLAG~targethat,data=InsTrain)
+plot(g)
+```
+ 
+The AUC value of `r round(g$auc,2)`, tells us this model predicted values are acurate.
+
+**Confusion Matrix**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+targethat[targethat<0.5]<-0
+targethat[targethat>=0.5]<-1
+table(targethat,InsTrain$TARGET_FLAG)
+```
+
+**Create a binned diagnostic plot of residuals vs prediction**
+There are definite patterns here, which bear investigating.
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+InsMut <- mutate(InsTrain, Residuals = residuals(m3), linPred = predict(m3))
+grpIns <- group_by(InsMut, cut(linPred, breaks=unique(quantile(linPred, (0:25/26)))))
+diagIns <- summarise(grpIns, Residuals = mean(Residuals), linPred = mean(linPred))
+plot(Residuals ~ linPred, data = diagIns, xlab="Linear Predictor")
+```
+
+**Plot leverages.**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+halfnorm(hatvalues(m3))
+```
+
+We don't see any strong outliers with the leverage plot.  The points identified (3608,5686) are essentially in the plot of the line formed, so they are not likely pulling our model in any direction.
+
+**Plot Goodness of fit**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+linPred <- predict(m3)
+InsMut <- mutate(InsTrain, predProb = predict(m3, type = "response"))
+grpIns <- group_by(InsMut, cut(linPred, breaks = unique(quantile(linPred, (0:25)/26))))
+#hosmer-lemeshow stat
+hlDf <- summarise(grpIns, y= sum(TARGET_FLAG), pPred=mean(predProb), count = n())
+hlDf <- mutate(hlDf, se.fit=sqrt(pPred * (1-(pPred)/count)))
+ggplot(hlDf,aes(x=pPred,y=y/count,ymin=y/count-2*se.fit,ymax=y/count+2*se.fit)) +
+    geom_point()+geom_linerange(color=grey(0.75))+geom_abline(intercept=0,slope=1) +
+    xlab("Predicted Probability") +
+    ylab("Observed Proportion")
+```
+
+We see that our predictors fall close to the line. 
+
+### Model 4 - Srep BIC Model
+
+**ROC Curve**
+
+The ROC Curve helps measure true positives and true negative. A high AUC or area under the curve tells us the model is predicting well. 
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+targethat<-predict(m4,type="response")
+g<-roc(TARGET_FLAG~targethat,data=InsTrain)
+plot(g)
+```
+ 
+The AUC value of `r round(g$auc,2)`, tells us this model predicted values are acurate.
+
+**Confusion Matrix**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+targethat[targethat<0.5]<-0
+targethat[targethat>=0.5]<-1
+table(targethat,InsTrain$TARGET_FLAG)
+```
+
+**Create a binned diagnostic plot of residuals vs prediction**
+There are definite patterns here, which bear investigating.
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+InsMut <- mutate(InsTrain, Residuals = residuals(m4), linPred = predict(m4))
+grpIns <- group_by(InsMut, cut(linPred, breaks=unique(quantile(linPred, (0:25/26)))))
+diagIns <- summarise(grpIns, Residuals = mean(Residuals), linPred = mean(linPred))
+plot(Residuals ~ linPred, data = diagIns, xlab="Linear Predictor")
+```
+
+**Plot leverages.**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+halfnorm(hatvalues(m4))
+```
+
+We don't see any strong outliers with the leverage plot.  The points identified (3608,5686) are essentially in the plot of the line formed, so they are not likely pulling our model in any direction.
+
+**Plot Goodness of fit**
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+linPred <- predict(m4)
+InsMut <- mutate(InsTrain, predProb = predict(m4, type = "response"))
+grpIns <- group_by(InsMut, cut(linPred, breaks = unique(quantile(linPred, (0:25)/26))))
+#hosmer-lemeshow stat
+hlDf <- summarise(grpIns, y= sum(TARGET_FLAG), pPred=mean(predProb), count = n())
+hlDf <- mutate(hlDf, se.fit=sqrt(pPred * (1-(pPred)/count)))
+ggplot(hlDf,aes(x=pPred,y=y/count,ymin=y/count-2*se.fit,ymax=y/count+2*se.fit)) +
+    geom_point()+geom_linerange(color=grey(0.75))+geom_abline(intercept=0,slope=1) +
+    xlab("Predicted Probability") +
+    ylab("Observed Proportion")
+```
+
+We see that our predictors fall close to the line.
+
+## Pick the best regression model
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+m1AIC <- AIC(m1)
+m1BIC <- BIC(m1)
+m2AIC <- AIC(m2)
+m2BIC <- BIC(m2)
+m3AIC <- AIC(m3)
+m3BIC <- BIC(m3)
+m4AIC <- AIC(m4)
+m4BIC <- BIC(m4)
+```
+| Metric    | Model 1     | Model 2      | Model 3    | Model 4    |
+| --------- | ----------- | -----------  | ---------- | ---------- |
+| AIC       | `r m1AIC`   | `r m2AIC`    | `r m3AIC`  | `r m4AIC`  |
+| BIC       | `r m1BIC`   | `r m2BIC`    | `r m3BIC`  | `r m4BIC`  |
+
+
+##TARGET_AMT Modeling
+
+**Model 1: all predictors**
+
+Same as with the logistic model before, we start with a model that includes all predictors
+
+```{r}
+InsTrain<-InsTrain[ , !(names(InsTrain) %in% c('predicted_m3','target_m4'))]
+lm1<-lm(TARGET_AMT~.,InsTrain)
+summary(lm1)
+plot(lm1)
+```
+
+
+### Select Model
+
+### Compare Model Statistics
+
+## Conclusion
+
+# APPENDIX

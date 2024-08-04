@@ -1,0 +1,66 @@
+[[1]]
+                       
+bag_class_probabilities negative positive
+               negative      152        0
+               positive        0       27
+
+[[2]]
+                   
+gbm_predicted_class negative positive
+           negative      152       13
+           positive        0       14
+
+[[3]]
+          
+           negative positive
+  negative      152       12
+  positive        0       15
+
+[[4]]
+          
+           negative positive
+  negative      152        8
+  positive        0       19
+
+[[5]]
+          
+           negative positive
+  negative      148       11
+  positive        4       16
+
+[[6]]
+          
+rf_pred    negative positive
+  negative      152        0
+  positive        0       27
+
+[[7]]
+                         
+rpart_class_probabilities negative positive
+                 negative      147       12
+                 positive        5       15
+
+[[8]]
+          
+vglm_pred  negative positive
+  negative      150       10
+  positive        2       17
+
+[[9]]
+        
+xgb_pred negative positive
+       1      151       17
+       2        1       10
+
+[[10]]
+          
+xgb_pred4  negative positive
+  negative      150        4
+  positive        2       23
+
+[[11]]
+          
+xgb_pred5  negative positive
+  negative      152        2
+  positive        0       25
+

@@ -1,0 +1,267 @@
+---
+title: "Data698 Final Presentation <br><br> Analyze historical performance metrics to predict critical system degradation"
+author: "Anthony Pagan"
+date: "December 17, 2020"
+output:
+  #ioslides_presentation:
+    #Shighlight: tango
+  slidy_presentation:
+    css: ./slides.css
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r global_options, echo=FALSE, fig.align='default',out.width="50px"}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+# Introduction
+
+## Paper Scope
+
+- Main Goals
+
+  - Proactive Monitoring
+  
+  - Performance Metrics
+  
+  - Automated Resolutions
+  
+  - Benefits
+    
+    - Reduce Cost
+    
+    - Gain Efficiency
+    
+    - Minimize non-actionable alerts
+
+# Journal Review Approaches 
+
+## LSTM
+
+- Long-term/short-term memory RNN
+
+- Gates
+  
+  - Input
+  
+  - Output
+  
+  - Forget
+
+## Monte Carlo and ARIMA Time Series
+
+- Monte Carlos
+
+  - Long-term
+  
+  - Short-Term
+
+- ARIMA Predictions
+
+
+## Other Approaches
+
+- Gauassian
+
+- Decision Trees
+
+- PCA
+
+
+# Project Model Approaches
+
+## Linear Models
+
+- Linear Regression
+
+  - 1 dependent 1  or more predictor variable
+
+- Ridge Regression
+
+  - Shrinkage Technique
+  
+  - Minimizes RSS
+
+- LASSO
+  
+  - Fixes Ridge shortfall allowing varable to be exactly zero
+
+## Non-linear Approaches
+
+- Decision Tree
+
+  - Possible outcome for different decisions
+
+- SVM
+
+  - Minimize outliers using support vectors
+  
+## Compare Keras NN
+
+- Keras
+
+  - Neural Network attemp to predict closest sample by mean of response
+
+- Kalman imputation
+
+  - Times series function to impute missing values
+
+# Data Discussion
+
+## Source
+
+![](./images/19.PNG)
+
+# Data Discussion
+
+## Data Description
+
+```{r echo=FALSE}
+library(kableExtra)
+Columns<-c('DateTime','ManagedEntityGUID','ObjectName','CoutnerName','SampleValue','AlertName','AlertDescription','Severity','Priority','ServerName','Ticket')
+Data_Description<-c('Date stamp of alert','Identity of monitored object','Name of component', 'Performance Metric Name', 'Value of Metric','Alert Generated','Description of Alert Generated','Severity of Alert','Priority of Alert','Name of Server', 'Was a ticket generated')
+def<-as.data.frame(Data_Description,Columns)
+kable(def,)
+```
+
+# Data Discussion
+
+## Metrics
+
+```{r echo=FALSE}
+metrics<-c('DateTime','ManagedEntityGuid','AlertName','Severity','ServerName','Ticket','% Processor Time','Database Drive Free Space','Database Size','Log File Drive Free Space','Pages/sec','MasterAvg')
+kable(metrics)
+```
+
+# Data Discussion
+
+## Visualizations and Tranformation 
+
+- Correlation Plot
+
+```{r echo=FALSE, out.width="500px"}
+knitr::include_graphics("images/1.PNG")
+```
+
+# Data Discussion
+
+## Visualizations and Tranformation 
+
+
+```{r echo=FALSE, out.width="600px"}
+knitr::include_graphics("images/21.PNG")
+knitr::include_graphics("images/2.PNG")
+knitr::include_graphics("images/3.PNG")
+knitr::include_graphics("images/20.PNG")
+```
+
+# Data Discussion
+
+## Visualizations and Tranformation 
+
+- Column Reduction
+
+```{r echo=FALSE, out.width="200px"}
+knitr::include_graphics("images/6.PNG")
+knitr::include_graphics("images/7.PNG")
+
+```
+
+![](./images/12.PNG)
+
+# Modeling
+
+## Initial review with GLM and Boxcox
+
+```{r echo=FALSE, out.width="200px"}
+knitr::include_graphics("images/5.PNG")
+knitr::include_graphics("images/4.PNG")
+```
+
+**X..Processor.Time	Database.Drive.Free.Space	Database.Size	Log.File.Drive.Free.Space	Pages.sec	MasterAvg**
+**-0.4	0	-0.2	0	-1.4	NA**
+
+![](./images/11.PNG)
+
+# Modeling
+
+## 5 Models
+
+- Performance comparison
+
+![](./images/13.PNG)
+
+![](./images/14.PNG)
+
+# Modeling
+
+## 5 Models
+
+- Performance comparison
+
+```{r echo=FALSE, out.width="500px"}
+knitr::include_graphics("images/13.PNG")
+knitr::include_graphics("images/14.PNG")
+knitr::include_graphics("images/8.PNG")
+```
+
+# Modeling
+
+## CTREE
+
+![](./images/15.PNG)
+
+![](./images/9.PNG)
+
+# Modeling
+
+## Keras NN
+
+```{r echo=FALSE, out.width="500px"}
+knitr::include_graphics("images/16.PNG")
+knitr::include_graphics("images/10.PNG")
+```
+
+
+# Model Selection
+
+## Predictions
+
+- Problem Resolution
+
+```{r echo=FALSE, out.width="800px"}
+knitr::include_graphics("images/18.PNG")
+```
+
+# Model Selection
+
+## Predictions
+
+- Prediction Results
+
+```{r echo=FALSE, out.width="800px"}
+knitr::include_graphics("images/17.PNG")
+```
+
+# Conclusion
+
+
+```{r echo=FALSE, out.width="300px"}
+knitr::include_graphics("images/finalthts.png")
+```
+
+
+- Final Thoughts
+
+  - Summary of steps taken
+
+- Next Step
+
+  - Expand Final Models
+  - Expand Server Types
+  
+
+
+

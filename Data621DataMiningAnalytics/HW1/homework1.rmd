@@ -1,0 +1,298 @@
+---
+title: "Data 621 Homework 1"
+author: "Anthony Pagan"
+date: "September 25, 2019"
+output:
+  html_document:
+    css: style.css
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+# Data Exploration
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#GEt the data
+
+library(GGally)
+library(dplyr)
+
+mbe <- read.csv("C:\\Users\\apagan\\OneDrive - BizoIT, Inc\\Desktop\\GitHub\\CUNYSPS\\Data621\\HW1\\moneyball-evaluation-data.csv", header= TRUE)
+
+mbt <- read.csv("C:\\Users\\apagan\\OneDrive - BizoIT, Inc\\Desktop\\GitHub\\CUNYSPS\\Data621\\HW1\\moneyball-training-data.csv", header= TRUE)
+```
+
+
+In this exercise we will go with 2 approaches. One approach would be to remove data with NA values and the second approach would be to replace the NA data with a value. We will attempt both approaches and use the one with the best predictions.
+
+## Data Explore  - Replace NA Values
+
+The initial review of the data shows 6 columns with incomplete data for 6 Columns
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+nrow(mbt)
+s<-summary(mbt)
+s[7,]
+```
+
+
+THis is a summary of values for each column that has NA data values. For the most part the mean and median values are close enough to theorize that data of the six columns with NA value are fairly normal. We will attempt a replacement as one approachin in the data preparation section.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(mbt$TEAM_BATTING_SO)
+summary(mbt$TEAM_BASERUN_SB)
+summary(mbt$TEAM_BASERUN_CS)
+summary(mbt$TEAM_BATTING_HBP)
+summary(mbt$TEAM_PITCHING_SO)
+summary(mbt$TEAM_FIELDING_DP)
+describe(mbt)
+```
+
+## Data Explore - Remove NA Values
+
+If we remove all rows with incomplete rows, there will be a total of 191 rows. We need to decide if using only `r round(191/2085,2)`% of the data suffice
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(complete.cases(mbt))
+
+```
+
+
+A look at the mean and median values show a larger spread in TB_SO, TP_H and TP_E. The expectation is there will be more outliers in these groups
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+s[3:4,]
+```
+
+
+The box plots below confirms the outliers as expected ,but TP_E is not as drastic as the others. However te 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+par(mar=c(9.5,3.5,.5,.5))
+boxplot(mbt, las=2)
+
+plot(lm(mbt$TARGET_WINS~mbt$TEAM_FIELDING_E))
+
+
+ggpairs(data=mbt, columns = c(2,14))
+```
+
+An initial view of the data show that TEAM_FIELDING_E and TEAM_FIELDING_DP have low P value and may have high correlation with team wins. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+fit<-lm(TARGET_WINS ~.-INDEX, mbt)
+summary(fit)
+```
+
+The qq dot plots do not follow the residual line and fails the normality test
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+qqplot(mbt$TARGET_WINS,residuals(lm(mbt$TARGET_WINS~mbt$TEAM_FIELDING_E)))
+qqline(mbt$TARGET_WINS,residuals(lm(mbt$TARGET_WINS~mbt$TEAM_FIELDING_E)))
+qqplot(mbt$TARGET_WINS,residuals(lm(mbt$TARGET_WINS~mbt$TEAM_FIELDING_DP)))
+qqline(mbt$TARGET_WINS,residuals(lm(mbt$TARGET_WINS~mbt$TEAM_FIELDING_DP)))
+
+```
+
+
+# Data Preparation
+
+As a start, we begin by redjusting the data column headings to shorter column names.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+str(mbt)
+colnames(mbt)<-c('Index','Wins','TB_Hits','TB_2B','TB_3B','TB_HR','TB_BB','TB_SO','TBR_SB','TBR_CS','TB_HBP','TP_H','TP_HR','TP_BB','TP_SO','TP_E','TP_DP')
+
+```
+
+## Data Prepare - Replace NA values
+
+In our analysis of the summbary of columns with NA values we noted that median and mean values were close enough to theorize that these column values were fairly normal. As a result, we replace any NAs with the mean value of the column data.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+mbta <-mbt
+
+mbta$TB_SO[is.na(mbta$TB_SO)] <- mean(mbta$TB_SO,na.rm=TRUE)
+mbta$TBR_SB[is.na(mbta$TBR_SB)] <- mean(mbta$TBR_SB,na.rm=TRUE)
+mbta$TBR_CS[is.na(mbta$TBR_CS)] <- mean(mbta$TBR_CS,na.rm=TRUE)
+mbta$TB_HBP[is.na(mbta$TB_HBP)] <- mean(mbta$TB_HBP,na.rm=TRUE)
+mbta$TP_SO[is.na(mbta$TP_SO)] <- mean(mbta$TP_SO,na.rm=TRUE)
+mbta$TP_DP[is.na(mbta$TP_DP)] <- mean(mbta$TP_DP,na.rm=TRUE)
+
+s<-summary(mbta)
+s
+```
+
+## Data Prepart - Remove NA values
+
+In this next approach we are removing columns with missing data. We run a linear model with reduced columns and look at the corrrelation charts.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+mbt2<-mbt%>%
+    select(Wins, TB_Hits, TB_2B, TB_3B, TB_HR, TB_BB, TP_H, TP_HR, TP_BB, TP_E)
+
+str(mbt2)
+
+```
+
+Now we will run the linear model again with only the columns with complete data. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+fit<-lm(Wins ~., mbt2)
+summary(fit)
+```
+
+The linear model shows the P values of TB_BB and TB_HR are greater than .05 so we can remove 2 columns and rerun the model.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+mbt3 <- mbt2%>%
+    select(Wins, TB_Hits,TB_2B,TB_3B,TP_H,TP_HR,TP_BB,TP_E)
+
+fit<-lm(Wins ~., mbt3)
+summary(fit)
+
+```
+
+Last we use ggally to get an idea of correlation of the data and run a corr test to get raw correlation statistics. TB_Hits and TB_2B show the highest correlation and graphs show a positive correlation.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggpairs(data=mbt3)
+
+cor(mbt2)[1,]
+
+```
+
+
+# Build Models
+
+For all of the linear models we are extracting the coeficients, r squared values, adjusted r squared, sigma and f statistics. Coeficients provide y intercept, slope ,the t value which gives the standard deviations the estimated coefficients are from zero and p value which gives probability the null hypothesis is true. The multiple r-squred and adjusted r squared lets us know how close our data are to the linear regression model. The F-statistic gives us the relationship between dependent and independent variables. A large F-statistics means a strong relationship.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+fit<-lm(Wins ~.-Index, mbta)
+s<-summary(fit)
+```
+
+Our first model uses the data set columns with complete data. The P value is very low. The Rsqured and Adjusted RSqaured values are below .5 and F Statistic is low
+
+* Coefficients: `r s$coefficients[1,1:4]`
+* RSquared: `r s$r.squared`
+* Adjusted RSquared: `r s$adj.r.squared`
+* Sigma: `r s$sigma`
+* FStatistic: `r s$fstatistic`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+fit<-lm(Wins ~.-Index-TBR_CS-TB_HBP-TP_BB-TP_HR, mbta)
+s<-summary(fit)
+```
+
+The next model uses the data set columns with columns with high pvalues re data. The P value is als very low. The Rsqured and Adjusted RSqaured values are below .5 and F Statistic is higher
+
+
+* Coefficients: `r s$coefficients[1,1:4]`
+* RSquared: `r s$r.squared`
+* Adjusted RSquared: `r s$adj.r.squared`
+* Sigma: `r s$sigma`
+* FStatistic: `r s$fstatistic`
+##Data Prepare - Remove NA Values
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Answer Question 1 here
+
+s<-summary(lm(Wins~., mbt2,na.action = na.fail))
+```
+
+This next approach removes NA columns. Our first model uses the data set columns wiht complete data. The P value is slightly above .05. The Rsqured and Adjusted RSqaured values are below .5 and F Statistic is low
+
+
+* Coefficients: `r s$coefficients[1,1:4]`
+* RSquared: `r s$r.squared`
+* Adjusted RSquared: `r s$adj.r.squared`
+* Sigma: `r s$sigma`
+* FStatistic: `r s$fstatistic`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+l<-lm(Wins~.-TP_BB-TP_HR, mbt3,na.action = na.fail)
+s<-summary(l)
+
+
+```
+
+Our next model removes TB_BB and TB_HR from previou dataset. The P value is lower at .01. The Rsqured and Adjusted RSqaured values are below .5 and F Statistic is higher than previous dataset. This tells us the new dataset has a lower probability of null hypothesis being true.
+
+
+* Coefficients: `r s$coefficients[1,1:4]`
+* RSquared: `r s$r.squared`
+* Adjusted RSquared: `r s$adj.r.squared`
+* Sigma: `r s$sigma`
+* FStatistic: `r s$fstatistic`
+
+# Select Models
+
+## Select Models - Replace NA Values
+
+In the below models results show comparison of data wih replace NA values. The GGplot below shows a tight cluster with a straight linear line for the NA replacement data.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Answer Question 2 here
+
+mbta1 <- mbta%>%
+    select(Index,TB_Hits,TB_2B,TB_3B,TP_H,TP_HR,TP_BB,TP_E)
+
+p<-data.frame(mbta$Index,predict(fit, new=mbta),mbta$Wins[mbta$Index])
+colnames(p)<-c('Id','PredictedWins','TargetWins')
+head(p)
+
+
+```
+
+## Select Models - Remove NA Values
+
+In the below models results show comparison of data wih remove NA values. The GGPlot below shows a scattered cluster with a dispersed linear line for NA Removals
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+colnames(mbe)<-c('Index','TB_Hits','TB_2B','TB_3B','TB_HR','TB_BB','TB_SO','TBR_SB','TBR_CS','TB_HBP','TP_H','TP_HR','TP_BB','TP_SO','TP_E','TP_DP')
+mbe1 <- mbe%>%
+    select(Index,TB_Hits,TB_2B,TB_3B,TP_H,TP_HR,TP_BB,TP_E)
+
+p1<-data.frame(mbe$Index,predict(l, new=mbe),mbt$Wins[mbe$Index])
+colnames(p1)<-c('Id','PredictedWins','TargetWins')
+head(p1)
+
+```
+
+
+## Conclusion
+
+Both predicuation appear to be similar, hower the replacement of NA values appear to be a better approach. The ggplot conifrms tha values are more correlated.
+
+### REMOVE NA
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+ggplot(p, aes(TargetWins, PredictedWins,width = 600, height =200)) +
+    geom_point(aes(group=TargetWins,size = PredictedWins, color = TargetWins), alpha = 0.2)+
+    stat_smooth(method = "lm", col = "red")
+```
+
+### REPLACE NA
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+ggplot(p1, aes(TargetWins, PredictedWins,width = 600, height = 200)) +
+    geom_point(aes(group=TargetWins,size = PredictedWins, color = TargetWins), alpha = 0.2)+
+    stat_smooth(method = "lm", col = "red")
+```

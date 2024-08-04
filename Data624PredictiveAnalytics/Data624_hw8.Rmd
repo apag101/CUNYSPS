@@ -1,0 +1,193 @@
+---
+title: "Data 624 Homework 8"
+author: "Anthony Pagan"
+date: "4/19/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 5
+        css: style.css
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+#knitr::opts_chunk$set(echo = TRUE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(mlbench)
+library(e1071)
+library(fpp2)
+library(urca)
+```
+
+
+# 7.2. 
+Friedman (1991) introduced several benchmark data sets create by simulation. One of these simulations used the following nonlinear equation to create data: y = 10 sin(πx1x2) + 20(x3 − 0.5)2 + 10x4 + 5x5 + N(0, σ2) where the x values are random variables uniformly distributed between [0, 1] (there are also 5 other non-informative variables also created in the simulation). The package mlbench contains a function called mlbench.friedman1 that simulates these data:
+
+```{r message=FALSE, warning=FALSE}
+
+library(mlbench)
+set.seed(200)
+trainingData <- mlbench.friedman1(200, sd = 1)
+## We convert the 'x' data from a matrix to a data frame
+## One reason is that this will give the columns names.
+trainingData$x <- data.frame(trainingData$x)
+## Look at the data using
+featurePlot(trainingData$x, trainingData$y)
+## or other methods.
+
+## This creates a list with a vector 'y' and a matrix
+## of predictors 'x'. Also simulate a large test set to
+## estimate the true error rate with good precision:
+testData <- mlbench.friedman1(5000, sd = 1)
+testData$x <- data.frame(testData$x)
+
+#Tune several models on these data. For example:
+library(caret)
+##KNN
+knnModel <- train(x = trainingData$x,y = trainingData$y, method = "knn",
+      preProc = c("center", "scale"),tuneLength = 10)
+#knnModel
+
+knnPred <- predict(knnModel, newdata = testData$x)
+## The function 'postResample' can be used to get the test set
+## perforamnce values
+postResample(pred = knnPred, obs = testData$y)
+
+##MARS
+marsModel <- train(x = trainingData$x,y = trainingData$y, method = "earth",
+      preProc = c("center", "scale"),tuneLength = 10)
+#marsModel
+marsPred <- predict(marsModel, newdata = testData$x)
+postResample(pred = marsPred, obs = testData$y)
+
+##SVM
+svmModel <- train(x = trainingData$x,y = trainingData$y, method = "svmRadial",
+      preProc = c("center", "scale"),tuneLength = 10)
+#svmModel
+svmPred <- predict(svmModel, newdata = testData$x)
+postResample(pred = svmPred, obs = testData$y)
+
+
+```
+
+Which models appear to give the best performance? Does MARS select the
+informative predictors (those named X1–X5)?
+
+**The MARS model would be the best perforamce as it has the highest Rsqaured  indicating an above average prediction and a low RMSE which is a good measure of how accurately the model predicts the response. This says that MARS does select informative predictors**
+
+# 7.5. 
+Exercise 6.3 describes data for a chemical manufacturing process. Use the same data imputation, data splitting, and pre-processing steps as before and train several nonlinear regression models. 
+
+
+```{r}
+library(caret)
+library(AppliedPredictiveModeling)
+data("ChemicalManufacturingProcess")
+cm<-ChemicalManufacturingProcess
+cm<-cm[complete.cases(cm),]
+
+set.seed(1)
+trainp <- sample(1:nrow(cm), 0.7*nrow(cm))
+trainf <- cm[trainp,]
+testf <- cm[(nrow(trainf)+1):nrow(cm),]
+trctrl<- trainControl(method="repeatedcv", number=10,repeats=3)
+
+
+##KNN
+knnModel <- caret::train(Yield~., data=cm, method="knn", 
+                trControl=trctrl, preProcess=c("center","scale"),
+                tuneLength =10)
+#KNN Model
+knnPred <- predict(knnModel, newdata = testf)
+postResample(pred = knnPred, obs = testf$Yield)
+
+##MARS
+marsModel <- caret::train(Yield~., data=cm, method="earth", 
+                trControl=trctrl, preProcess=c("center","scale"),
+                tuneLength =10)
+#marsModel
+marsPred <- predict(marsModel, newdata = testf)
+postResample(pred = marsPred, obs = testf$Yield)
+
+##SVM
+svmModel <- caret::train(Yield~., data=cm, method="svmLinear", 
+                trControl=trctrl, preProcess=c("center","scale"),
+                tuneLength =10)
+#svmModel
+svmPred <- predict(svmModel, newdata = testf)
+postResample(pred = svmPred, obs = testf$Yield)
+
+```
+
+
+## (a) 
+Which nonlinear regression model gives the optimal resampling and test set performance?
+
+**KNN looks to be the better model as it has the highest Rsquared, 2nd lowest RMSE and the lowest MAE. RMSE and MAE are negatively-oriented scores, the lower the errors in RMSE/MAE the better the model predicts the response.**
+
+## (b) 
+Which predictors are most important in the optimal nonlinear regression model? Do either the biological or process variables dominate the list? How do the top ten important predictors compare to the top ten predictors from the optimal linear model?
+
+**The names list below are the most important in the optimal nonlinear regresion. The top 10 lest is evenly split 5 to 5 between Biological and Manufacturing.**
+
+```{r}
+t<-c()
+for(x in knnModel$results[,1])
+{
+  
+  t<-c(t,names(cm[x]))
+}
+t
+```
+
+**The Mars model has a different list of top 10 predictors and has 7 Biological and 3 Manufacturing predictors**
+
+```{r}
+v<-c()
+for(x in marsModel$results[,2])
+{
+  v<-c(v,names(cm[x]))
+}
+v
+```
+
+## (c) 
+Explore the relationships between the top predictors and the response for the predictors that are unique to the optimal nonlinear regression model. Do these plots reveal intuition about the biological or process predictors and their relationship with yield?
+
+**The top Biological predictors are more more positviely correlated and the Process predictors seem to be more neutral in the feature plot although the correlation plot show the Process predictors are slightly negative**
+
+```{r}
+
+featurePlot(trainf[, t], trainf$Yield)
+cor.plot(trainf[, t], trainf$Yield)
+```
+
+
+# APPENDIX
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+

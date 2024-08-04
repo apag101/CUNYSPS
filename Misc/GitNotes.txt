@@ -1,0 +1,17 @@
+Clone repository: git clone urlofrepository
+
+git init
+
+git add origin
+
+git clone 
+
+git status(getStatus of files)
+
+git add filename (or git add . (to add all updated files)Add update: )
+
+git commit -m "message"(commit changes)
+
+git push (Push committed files to repository)
+
+git pull (pull new files from repository)

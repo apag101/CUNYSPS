@@ -1,0 +1,220 @@
+---
+title: "Data 621 Homework 3"
+author: "Group 1"
+date: "October 25, 2019"
+output:
+  html_document:
+    css: style.css
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message=FALSE)
+
+library(GGally)
+library(dplyr)
+library(ggplot2)
+library("knitr")
+```
+
+# Data Exloration
+
+Get all data
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+
+edata <- read.csv("crime-evaluation-data_modified.csv", header= TRUE)
+tdata <- read.csv("crime-training-data_modified.csv", header= TRUE)
+sum(is.na(tdata))
+sum(is.na(edata))
+```
+
+
+## Data Explore 
+
+Use plot, boxpot and ggpairs to eplore data
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+nrow(tdata)
+names(tdata)
+#summary(tdata)
+
+boxplot(log(tdata), las=2)
+ggpairs(data=tdata, columns = c(2:11))
+#pairs(tdata[2:11],col=tdata$target)
+lmod<-lm(target~., data=tdata)
+summary(lmod)
+plot(lmod)
+```
+
+# Modeling
+
+## Stepwise Regression Modeling
+
+In this model we table a linear model then use a step approach to remove and add variables. We table the lm, rsqared and fstatistics stats to a table for comparison
+
+```{r}
+df<-data.frame(matrix(ncol = 5, nrow = 0))
+
+lmod<-lm(target~nox+age+rad+medv, data=tdata)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df<-rbind(df,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+lmod<-update(lmod, .~.-medv)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df<-rbind(df,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+lmod<-update(lmod, .~.+medv+ptratio)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df<-rbind(df,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+lmod<-update(lmod, .~.+lstat)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df<-rbind(df,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+lmod<-update(lmod, .~.-lstat+tax)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df<-rbind(df,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+lmod<-update(lmod, .~.+zn)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df<-rbind(df,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+lmod<-update(lmod, .~.-zn+dis)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df<-rbind(df,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+lmod<-update(lmod, .~.-dis)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df<-rbind(df,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+colnames(df)<-c("lm formula", "R-Squred", "F-statistic", "numdf", "dendf")
+#summary(lmod)
+
+kable(df)
+
+```
+
+## Criteria Based AIC Modeling
+
+Criteria Based AIC using leaps package. The package searches all possible combinations of predictors.
+
+```{r message=FALSE, warning=FALSE}
+require(leaps)
+d<-regsubsets(target~., data=tdata)
+rs<-summary(d)
+rs$which
+
+AIC<-50*log(rs$rss/50)+ (2:9)*2
+plot(AIC - I(1:7), ylab="AIC", xlab="Number of Predictors")
+plot(2:9,rs$adjr2,xlab="No. of Parameters", ylab="Adjusted R-Square")
+which.max(rs$adjr2)
+plot(2:9,rs$cp,xlab="No. of Parameters",ylab="Cp Statistic")
+abline(0,1)
+```
+
+In this linear model we do not find any high leverage points when we plot values. However, in the strip chart we find nox, rad and tax have outliers.
+
+```{r}
+lmod<-lm(target ~ ., data=tdata)
+step(lmod)
+h<-lm.influence(lmod)$hat
+c(min(h), max(h))
+plot(h) #No high leverage points
+
+
+#Nox, rad and Tax have outliers
+stripchart(data.frame(scale(tdata)), method ="jitter", las=2, vertical=TRUE)
+```
+
+
+Here we are transforming a variables with outliers with Log except tax. The Rs adjusted value shows false
+
+```{r}
+b<-regsubsets(target ~ log(nox) + age + log(rad) + ptratio + medv + tax, data = tdata)
+rs<-summary(b)
+rs$which[which.max(rs$adjr2),]
+```
+
+Adding log transformation to tax and the The Rs adjusted now has a true value
+
+```{r}
+b<-regsubsets(target ~ log(nox) + age + log(rad) + ptratio + medv + log(tax), data = tdata)
+rs<-summary(b)
+rs$which[which.max(rs$adjr2),]
+```
+
+
+We remove tax and add to dataframe for comparison of statistics with dataframe that includes tax. R-square is slightly higher with log of tax.
+```{r}
+#Orig No Tax plus logs
+df2<-data.frame(matrix(ncol = 5, nrow = 0))
+lmod<-lm(target ~ log(nox) + age + log(rad) + ptratio + medv, data = tdata)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df2<-rbind(df2,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+#Plus Tax logged slightly  higher R squared
+lmod<-lm(target ~ log(nox) + age + log(rad) + ptratio + medv + log(tax), data = tdata)
+s<-summary(lmod)
+d<- list(c(s$call, s$r.squared,s$fstatistic))
+df2<-rbind(df2,data.frame(matrix(unlist(d), nrow=length(d), byrow=T)))
+
+colnames(df2)<-c("lm formula", "R-Squred", "F-statistic", "numdf", "dendf")
+
+kable(df2)
+
+```
+
+## GLM Modeling
+
+```{r}
+require(ISLR)
+#use all data
+pairs(tdata,col=tdata$target)
+glm.fit=glm( target ~ .,data=tdata,family=binomial)
+summary(glm.fit)
+glm.probs=predict(glm.fit,type="response")
+glm.probs[1:5]
+glm.pred=ifelse(glm.probs>0.5,"Up","Down")
+attach(tdata)
+table(glm.pred,target)
+mean(glm.pred==target)
+
+
+#Use results from approach  1 and 2 in 
+pairs(tdata,col=tdata$target)
+glm.fit=glm( target ~ log(nox) + age + log(rad) + ptratio + medv +  log(tax),data=tdata,family=binomial)
+summary(glm.fit)
+glm.probs=predict(glm.fit,type="response")
+glm.probs[1:5]
+glm.pred=ifelse(glm.probs>0.5,"Up","Down")
+attach(tdata)
+table(glm.pred,target)
+mean(glm.pred==target)
+hist(glm.probs)
+
+#use eveluation data to predict
+
+glm.probs2=predict(glm.fit,type="response",newdata=edata)
+glm.probs2[1:5]
+glm.pred=ifelse(glm.probs2>0.5,"Up","Down")
+
+```

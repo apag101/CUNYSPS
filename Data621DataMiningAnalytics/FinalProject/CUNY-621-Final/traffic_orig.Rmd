@@ -1,0 +1,1076 @@
+---
+title: "Traffic Predictions"
+subtitle: "Data 621 Final"
+institute: "CUNY SPS"
+author: "Tommy Jenkins, Violeta Stoyanova, Todd Weigel, Peter Kowalchuk, Eleanor R-Secoquian,
+  Anthony Pagan"
+date: "2019/12/04"
+output:
+  prettydoc::html_pretty:
+    toc: true
+    fig_width: 7
+    fig_height: 4.5 
+    theme: tactile 
+    highlight: tango
+--- 
+
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+list.of.packages <- c("alluvial","caret","caret","corrplot","corrplot","data.table","dplyr","faraway","forcats","geosphere","ggplot2","ggplot2","ggplot2","grid","gridExtra","jtools","kableExtra","knitr","leaflet","leaflet.extras","leaps","lubridate","maps","MASS","mice","naniar","pander","patchwork","prettydoc","pROC","psych","RColorBrewer","readr","reshape2","scales","stringr","tibble","tidyr","tidyverse","xgboost","widgetframe","Rcpp")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+require(knitr)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE,fig.align='center')
+
+library(faraway)
+library(MASS)
+library(psych)
+library(pROC)
+library(corrplot)
+library(jtools)
+library(mice)
+library('corrr')
+library(kableExtra)
+library(gridExtra)
+library(pander)
+#devtools::install_github("thomasp85/patchwork")
+library(patchwork)
+library(tidyverse)
+library(ggplot2)
+library(ggplot2)
+library(reshape2)
+library(leaps)
+library(caret)
+library(naniar)
+library('ggplot2') # visualisation
+library('scales') # visualisation
+library('grid') # visualisation
+library('RColorBrewer') # visualisation
+library('corrplot') # visualisation
+library('alluvial') # visualisation
+library('dplyr') # data manipulation
+library('readr') # input/output
+library('data.table') # data manipulation
+library('tibble') # data wrangling
+library('tidyr') # data wrangling
+library('stringr') # string manipulation
+library('forcats') # factor manipulation
+library('lubridate') # date and time
+library('geosphere') # geospatial locations
+library('leaflet') # maps
+library('leaflet.extras') # maps
+library('maps') # maps
+library('xgboost') # modelling
+library('caret') # modelling
+library('widgetframe') #visualizaiton
+library('grid')
+library('gridExtra')
+```
+
+
+## Utility functions
+
+
+```{r}
+# Define multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+From [R Cookbooks](http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/) to create multi-panel plots.
+
+
+```{r}
+var_stats<- function(df){ 
+  wt<-data.frame(columns=colnames(df))
+  wt$na_count <- sapply(df, function(y) sum(is.na(y)))
+  wt$neg_count <- sapply(df, function(y) sum(y<0))
+  wt$zero_count <- sapply(df, function(y) sum(as.integer(y)==0))
+  wt$unique_count <- sapply(df, function(y) sum(n_distinct(y)))
+  print(wt)
+  return(wt)
+}
+```
+
+## OVERVIEW
+
+In this competition, Kaggle is challenging you to build a model that predicts the total ride duration of taxi trips in New York City. Your primary dataset is one released by the NYC Taxi and Limousine Commission, which includes pickup time, geo-coordinates, number of passengers, and several other variables.
+
+The competition dataset is based on the 2016 NYC Yellow Cab trip record data made available in Big Query on Google Cloud Platform. The data was originally published by the NYC Taxi and Limousine Commission (TLC). The data was sampled and cleaned for the purposes of this playground competition. Based on individual trip attributes, participants should predict the duration of each trip in the test set.
+
+File descriptions
+
+* train.csv - the training set (contains 1458644 trip records)
+* test.csv - the testing set (contains 625134 trip records)
+* sample_submission.csv - a sample submission file in the correct format
+
+Data fields
+
+id - a unique identifier for each trip
+* vendor_id - a code indicating the provider associated with the trip record
+* pickup_datetime - date and time when the meter was engaged
+* dropoff_datetime - date and time when the meter was disengaged
+* passenger_count - the number of passengers in the vehicle (driver entered value)
+* pickup_longitude - the longitude where the meter was engaged
+* pickup_latitude - the latitude where the meter was engaged
+* dropoff_longitude - the longitude where the meter was disengaged
+* dropoff_latitude - the latitude where the meter was disengaged
+* store_and_fwd_flag - This flag indicates whether the trip record was held in vehicle memory before sending to the vendor because the vehicle did not have a 
+* connection to the server - Y=store and forward; N=not a store and forward trip
+* trip_duration - duration of the trip in seconds
+ 
+## Objective: 
+
+TODO: Enter proposal data here
+
+
+vvvv REWRITE vvv
+
+
+# DATA EXPLORATION
+
+## Load data
+
+
+```{r} 
+train <- as_tibble(fread('data/train.csv'))
+test <- as_tibble(fread('data/test.csv'))
+sample_submit <- as_tibble(fread('data/sample_submission.csv'))
+```
+
+
+### View Data
+```{r}
+#str(train)
+glimpse(train)
+#summary(train)
+#describe(train) 
+```
+
+We also calculate the counts for NA's, 0, negative, and unique values. 
+
+## Data Summary 
+ 
+TODO: discuss each variable and identify the target
+
+ 
+```{r}
+names(train)
+names(test)
+#glimpse(test)
+
+#   
+vars_to_add <- train[!names(train) %in% names(test)]
+
+ #vvvvv
+## Combining train and test
+ 
+combine <- rbind(train %>% mutate(dset = "train"), 
+                     test %>% mutate(dset = "test",
+                                     dropoff_datetime = NA,
+                                     trip_duration = NA))
+```
+
+
+```{r}
+combine <- combine %>% mutate(dset = factor(dset))
+```
+
+
+## Reformating features
+
+For our following analysis, we will turn the data and time from characters into *date* objects. We also recode *vendor\_id* as a factor. This makes it easier to visualise relationships that involve these features.
+
+```{r}
+train <- train %>%
+  mutate(pickup_datetime = ymd_hms(pickup_datetime),
+         dropoff_datetime = ymd_hms(dropoff_datetime),
+         vendor_id = factor(vendor_id),
+         passenger_count = factor(passenger_count))
+```
+
+ 
+
+
+```{r}
+glimpse(combine)
+```
+
+### Abnormal Data
+### Missing values
+```{r}
+var_stats(combine) 
+```
+
+# Define 
+```{r} 
+
+```
+
+
+## Reformating features
+## Other data assumptions / integrity checks
+# Individual feature visualisations 
+
+```{r  fig.align = 'default', warning = FALSE, fig.cap ="Fig. 2", out.width="100%"}
+#ggplot(combine, aes(trip_duration)) +
+#  geom__histogram(aes(y = ..density..) 
+
+attach(train)
+boxplot(by(log(train$trip_duration),train$store_and_fwd_flag,summary),col=c("red","blue"))
+by(log(train$trip_duration),train$store_and_fwd_flag,summary)
+
+#plot(trip_duration ~ dropoff_longitude,pch  = 20,cex  = 2,col  = "grey")
+
+```
+
+
+
+## Worksheet with one variable
+
+### Trip duration vs pickup_datetime using 20% of sampled data
+
+```{r}
+sub_train = train%>%sample_frac(.2)
+attach(sub_train)
+g1<-ggplot(sub_train, aes(x=I(pickup_latitude*pickup_longitude), y=log(trip_duration), color = store_and_fwd_flag)) +geom_point() +stat_smooth(method="glm", se=TRUE)
+g2<-ggplot(sub_train, aes(x=I(dropoff_latitude*dropoff_longitude), y=log(trip_duration), color = store_and_fwd_flag)) +geom_point() +stat_smooth(method="glm", se=TRUE)
+g3<-ggplot(sub_train, aes(x=pickup_datetime, y=log(trip_duration), color = store_and_fwd_flag)) +geom_point() +stat_smooth(method="glm", se=TRUE)
+g4<-ggplot(sub_train, aes(x=dropoff_datetime, y=log(trip_duration), color = store_and_fwd_flag)) +geom_point() +stat_smooth(method="glm", se=TRUE)
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+sample_model = lm(trip_duration ~ pickup_datetime:dropoff_datetime+pickup_latitude:pickup_longitude+dropoff_latitude:dropoff_longitude+store_and_fwd_flag)
+
+par(mfrow = c(2,3))
+plot(sample_model,  
+     pch  = 20,
+     cex  = 2,
+     col  = "grey")
+abline(sample_model, lwd = 3, col = "darkorange")
+halfnorm(hatvalues(sample_model))
+
+```
+The p-value is low, so there is not much of a correlation between trip duration and dropping people off towards North of the norm, on at least our unormalized data. 
+
+```{r}
+summary(sample_model)
+confint(sample_model, level = 0.99)
+```
+
+
+```{r}
+trip_duration_grid = seq(min(trip_duration), max(trip_duration), by = 50)
+dist_ci_band = predict(sample_model, 
+                       newdata = data.frame(speed = trip_duration_grid), 
+                       interval = "confidence", level = 0.99)
+dist_pi_band = predict(sample_model, 
+                       newdata = data.frame(speed = trip_duration_grid), 
+                       interval = "prediction", level = 0.99) 
+
+plot(trip_duration ~ dropoff_longitude,
+     xlab = "Trip Duration",
+     ylab = "Dropoff Logitude",
+     main = "vs",
+     pch  = 20,
+     cex  = 2,
+     col  = "grey",
+     ylim = c(min(dist_pi_band), max(dist_pi_band)))
+abline(sample_model, lwd = 5, col = "darkorange")
+
+#lines(trip_duration_grid, dist_ci_band[,"lwr"], col = "dodgerblue", lwd = 3, lty = 2)
+#lines(trip_duration_grid, dist_ci_band[,"upr"], col = "dodgerblue", lwd = 3, lty = 2)
+#lines(trip_duration_grid, dist_pi_band[,"lwr"], col = "dodgerblue", lwd = 3, lty = 3)
+#lines(trip_duration_grid, dist_pi_band[,"upr"], col = "dodgerblue", lwd = 3, lty = 3)
+#points(mean(cars$dropoff_longitude), mean(train$trip_duration), pch = "+", cex = 3)
+
+
+```
+#https://daviddalpiaz.github.io/appliedstats/inference-for-simple-linear-regression.html
+
+
+
+```{r}
+plot(fitted(sample_model), resid(sample_model), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Data from Model 1")
+abline(h = 0, col = "darkorange", lwd = 2)
+
+
+
+```
+
+Breusch-Pagan Test. 
+
+H0: Homoscedasticity. The errors have constant variance about the true model.
+H1: Heteroscedasticity. The errors have non-constant variance about the true model.
+
+```{r}
+library(zoo)
+library(lmtest)
+
+bptest(sample_model)
+hist(resid(sample_model))
+
+qqnorm(resid(sample_model), main = "Normal Q-Q Plot, sample_model", col = "darkgrey")
+qqline(resid(sample_model), col = "dodgerblue", lwd = 2)
+
+
+#set.seed(42)
+#shapiro.test(resid(sample_model))
+
+```
+## Leverage
+
+```{r}
+plot(which(hatvalues(sample_model) > 2 * mean(hatvalues(sample_model)), TRUE))
+```
+
+
+## Outliers
+
+```{r}
+plot(rstandard(sample_model)[abs(rstandard(sample_model)) > 2])
+```
+
+## Influence
+
+```{r}
+cooks.distance(sample_model)[11] > 4 / length(cooks.distance(sample_model))
+```
+
+## Coef change
+```{r}
+
+cd_sample_model_add = cooks.distance(sample_model)
+sum(cd_sample_model_add > 4 / length(cd_sample_model_add))
+
+
+large_cd_train = cd_sample_model_add > 4 / length(cd_sample_model_add)
+plot(cd_sample_model_add[large_cd_train])
+
+
+
+coef(sample_model)
+sample_model_add_fix = lm(trip_duration ~ dropoff_longitude,
+                    data = train,
+                    subset = cd_sample_model_add <= 4 / length(cd_sample_model_add))
+coef(sample_model_add_fix)
+```
+
+
+
+### Transformations
+
+```{r}
+mlm_model = lm(trip_duration ~ .-id-vendor_id-store_and_fwd_flag-trip_duration, data = sub_train)
+```
+
+
+```{r}
+boxcox(mlm_model, plotit = TRUE)
+```
+
+```{r eval=FALSE, include=FALSE}
+library(faraway)
+pairs(sub_train, col = "dodgerblue")
+```
+
+
+#### RMSE
+
+```{r eval=FALSE, include=FALSE}
+#xx
+fit_quad = lm(y ~ poly(trip_duration, degree = 2), data = poly_data)
+
+
+sqrt(mean(resid(fit_quad) ^ 2))
+
+
+calc_loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
+} 
+
+calc_loocv_rmse(fit_quad)
+```
+
+
+
+# Back to model
+
+
+
+```{r  fig.align = 'default', warning = FALSE, fig.cap ="Fig. 2", out.width="100%"}
+sub_train$trip_duration %>% as.double() %>% boxplot()
+#bins
+#scale_x_log10() +
+#scale_y_sqrt()
+attach(sub_train)
+boxplot(log(trip_duration) ~ as.factor(passenger_count),  
+     xlab   = "..",
+     ylab   = "trip_duration",
+     main   = "trip_duration vs ..",
+     pch    = 20,
+     cex    = 2,
+     col    = "darkorange",
+     border = "dodgerblue")
+
+```
+
+
+
+ TODO: distributions and outliers, timeplots
+
+
+vvvv positional information from kaggle vvvv
+
+
+Finally, we will look at a simple overview visualisation of the *pickup/dropoff* latitudes and longitudes:
+
+
+```{r fig.align = 'default', warning = FALSE, fig.cap ="Fig. 6", out.width="100%"}
+p1 <- sub_train %>%
+  filter(pickup_longitude > -74.05 & pickup_longitude < -73.7) %>%
+  ggplot(aes(pickup_longitude)) +
+  geom_histogram(fill = "red", bins = 40)
+
+p2 <- sub_train %>%
+  filter(dropoff_longitude > -74.05 & dropoff_longitude < -73.7) %>%
+  ggplot(aes(dropoff_longitude)) +
+  geom_histogram(fill = "blue", bins = 40)
+
+p3 <- sub_train %>%
+  filter(pickup_latitude > 40.6 & pickup_latitude < 40.9) %>%
+  ggplot(aes(pickup_latitude)) +
+  geom_histogram(fill = "red", bins = 40)
+
+p4 <- sub_train %>%
+  filter(dropoff_latitude > 40.6 & dropoff_latitude < 40.9) %>%
+  ggplot(aes(dropoff_latitude)) +
+  geom_histogram(fill = "blue", bins = 40)
+
+layout <- matrix(c(1,2,3,4),2,2,byrow=FALSE)
+multiplot(p1, p2, p3, p4, layout=layout)
+p1 <- 1; p2 <- 1; p3 <- 1; p4 <- 1
+```
+ 
+
+# Feature relations by variable
+
+
+
+# Feature engineering
+
+New features to analyse
+
+ #TODO add weather / other new data
+ #TODO verify math below, add to it
+
+
+```{r}
+
+#jfk_coord <- tibble(lon = -73.778889, lat = 40.639722)
+
+#la_guardia_coord <- tibble(lon = -73.872611, lat = 40.77725)
+
+
+#train$jfk_dist_pick <- distCosine(pick_coord, jfk_coord)
+
+#train$jfk_dist_drop <- distCosine(drop_coord, jfk_coord)
+
+#train$lg_dist_pick <- distCosine(pick_coord, la_guardia_coord)
+
+#train$lg_dist_drop <- distCosine(drop_coord, la_guardia_coord)
+
+
+
+pick_coord <- sub_train %>% select(pickup_longitude, pickup_latitude)
+
+drop_coord <- sub_train %>% select(dropoff_longitude, dropoff_latitude)
+
+sub_train$dist <- distCosine(pick_coord, drop_coord)
+
+#train$bearing = bearing(pick_coord, drop_coord)
+
+
+
+
+sub_train <- sub_train %>%
+
+  mutate(speed = dist/trip_duration*3.6,
+
+         date = date(pickup_datetime),
+
+         month = month(pickup_datetime, label = TRUE),
+
+         wday = wday(pickup_datetime, label = TRUE),
+
+         wday = fct_relevel(wday, c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")),
+
+         hour = hour(pickup_datetime),
+
+         work = (hour %in% seq(8,18)) & (wday %in% c("Mon","Tue","Wed","Thu","Fri")),
+
+ #        jfk_trip = (jfk_dist_pick < 2e3) | (jfk_dist_drop < 2e3),
+
+ #       lg_trip = (lg_dist_pick < 2e3) | (lg_dist_drop < 2e3),
+
+ #        blizzard = !( (date < ymd("2016-01-22") | (date > ymd("2016-01-29"))) )
+
+         )
+
+```
+
+# Analyze dist, speed, time
+ 
+
+## Bearing direction
+
+
+ 
+
+# Data cleaning
+
+
+
+To further add the trip connections (direct distance) we use another handy tool from the *geosphere* package: *gcIntermediate* allows us to interpolate the path between two sets of coordinates. I've seen this tool first in action in this [truly outstanding kernel](https://www.kaggle.com/jonathanbouchet/u-s-commercial-flights-tracker-map/) by [Jonathan Bouchet](https://www.kaggle.com/jonathanbouchet). (If you haven't seen his kernel, then I strongly recommend you check it out; right after reading this one, of course ;-) ).
+
+  
+ 
+
+```{r}
+
+sub_train <- sub_train %>%
+
+  filter(trip_duration < 22*3600,
+
+         dist > 0 | (near(dist, 0) & trip_duration < 60),
+
+#         jfk_dist_pick < 3e5 & jfk_dist_drop < 3e5,
+
+         trip_duration > 10,
+
+         speed < 100)
+
+```
+
+
+
+
+
+# External data
+
+ 
+
+
+ Notes Kaggle
+
+ estimate of the *fastest routes for each trip* provided by [oscarleo](https://www.kaggle.com/oscarleo) using the the Open Source Routing Machine, [OSRM](http://project-osrm.org/). The data can be found [here](https://www.kaggle.com/oscarleo/new-york-city-taxi-with-osrm) and includes the pickup/dropoff streets and total distance/duration between these two points together with a sequence of travels steps such as turns or entering a highway.
+
+
+
+Note, that according to [discussion items](https://www.kaggle.com/c/nyc-taxi-trip-duration/discussion/37033) those really are the "fastest", not the shortest, routes between the two points. This will most likely not account for traffic volume, and the fastest route on one day might not be the fastest on another day of the week. Still, here we have an actual driving distance and duration measure that should be valuable for our prediction goal.
+
+ 
+ 
+
+```{r fig.align='default', fig.cap="Fig. 30a", fig.height=6, warning=FALSE, out.width="100%"}
+
+sub_train %>%
+
+  select(-id, -pickup_datetime, -dropoff_datetime, -date) %>% #-jfk_dist_pick,
+
+ #        -jfk_dist_drop, -lg_dist_pick, -lg_dist_drop, -date) %>%
+
+  mutate(passenger_count = as.integer(passenger_count),
+
+         vendor_id = as.integer(vendor_id),
+
+         store_and_fwd_flag = as.integer(as.factor(store_and_fwd_flag)),
+
+ #        jfk_trip = as.integer(jfk_trip),
+
+         wday = as.integer(wday),
+
+         month = as.integer(month),
+
+         work = as.integer(work))%>%
+
+ #        lg_trip = as.integer(lg_trip),
+
+ #        blizzard = as.integer(blizzard),
+
+ #        has_snow = as.integer(has_snow),
+
+  #       has_rain = as.integer(has_rain)) %>%
+#
+  select(trip_duration, speed, everything()) %>%
+
+  cor(use="complete.obs", method = "spearman") %>%
+
+  corrplot(type="lower", method="circle", diag=FALSE)
+
+```
+
+
+
+
+# An excursion into classification
+
+ 
+
+```{r  fig.align = 'default', warning = FALSE, fig.cap ="Fig. 31", out.width="100%"}
+
+train_group <- sub_train %>%
+
+  mutate(tgroup = case_when(trip_duration < 3e2 ~ "fast",
+
+                            trip_duration >= 3e2 & trip_duration <= 1.6e3 ~ "mid",
+
+                            trip_duration > 1.6e3 ~ "slow"))
+
+
+
+train_group %>%
+
+  ggplot(aes(trip_duration, fill = tgroup)) +
+
+  geom_histogram(bins = 300) +
+
+  scale_x_log10() +
+
+  scale_y_sqrt()
+
+```
+
+
+
+(Ignore the apparent spikes caused by the binning resolution.)
+
+
+
+For the purpose of this excercise, we are not interested in the middle bit. Our aim is to compare the properties of the fast vs slow trips.
+
+
+
+```{r fig.align = 'default', warning = FALSE, fig.cap ="Fig. 32", out.width="100%"}
+
+train_group <- train_group %>%
+
+  filter(tgroup != "mid")
+
+
+
+p1 <- train_group %>%
+
+  ggplot(aes(wday, fill = tgroup)) +
+
+  geom_bar(position = "fill") +
+
+  theme(legend.position = "none")
+
+  
+
+p2 <- train_group %>%
+
+  ggplot(aes(month, fill = tgroup)) +
+
+  geom_bar(position = "fill") +
+
+  theme(legend.position = "none")
+
+
+
+p3 <- train_group %>%
+
+  ggplot(aes(hour, fill = tgroup)) +
+
+  geom_bar(position = "fill")
+ 
+p7 <- train_group %>%
+
+  ggplot(aes(work, fill = tgroup)) +
+
+  geom_bar(position = "fill") +
+
+  theme(legend.position = "none")
+
+
+
+layout <- matrix(c(1,1,2,2,3,3,3,3,4,5,6,7),3,4,byrow=TRUE)
+
+multiplot(p1, p2,   p7, layout=layout)
+
+p1 <- 1; p2 <- 1;   p7 <- 1
+
+```
+
+
+  
+
+I would like to thank [retrospectprospect](https://www.kaggle.com/retrospectprospect) for introducing me to alluvial plots in their very elegant [EDA kernel](https://www.kaggle.com/retrospectprospect/titanic-machine-learning-from-eda-to-xgb) for the [Titanic](https://www.kaggle.com/c/titanic) challenge! The same user also has shared an informative and concise [kernel](https://www.kaggle.com/retrospectprospect/nyc-taxi-trip-duration-eda-to-xgb/) in this competition, and if you haven't seen it yet then I definitely recommend you to check it out.
+
+ 
+
+```{r fig.align = 'default', warning = FALSE, fig.cap ="Fig. 34", out.width="100%"}
+
+allu_train <- train_group %>%
+
+  group_by(tgroup, work, wday) %>% # jfk_trip
+
+  count() %>%
+
+  ungroup
+
+  
+
+alluvial(allu_train %>% select(-n),
+
+         freq=allu_train$n, border=NA,
+
+         col=ifelse(allu_train$tgroup == "fast", "red", "blue"),
+
+         cex=0.75,
+
+         hide = allu_train$n < 150,
+
+         ordering = list(
+
+           order(allu_train$tgroup=="fast"),
+
+       #    NULL,
+
+           NULL,
+
+           NULL))
+
+```
+
+
+# Model, correlation
+
+```{r  fig.align = 'default', warning = FALSE, fig.cap ="Fig. 35", out.width="100%"}
+
+foo <- combine %>%
+
+  mutate(date = date(ymd_hms(pickup_datetime))) %>%
+
+  group_by(date, dset) %>%
+
+  count() %>%
+
+  ungroup()
+
+foo %>%
+
+  ggplot(aes(date, n/1e3, color = dset)) +
+
+  geom_line(size = 1.5) +
+
+  labs(x = "", y = "Kilo trips per day")
+
+```
+
+
+
+
+
+```{r fig.align = 'default', warning = FALSE, fig.cap ="Fig. 36", out.width="100%"}
+
+pick_good <- combine %>%
+
+  filter(pickup_longitude > -75 & pickup_longitude < -73) %>%
+
+  filter(pickup_latitude > 40 & pickup_latitude < 42)
+
+pick_good <- sample_n(pick_good, 5e3)
+
+
+
+pick_good %>%
+
+  ggplot(aes(pickup_longitude, pickup_latitude, color = dset)) +
+
+  geom_point(size=0.1, alpha = 0.5) +
+
+  coord_cartesian(xlim = c(-74.02,-73.77), ylim = c(40.63,40.84)) +
+
+  facet_wrap(~ dset) +
+
+  #guides(color = guide_legend(override.aes = list(alpha = 1, size = 4))) +
+
+  theme(legend.position = "none")
+
+```
+
+
+ 
+### Data formatting
+
+
+ 
+
+```{r}
+
+# airport coordinates again, just to be sure
+
+#jfk_coord <- tibble(lon = -73.778889, lat = 40.639722)
+
+#la_guardia_coord <- tibble(lon = -73.872611, lat = 40.77725)
+
+
+
+# derive distances
+
+pick_coord <- combine %>%
+
+  select(pickup_longitude, pickup_latitude)
+
+drop_coord <- combine %>%
+
+  select(dropoff_longitude, dropoff_latitude)
+
+combine$dist <- distCosine(pick_coord, drop_coord)
+
+#combine$bearing = bearing(pick_coord, drop_coord)
+
+
+
+#combine$jfk_dist_pick <- distCosine(pick_coord, jfk_coord)
+
+#combine$jfk_dist_drop <- distCosine(drop_coord, jfk_coord)
+
+#combine$lg_dist_pick <- distCosine(pick_coord, la_guardia_coord)
+
+#combine$lg_dist_drop <- distCosine(drop_coord, la_guardia_coord)
+
+
+
+# add dates
+
+combine <- combine %>%
+
+  mutate(pickup_datetime = ymd_hms(pickup_datetime),
+
+         dropoff_datetime = ymd_hms(dropoff_datetime),
+
+         date = date(pickup_datetime)
+
+  )
+
+
+
+# add weather info
+
+#foo <- weather %>%
+
+#  select(date, rain, s_fall, all_precip, has_snow, has_rain, s_depth, max_temp, min_temp)
+
+#combine <- left_join(combine, foo, by = "date")
+
+
+ 
+
+
+
+# reformat to numerical and recode levels
+
+combine <- combine %>%
+
+  mutate(store_and_fwd_flag = as.integer(factor(store_and_fwd_flag)),
+
+         vendor_id = as.integer(vendor_id),
+
+         month = as.integer(month(pickup_datetime)),
+
+         wday = wday(pickup_datetime, label = TRUE),
+
+         wday = as.integer(fct_relevel(wday, c("Sun", "Sat", "Mon", "Tue", "Wed", "Thu", "Fri"))),
+
+         hour = hour(pickup_datetime),
+
+         work = as.integer( (hour %in% seq(8,18)) & (wday %in% c("Mon","Tue","Fri","Wed","Thu")) ),
+
+#         jfk_trip = as.integer( (jfk_dist_pick < 2e3) | (jfk_dist_drop < 2e3) ),
+#
+#         lg_trip = as.integer( (lg_dist_pick < 2e3) | (lg_dist_drop < 2e3) ),
+
+#         has_rain = as.integer(has_rain),
+
+#         has_snow = as.integer(has_snow),
+
+#         blizzard = as.integer( !( (date < ymd("2016-01-22") | (date > ymd("2016-01-29")))) )
+
+         )
+
+```
+ 
+In this code block, the feature selection is structured with a little more detail than necessary, in order to make it easier to generalise it to a new problem:
+
+
+
+```{r}
+
+# Specific definitions:
+
+#---------------------------------
+
+# predictor features
+
+train_cols <- c("total_distance", "hour", "dist",
+
+                "vendor_id", 
+                #"jfk_trip", "lg_trip",
+                "wday", "month",
+
+                "pickup_longitude", "pickup_latitude"
+                #, "bearing", "lg_dist_drop"
+                )
+
+# target feature
+
+y_col <- c("trip_duration")
+
+# identification feature
+
+id_col <- c("id") 
+
+# auxilliary features
+
+aux_cols <- c("dset")
+
+# cleaning features
+
+#clean_cols <- c("jfk_dist_drop", "jfk_dist_pick")
+
+#---------------------------------
+
+
+
+# General extraction
+
+#---------------------------------
+
+# extract test id column
+
+#test_id <- combine %>%
+
+#  filter(dset == "test") %>%
+
+#  select_(.dots = id_col)
+
+
+
+# all relevant columns for train/test
+
+#names(combine) <- c(train_cols, y_col, aux_cols)#, clean_cols)
+ 
+
+glimpse(combine)
+```
+
+
+
+For our taxi challenge, the evaluation metric is [RMSLE](https://www.kaggle.com/c/nyc-taxi-trip-duration#evaluation), the [Root Mean Squared Logarithmic Error](https://www.kaggle.com/wiki/RootMeanSquaredLogarithmicError). Essentially, this means that we are optimising the prediction vs data deviations in log space. This has the advantage that large individual outliers don't get as much weight as they would in a linear metric.
+
+
+
+In order to easily simulate the evaluation metric in our model fitting we replace the *trip\_duration* with its logarithm. (The `+ 1` is added to avoid an undefined `log(0)` and we need to remember to remove this 1 second for the prediction file, although it shouldn't make a huge difference if we didn't.)
+
+
+
+
+^^^ Kaggle ^^^ 
+
+
+
+## Notes
+New package corrr, FYI
+https://github.com/tidymodels/corrr
+```{r}
+library(corrr)
+ssub_train<-sub_train[sapply(sub_train, function(x) is.numeric(x) && !is.na(x))]
+
+ssub_train %>% 
+  correlate() %>% 
+  network_plot(min_cor = .2)
+```
+
+
+Interesting way to show stats
+https://cran.r-project.org/web/packages/broom/vignettes/broom.html
+```{r}
+library(broom)
+
+tidy(sample_model) 
+augment(sample_model) 
+glance(sample_model)
+```
+
+
+Simple Outliers, Leverage and Model Diagnostics
+
+https://daviddalpiaz.github.io/appliedstats/model-diagnostics.html
+
+https://raw.githubusercontent.com/daviddalpiaz/appliedstats/master/diagnostics.Rmd
+
+Analysis
+https://daviddalpiaz.github.io/appliedstats/transformations.html#r-markdown-7
+```{r}
+
+```
+
+
+COmbineing plots
+Haven't used it, but might be easier
+https://indrajeetpatil.github.io/ggstatsplot/articles/web_only/combine_plots.html
+
+
+# APPENDIX
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```

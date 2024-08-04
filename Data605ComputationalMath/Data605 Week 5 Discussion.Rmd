@@ -1,0 +1,28 @@
+---
+title: "Data 605 Week 5 Discussion"
+author: "Anthony Pagan"
+date: "February 27, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+ What odds should a person give in favor of the following events?
+(a) A card chosen at random from a 52-card deck is an ace. (b) Two heads will turn up when a coin is tossed twice. (c) Boxcars (two sixes) will turn up when two dice are rolled.
+
+```{r}
+a <-round(4/52, 4) * 100 
+
+b<-round (1/2 * 1/2, 4) * 100
+
+c<-round (1/6 * 1/6, 4) * 100
+
+```
+
+a) As there are 4 aces in a deck of cards the probabily of chosing an ace is `r a`%
+
+b) The probabilty that 2 heads will turn up when a coin is tossed twice is `r b`%
+
+c) The probabilty boxcars will turn up when two dice are rolled is `r c`%
+

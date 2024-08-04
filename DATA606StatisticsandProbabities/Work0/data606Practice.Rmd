@@ -1,0 +1,167 @@
+---
+title: "Data606 Practice"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#WEEK 1
+
+1.7 Fisher's irises. Sir Ronald Aylmer Fisher was an English statistician, evolutionary biologist, and geneticist who worked on a data set that contained sepal length and width, and petal length and width from three species of iris ???owers (setosa, versicolor and virginica). There were 50 ???owers from each species in the data set.57
+
+#####(a) How many cases were included in the data? 
+
+```{r}
+library(datasets)
+data("iris")
+dim(iris)
+nrow(iris)
+```
+
+
+#####(b) How many numerical variables are included in the data? Indicate what they are, and if they are continuous or discrete.
+##### 4 continuous
+
+#####(c) How many categorical variables are included in the data, and what are they? List the corresponding levels (categories).
+##### 1 categorical with 3 levels
+```{r}
+str(iris)
+```
+
+1.23 Haters are gonna hate, study con???rms. A study published in theJournal of Personality and Social Psychology asked a group of 200 randomly sampled men and women to evaluate how they felt about various subjects, such as camping, health care, architecture, taxidermy, crossword puzzles, and Japan in order to measure their dispositional attitude towards mostly independent stimuli. Then, they presented the participants with information about a new product: a microwave oven. This microwave oven does not exist, but the participants didn't know this, and were given three positive and three negative fake reviews. People who reacted positively to the subjects on the dispositional attitude measurement also tended to react positively to the microwave oven, and those who reacted negatively also tended to react negatively to it. Researcher concluded that "some people tend to like things, whereas others tend to dislike things, and a more thorough understanding of this tendency will lead to a more thorough understanding of the psychology of attitudes."60
+
+#####(a) What are the cases? 
+##### The case is 200 randomly sampled men and women to evaluate how they felt about various subjects
+
+#####(b) What is (are) the response variable(s) in this study? 
+#####Peoples reaction
+
+#####(c) What is (are) the explanatory variable(s) in this study? 
+#####"some people tend to like things, whereas others tend to dislike things
+
+#####(d) Does the study employ random sampling? 
+##### Yes, they asked 200 randomly selected men and women
+
+#####(e) Is this an observational study or an experiment? Explain your reasoning. 
+#####This is experimental is it has a response and explanatory variables which resuled in researchers collecting samples responses from random individuals
+
+#####(f) Can we establish a causal link between the explanatory and response variables? 
+#####Yes it is reasonable to conclude a casual link on experimental explanatory and response variables
+
+
+#####(g) Can the results of the study be generalized to the population at large?
+#####In general yes, but more data should be collected to be sure
+
+1.33 Light, noise, and exam performance. A study is designed to test the effect of light level and noise level on exam performance of students. The researcher believes that light and noise levels might have different effects on males and females, so wants to make sure both are equally represented in each treatment. The light treatments considered are ???uorescent overhead lighting, yellow overhead lighting, no overhead lighting (only desk lamps). The noise treatments considered are no noise, construction noise, and human chatter noise.
+
+#####(a) What type of study is this? 
+#####This is an experimental study
+
+#####(b) How many factors are considered in this study? Identify them, and describe their levels. 
+##### There are 2 factors Light and Noise. Light has 3 levesls, flourescent, yellow and no overhed. Noise levels are no noise, construction noise and human chatter.
+
+#####(c) What is the role of the sex variable in this study?
+##### The sex variable is part of the random sampling.
+
+1.55 Distributions and appropriate statistics, Part I. For each of the following, state whether you expect the distribution to be symmetric, right skewed, or left skewed. Also specify whether the mean or median would best represent a typical observation in the data, and whether the variability of observations would be best represented using the standard deviation or IQR. Explain your reasoning. 
+
+#####(a) Number of pets per household. 
+##### I would expect this to be skewed to the right, some people will have more pets than average and the average will be more toward low number to no pets. The median would the best represent a typical observation since the average will be affected by righ skew. In this case IQR would be best used for variability as it uses median rather than average for variability.
+
+#####(b) Distance to work, i.e. number of miles between work and home. 
+##### I would expect this to be skewed to the left, since most people probably live closer to where they work. The median would the best represent a typical observation since the average will be affected by left skew. In this case IQR would be best used for variability as it uses median rather than average for variability.
+
+#####(c) Heights of adult males.
+##### I would expect this to be have no skew. I expect heights to be simetrical. The mean would the best represent a typical observation since the average will not be affected by skew. In this case standard deviation would be best used for variability as it uses average rather than median for variability.
+
+1.69 Side e???ects of Avandia. Rosiglitazone is the active ingredient in the controversial type 2 diabetes medicine Avandia and has been linked to an increased risk of serious cardiovascular problems such as stroke, heart failure, and death. A common alternative treatment is pioglitazone, the active ingredient in a diabetes medicine called Actos. In a nationwide retrospective observational study of 227,571 Medicare bene???ciaries aged 65 years or older, it was found that 2,593 of the 67,593 patients using rosiglitazone and 5,386 of the 159,978 using pioglitazone had serious cardiovascular problems. These data are summarized in the contingency table below.
+
+#####(a) Determine if each of the following statements is true or false. If false, explain why. Be careful: The reasoning may be wrong even if the statement's conclusion is correct. In such cases, the statement should be considered false.
+
+#####i. Since more patients on pioglitazone had cardiovascular problems (5,386 vs. 2,593), we can conclude that the rate of cardiovascular problems for those on a pioglitazone treatment is higher. 
+
+##### False. Although more patients show cardiovascular problems the proportions are on pioglitazone were lower.
+
+#####ii. The data suggest that diabetic patients who are taking rosiglitazone are more likely to have cardiovascular problems since the rate of incidence was (2,593 / 67,593 = 0.038) 3.8% for patients on this treatment, while it was only (5,386 / 159,978 = 0.034) 3.4% for patients on pioglitazone. 
+
+##### False. The differens is so low (.4%) it could be attributed to the expected error rate and can be negligable.. More calculations must be done.
+
+#####iii. The fact that the rate of incidence is higher for the rosiglitazone group proves that rosiglitazone causes serious cardiovascular problems. 
+
+##### False. Assosication does not equate to causation.
+
+#####iv. Based on the information provided so far, we cannot tell if the difference between the rates of incidences is due to a relationship between the two variables or due to chance.
+
+##### True.
+
+#####(b) What proportion of all patients had cardiovascular problems? 
+
+```{r}
+7979/227571
+```
+
+
+######(c) If the type of treatment and having cardiovascular problems were independent, about how many patients in the rosiglitazone group would we expect to have had cardiovascular problems? 
+
+```{r}
+2593/67593
+```
+
+#####(d) We can investigate the relationship between outcome and treatment in this study using a randomization technique. While in reality we would carry out the simulations required for randomization using statistical software, suppose we actually simulate using index cards. In order to simulate from the independence model, which states that the outcomes were independent of the treatment, we write whether or not each patient had a cardiovascular problem on cards, shu???ed all the cards together, then deal them into two groups of size 67,593 and 159,978. We repeat this simulation 1,000 times and each time record the number of people in the rosiglitazone group who had cardiovascular problems. Use the relative frequency histogram of these counts to answer (i)-(iii).
+
+#####i. What are the claims being tested? 
+##### the relationship of taking rosiglitazone vs cardiovascular problems
+
+#####ii. Compared to the number calculated in part(b), which would provide more support for the alternative hypothesis, more or fewer patients with cardiovascular problems in the rosiglitazone group? 
+
+##### More patients will get us close to the real mean
+
+#####iii. What do the simulation results suggest about the relationship between taking rosiglitazone and having cardiovascular problems in diabetic patients?
+
+##### On average ~2350 out o f67593 patients will have cardiovascular problems when taking rosiglitazone
+
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+

@@ -1,0 +1,11 @@
+Airport, Destination, OnTime, Delayed, DelayRate
+Alaska, Pheonix, 221, 12, 0.054298643
+AM West, Pheonix, 4840, 415, 0.085743802
+Alaska, San Diego, 212, 20, 0.094339623
+Alaska, Los Angeles, 497, 62, 0.124748491
+Alaska, Seattle, 1841, 305, 0.165670831
+AM West, Los Angeles, 694, 117, 0.168587896
+AM West, San Diego, 383, 65, 0.169712794
+Alaska, San Francisco, 503, 102, 0.2027833
+AM West, Seattle, 201, 61, 0.303482587
+AM West, San Francisco, 320, 129, 0.403125

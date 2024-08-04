@@ -1,0 +1,106 @@
+---
+title: "Data 622 BB Week 10 SVM"
+author: "Anthony Pagan"
+date: "4/5/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 5
+        css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+#knitr::opts_chunk$set(echo = TRUE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(mlbench)
+library(e1071)
+library(fpp2)
+library(mlr)
+```
+
+BB Week 10
+
+## Split/Subset Data
+
+```{r message=FALSE, warning=FALSE}
+covid<- read.csv("covid-19-survey-responses-sample.csv", header = TRUE)
+covid<-subset(covid,select=(names(covid[12:ncol(covid)-2])))
+intrain<- createDataPartition(y = covid$q03_symptoms, p=.7, list=FALSE)
+training <- covid[intrain,]
+test<- covid[-intrain, ]
+dim(training)
+dim(test)
+anyNA(covid)
+glimpse(covid)
+```
+
+## Train/Test/Predict
+
+```{r message=FALSE, warning=FALSE}
+
+trctrl<- trainControl(method="repeatedcv", number=10,repeats=3)
+svm_lin<- caret::train(q03_symptoms~., data=training, method="svmLinear", 
+                trControl=trctrl, preProcess=c("center","scale"),
+                tuneLength =10)
+svm_lin
+
+test_pred<- predict(svm_lin, newdata=test)
+test_pred
+confusionMatrix(table(test_pred,test$q03_symptoms))
+
+```
+
+## Tune for best model
+
+```{r message=FALSE, warning=FALSE}
+
+set.seed(1)
+tune.out<-tune(svm,q03_symptoms~.,data=covid, kernel="linear",
+               ranges=list(cost=c(.00001,.0001, .001, .01, 1,10), 
+                           gamma=c(1,2,3,4,5))) #get best model with tune
+summary(tune.out)
+bestmod<-tune.out$best.model
+summary(bestmod)
+```
+
+## Plot Data
+
+```{r message=FALSE, warning=FALSE}
+
+grid <- expand.grid(C = c(1,10,100, 1000, 10000))
+svm_Linear_Grid <- caret::train(q03_symptoms ~., data = training, method = "svmLinear", trControl=trctrl, preProcess = c("center", "scale"),tuneGrid = grid, tuneLength = 10, cost=bestmod$cost,gamma=bestmod$gamma)
+
+svm_Linear_Grid
+
+plot(svm_Linear_Grid)
+
+```
+
+## APPENDIX
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+

@@ -1,0 +1,20 @@
+---
+title: "Data 605 Week 11 Discussion"
+author: "Anthony Pagan"
+date: "April 10, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+Using R, build a  regression model for data that interests you.  Conduct residual analysis.  Was the linear model appropriate? Why or why not?
+
+```{r}
+data("attitude")
+summary(attitude)
+c.lm<-lm(attitude$rating~attitude$complaints)
+plot(c.lm)
+```
+
+$\color{red}{\text{QQPlot drops off the line towards end so it is nearly linear}}$

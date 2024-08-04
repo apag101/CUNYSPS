@@ -1,0 +1,320 @@
+---
+title: "Data 622 Homework 2"
+author: "Anthony Pagan"
+date: "4/10/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 5
+        css: style.css
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+#knitr::opts_chunk$set(echo = TRUE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(mlbench)
+library(e1071)
+library(fpp2)
+library(mlr)
+library(GGally)
+library(neuralnet)
+```
+
+# Data Summary
+
+**Summary of data shows that we have a dataframe with 2 factor columns and 1 integer column.**
+
+```{r}
+#x<-read.clipboard(header=TRUE, sep=',')
+#summary(x)
+#write.csv((x),"x.csv")
+
+d<-read.csv("y.csv")
+d<-d[,2:4]
+summary(d)
+glimpse(d)
+
+d<-subset(joineddata, select=c(Ticket,CounterName,SampleValue))
+X=d$SampleValue
+Y=d$Ticket
+label=d$CounterName
+#Split train/test
+set.seed(1)
+intrain<- createDataPartition(y = label, p=.7, list=FALSE)
+traind <- d[intrain,]
+test<- d[-intrain, ]
+
+```
+
+# Run Models
+
+Run kNN, Tree, NB, LDA and LR, SVM with RBS Kernel (60%)
+
+## KNN
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+require("class")
+attach(d)
+Xlog<-cbind(X,Y)
+trainm<-X<51
+knn.pred<-knn(Xlog[trainm,],Xlog[!trainm,],label[trainm],k=1, prob=FALSE)
+knn.pred
+confusionMatrix<-table(knn.pred,label[trainm],dnn=c('Predicted','Actual'))
+
+
+knn.acc<-round(sum(diag(confusionMatrix))/sum(confusionMatrix),2)
+knn.miss<-round((confusionMatrix[2,1]+confusionMatrix[1,2])/sum(confusionMatrix),2)
+knn.tpr<-round(sum(confusionMatrix[2,2])/sum(confusionMatrix[,2]),2)
+knn.fpr<-round(sum(confusionMatrix[2,1])/sum(confusionMatrix[,2]),2)
+
+knnn<-roc(data=trainm,label, X)
+knn.auc<-round(knnn$auc[1],2)
+```
+
+**The knn model has a confusion matrix below with a accuracy of `r knn.acc` , TPR of `r knn.tpr` and FPR of `r knn.fpr`.**
+
+```{r}
+confusionMatrix
+```
+
+## TREE
+
+```{r}
+require(C50)
+tr.d<-C5.0(label~.,data=traind)
+summary(tr.d)
+
+tr.prob<-predict(tr.d, newdata=test)
+confusionMatrix<-table(tr.prob,test[,3],dnn=c('Predicted','Actual'))
+
+tr.acc<-round(sum(diag(confusionMatrix))/sum(confusionMatrix),2)
+tr.miss<-round((confusionMatrix[2,1]+confusionMatrix[1,2])/sum(confusionMatrix),2)
+tr.tpr<-round(sum(confusionMatrix[2,2])/sum(confusionMatrix[,2]),2)
+tr.fpr<-round(sum(confusionMatrix[2,1])/sum(confusionMatrix[,2]),2)
+
+targethat<-predict(tr.d, newdata=test, type="prob")
+tr.auc<-round((auc(test$label, targethat[,1])+auc(test$label, targethat[,2]))/2,2)
+
+```
+
+**The Tree model has a confusion matrix below with a accuracy of `r tr.acc` , TPR of `r tr.tpr` and FPR of `r tr.fpr`.**
+
+```{r}
+confusionMatrix
+```
+
+## NB
+
+```{r}
+require(e1071)
+d.nb<-naiveBayes(label~., data=traind, type="class",useKernal=TRUE)
+d.nb
+n.prob<-predict(d.nb, newdata=test, type="class")
+confusionMatrix<-table(n.prob,test[,3],dnn=c('Predicted','Actual'))
+
+nb.acc<-round(sum(diag(confusionMatrix))/sum(confusionMatrix),2)
+nb.miss<-round((confusionMatrix[2,1]+confusionMatrix[1,2])/sum(confusionMatrix),2)
+nb.tpr<-round(sum(confusionMatrix[2,2])/sum(confusionMatrix[,2]),2)
+nb.fpr<-round(sum(confusionMatrix[2,1])/sum(confusionMatrix[,2]),2)
+
+targethat<-predict(d.nb,type="raw", newdata=test)
+n.prob<-predict(d.nb, newdata=test, type="raw")
+nb.auc<-round((auc(test$label, n.prob[,1])+auc(test$label, n.prob[,2]))/2,2)
+
+```
+
+**The Naive Bayes model has a confusion matrix below with a accuracy of `r nb.acc` , TPR of `r nb.tpr` and FPR of `r nb.fpr`.**
+
+```{r}
+confusionMatrix
+```
+
+## LDA
+
+```{r}
+require(MASS)
+require(C50)
+d.5<-d[!trainm,]
+lda.fit<-lda(label~., data=traind)
+lda.fit
+lda.pred<-predict(lda.fit, newdata=test)
+lda.class<-lda.pred$class
+confusionMatrix<-table(lda.class, test[,3],dnn=c('Predicted','Actual'))
+
+lda.acc<-round(sum(diag(confusionMatrix))/sum(confusionMatrix),2)
+lda.miss<-round((confusionMatrix[2,1]+confusionMatrix[1,2])/sum(confusionMatrix),2)
+lda.tpr<-round(sum(confusionMatrix[2,2])/sum(confusionMatrix[,2]),2)
+lda.fpr<-round(sum(confusionMatrix[2,1])/sum(confusionMatrix[,2]),2)
+
+targethat<-predict(lda.fit,type="response", newdata=test)
+lda.auc<-round((auc(test$label, targethat$posterior[,1])+auc(test$label, targethat$posterior[,2]))/2,2)
+
+```
+
+**The LDA model has a confusion matrix below with a accuracy of `r lda.acc` , TPR of `r lda.tpr` and FPR of `r lda.fpr`.**
+
+```{r}
+confusionMatrix
+```
+
+## LR
+
+```{r}
+require(stats)
+glm.fit<-glm(label~.,data=d,family=binomial)
+summary(glm.fit)
+glm.prob<-predict(glm.fit,newdata=traind, type="response")
+glm.pred<-ifelse(glm.prob>.5,1,0)
+confusionMatrix<-table(glm.pred,traind$label,dnn=c('Predicted','Actual'))
+
+lr.acc<-round(sum(diag(confusionMatrix))/sum(confusionMatrix),2)
+lr.miss<-round((confusionMatrix[2,1]+confusionMatrix[1,2])/sum(confusionMatrix),2)
+lr.tpr<-round(sum(confusionMatrix[2,2])/sum(confusionMatrix[,2]),2)
+lr.fpr<-round(sum(confusionMatrix[2,1])/sum(confusionMatrix[,2]),2)
+
+targethat<-predict(glm.fit,type="response")
+lrr<-roc(label~targethat,data=d)
+lr.auc<-round(lrr$auc[1],2)
+```
+
+
+**The Linear model has a confusion matrix below with a accuracy of `r lr.acc` , TPR of `r lr.tpr` and FPR of `r lr.fpr`.**
+
+```{r}
+confusionMatrix
+```
+
+## SVM 
+
+```{r}
+
+set.seed(1)
+tune.out<-tune(svm,label~.,data=traind, kernel="linear",
+               ranges=list(cost=c(.00001,.0001, .001, .01, 1,10), 
+                           gamma=c(1,2,3,4,5))) #get best model with tune
+bestmod<-tune.out$best.model
+
+trctrl<- trainControl(method="repeatedcv", number=10,repeats=1)
+svm_lin<- caret::train(label~., data=traind, method="svmLinear", 
+                trControl=trctrl, preProcess=c("center","scale"),
+                tuneLength =10, cost=bestmod$cost,gamma=bestmod$gamma)
+
+svm_lin
+
+test_pred<- predict.train(svm_lin, newdata=traind)
+confusionMatrix<-confusionMatrix(table(test_pred,traind$label))
+
+svm.acc<-round(confusionMatrix$byClass[10],2)
+svm.miss<-round(1-confusionMatrix$byClass[10],2)
+svm.tpr<-round(confusionMatrix$byClass[1],2)
+svm.fpr<-round(confusionMatrix$byClass[2],2)
+
+svmfit<-svm(label~., data=traind, kernel="radial", gamma=2, cost=2,decision.values=T)
+fitted<-attributes(predict(svmfit,traind,decision.values=T))$decision.values
+svm.auc<-round(auc(traind$label,fitted),2)
+
+```
+
+**The SVM model has a confusion matrix below with a accuracy of `r svm.acc` , TPR of `r svm.tpr` FPR of `r svm.fpr`:**
+
+```{r}
+confusionMatrix
+```
+
+
+# Performance Table
+
+Determine the AUC, ACCURACY, TPR,FPR for each algorithm, create a table as shown below
+ALGO   AUC,ACC,TPR,FPR
+LR
+LDA
+NB
+SVM
+kNN
+TREE
+
+```{r echo=TRUE}
+finaldf<-data.frame(ALGO=c('LR','LDA','NB','SVM','kNN','TREE'),
+                    AUC=c(lr.auc,lda.auc,nb.auc,svm.auc,knn.auc,tr.auc),
+                    ACC=c(lr.acc,lda.acc,nb.acc,svm.acc,knn.acc,tr.acc),
+                    TPR=c(lr.tpr,lda.tpr,nb.tpr,svm.tpr,knn.tpr,tr.tpr),
+                    FPR=c(lr.fpr,lda.fpr,nb.fpr,svm.fpr,knn.fpr,tr.fpr))
+
+write.csv(finaldf, "finaldf.csv")
+```
+
+# Commentary
+
+Summarize and provide a explanatory commentary on the observed performance of these classifiers. What aspects of the data and or aspects of the algorithms, explain these performance differences.
+
+- **TPR - True positive rate (sensitivity) tries to find the percentage of true positives where predictions were correctly identified**
+- **FPR - False positives rate (1 - specificity(True Negative)) tries to find percentage of true positive where prediction is incorrectly identified (Type 1 Errors)**
+
+    **(Specificity and sensitivity are inversely  proportional, while TPR and FPR are not.)**
+
+- **Accuracy - Finds the percentage of true positive and true negatives where predictions were correctly identified.**
+- **AUC - Area under the curve is the area under the ROC curve when comparing TPR to FPR for several models. The closer the curve is to the upper left corner the better the model classification. **
+
+References:
+
+https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5
+https://towardsdatascience.com/understanding-confusion-matrix-a9ad42dcfd62
+https://towardsdatascience.com/understanding-the-roc-and-auc-curves-a05b68550b69
+
+
+| ALGO   | AUC          | ACC           | TPR        | FPR        |
+| ------ | -----------  | -----------   | ---------- |----------  |
+| LR     | `r lr.auc`   | `r lr.acc`    | `r lr.tpr` | `r lr.fpr` |
+| LDA    | `r lda.auc`  | `r lda.acc`   | `r lda.tpr`| `r lda.fpr`|
+| NB     | `r nb.auc`   | `r nb.acc`    | `r nb.tpr` | `r nb.fpr` |
+| SVM    | `r svm.auc`  | `r svm.acc`   | `r svm.tpr`| `r svm.fpr`|
+| kNN    | `r knn.auc`  | `r knn.acc`   | `r knn.tpr`| `r knn.fpr`|
+| TREE   | `r tr.auc`   | `r tr.acc `   | `r tr.tpr `| `r tr.tpr `|
+
+
+**LR - The GLM linear regression model shows that the accuracy of TP and TN is the highest at `r lr.acc` while the AUC is the 2nd highest of all models. This tells us the model did an above average job at classfication.**
+
+**LDA - The LDA model accuracy is `r lda.acc`  with an AUC of `r lda.auc`. These performance stats are average.**
+
+**NB - The NB model has the exact performance stats as LDA which also catergorizes it as an average model.**
+
+**SVM - The SVM model accuracy is the 3rd highest at `r svm.acc`, It also has the highest AUC value of `r svm.auc` and above average TPR and FPR values at `r svm.tpr` and `r svm.fpr` respectively.**
+
+**KNN - The KNN model accuracy is the 2nd highest at `r knn.acc`, but the AUC is average and TPR is below average.**
+
+**TREE - The Tree model accuracy is above average , but AUC is average and TPR is 0.**
+
+# Conclusion
+
+**The performance data tells us LR and SVM are the best models for this data. While SVM has the higher AUC, LR has the higher accuracy. While SVM has a higher TPR it also has a higher FPR. I would lean toward using the LR model since it has a lower FPR while SVM has a higher FPR, since the above average FPR on SVM can have a higher impact on the performance of the model.**
+
+# Appendix
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+

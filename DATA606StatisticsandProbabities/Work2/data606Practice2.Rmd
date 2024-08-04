@@ -1,0 +1,193 @@
+---
+title: "Data606Practice2"
+author: "Anthony Pagan"
+date: "September 9, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Week 2 Practice
+2.5 Coin ???ips. If you ???ip a fair coin 10 times, what is the probability of 
+
+#####(a) getting all tails? 
+
+```{r eval = FALSE}
+(1/2)^10
+```
+
+The probabilty of getting all tails is `r (1/2)^10`
+
+#####(b) getting all heads? 
+
+```{r eval = FALSE}
+(1/2)^10
+```
+The probabilty of getting all heads is `r (1/2)^10`
+
+#####(c) getting at least one tails?
+We use the complement of probability of getting all heads. 1 minus that probability gives us the probability of getting at least 1 tail.
+
+```{r eval = FALSE}
+1-((1/2)^10)
+```
+
+We use the complement of probability of getting all heads. 1 minus that probability gives us the probability of getting at least 1 tail which equates to `r 1-((1/2)^10)`
+
+2.7 Swing voters. A 2012 Pew Research survey asked 2,373 randomly sampled registered voters their political affiliation (Republican, Democrat, or Independent) and whether or not they identify as swing voters. 35% of respondents identi???ed as Independent, 23% identi???ed as swing voters, and 11% identi???ed as both.58
+
+#####(a) Are being Independent and being a swing voter disjoint, i.e. mutually exclusive? 
+
+No, because being mutually exclusives means being one or the other. In this case some voters are both, which is opposite of being mutually exclusive.
+
+#####(b) Draw a Venn diagram summarizing the variables and their associated probabilities.
+
+```{r message=FALSE, warning=FALSE}
+library(VennDiagram)
+grid.newpage()
+draw.pairwise.venn(.35*2573, .23*2573, .11*2573, category = c("Independent", "Swing Voters"), lty = rep("blank", 
+    2), fill = c("light blue", "pink"), alpha = rep(0.5, 2), cat.pos = c(0, 
+    0), cat.dist = rep(0.025, 2), scaled = FALSE )
+```
+
+#####(c) What percent of voters are Independent but not swing voters? 
+
+This would be the  percent Independent and complementary of swing voters percent. 
+
+```{r eval = FALSE}
+(.35*(1-.23))
+```
+
+The results are `r (.35*(1-.23))`
+
+#####(d) What percent of voters are Independent or swing voters? 
+
+This would be the percent of independent voters plus swing  voters
+
+```{r eval = FALSE}
+.35+.23
+```
+
+The results are `r .35+.23`
+
+#####(e) What percent of voters are neither Independent nor swing voters? 
+
+This would be the complement of Indendent plus, Swing plus voters that are both.
+```{r eval = FALSE}
+1-(.35+.23+.11)
+```
+
+The results are `r 1-(.35+.23+.11)`
+
+#####(f) Is the event that someone is a swing voter independent of the event that someone is a political Independent?
+
+Yes A swing voter is not dependent on being in the independent party. If a person is classified as a swing voter they can be independent or Democrat or Republican. 
+
+2.19 Burger preferences. A 2010 SurveyUSA poll asked 500 Los Angeles residents, "What is the best hamburger place in Southern California? Five Guys Burgers? In-N-Out Burger? Fat Burger? Tommy's Hamburgers? Umami Burger? Or somewhere else?" The distribution of responses by gender is shown below.
+
+#####(a) Are being female and liking Five Guys Burgers mutually exclusive? 
+
+Yes they are mutually exclusive. You can be female and like Five Guys Burgers at the same time.
+
+#####(b) What is the probability that a randomly chosen male likes In-N-Out the best?
+The probability would be total males that liked In-N-Out by total number male 
+
+```{r eval = FALSE}
+162/248
+```
+
+The result is  `r 162/248`
+
+#####(c) What is the probability that a randomly chosen female likes In-N-Out the best? 
+
+The probability would be total females that liked In-N-Out by total number female 
+
+```{r eval = FALSE}
+181/252
+```
+
+The result is  `r 181/252`
+
+#####(d) What is the probability that a man and a woman who are dating both like In-N-Out the best? Note any assumption you make and evaluate whether you think that assumption is reasonable. 
+
+The probability would be total that liked In-N-Out by total number male and females
+
+```{r eval = FALSE}
+(162+181)/500
+```
+
+The result is  `r (162+181)/500`
+
+#####(e) What is the probability that a randomly chosen person likes Umami best or that person is female? 
+
+The probability would be total that liked Unami by total number male and females plus total females by total females plus males.
+
+```{r eval = FALSE}
+(6/550)+(252/500)
+```
+
+The result is  `r (6/550)+(252/500)`
+
+2.29 Chips in a bag. Imagine you have a bag containing 5 red, 3 blue, and 2 orange chips. 
+
+#####(a) Suppose you draw a chip and it is blue. If drawing without replacement, what is the probability the next is also blue? 
+
+Without replacment there would be 2 blue chips left and 9 chips total
+```{r eval = FALSE}
+2/9
+```
+
+The probablity would be `r 2/9`
+
+#####(b) Suppose you draw a chip and it is orange, and then you draw a second chip without replacement. What is the probability this second chip is blue? 
+
+Without replacment after selecting an orange chip there would be 3 blue chips left,  and 9 chips total
+```{r eval = FALSE}
+3/9
+```
+
+The probablity would be `r 3/9`
+
+#####(c) If drawing without replacement, what is the probability of drawing two blue chips in a row? 
+
+Without replacment there would be 3 blue chips out of 10 chips at the start and 2 chips left and 9 chips total for second drawing
+```{r eval = FALSE}
+(3/10)*(2/9)
+```
+
+The probablity would be `r (3/10)*(2/9)`
+
+#####(d) When drawing without replacement, are the draws independent? Explain.
+
+Without replacement the draws are not independent as the number of chips change and affect the next drawing. The second drawing results depend on the first drawing.
+
+2.43 Cat weights. The histogram shown below represents the weights (in kg) of 47 female and 97 male cats.68
+
+#####(a) What fraction of these cats weigh less than 2.5 kg?
+
+The fraction will be total below 2.5 divided by total cats
+```{r eval = FALSE}
+(35+30)/(47+97)
+```
+
+The results is `r (35+30)/(47+97)`
+
+#####(b) What fraction of these cats weigh between 2.5 and 2.75 kg? 
+
+The fraction will be total below 2.75 divided by total cats minus total below 2.5 divided by total cats.
+
+```{r eval = FALSE}
+(35+30+20)/(47+97) - (35+30)/(47+97)
+```
+The results is `r (35+30+20)/(47+97) - (35+30)/(47+97)`
+
+#####(c) What fraction of these cats weigh between 2.75 and 3.5 kg?
+
+The fraction will be total below 3.5 divided by total cats minus total below 2.75 divided by total cats.
+
+```{r eval = FALSE}
+(35+30+20+25+10+15)/(47+97) - (35+30+20)/(47+97)
+```
+The results is `r (35+30+20+25+10+15)/(47+97) - (35+30+20)/(47+97)`

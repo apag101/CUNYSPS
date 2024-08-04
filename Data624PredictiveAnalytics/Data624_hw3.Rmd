@@ -1,0 +1,143 @@
+---
+title: "Data 624 Homework 3"
+author: "Anthony Pagan"
+date: "2/22/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+library(fpp2)
+library(dplyr)
+```
+
+## Excercise 6.2
+
+The plastics data set consists of the monthly sales (in thousands) of product A for a plastics manufacturer for five years. 
+
+### A
+
+Plot the time series of sales of product A. Can you identify seasonal fluctuations and/or a trend-cycle?
+
+The data appears to increase mid year and decrease end of year. Data also looks to have a year to year increase the past 5 years.
+
+
+```{r}
+glimpse(plastics)
+frequency(plastics)
+autoplot(plastics, frequency = frequency(plastics))
+```
+
+### B
+
+Use a classical multiplicative decomposition to calculate the trend-cycle and seasonal indices.
+
+```{r}
+plastics %>% decompose(type="multiplicative")%>%
+  autoplot(frequency = frequency(plastics)) + xlab("Year") +
+  ggtitle("Classical multiplicative decomposition of sales of plastics")
+
+```
+
+### C
+
+Do the results support the graphical interpretation from part a?
+
+Yes. The overall data plot shows the same upward trend as part A. The seasonal breakdown show that every year there is a similar up and down trend mid year. The trend breakdown confirms that there is anupward trend year to year. The remainder breakdown hint that years 5 and 6 had a bigger impact on the up trendward than the previous 4 years.
+
+### D
+
+Compute and plot the seasonally adjusted data.
+
+```{r}
+library(seasonal)
+
+autoplot(plastics, series="Data") +
+  autolayer(ma(plastics,12), series="Seasionally Adjsuted") +
+  xlab("Year") + ylab("Sales") +
+  ggtitle("Classical multiplicative decomposition of sales of plastics") +
+  scale_colour_manual(values=c("blue","red"),
+                      breaks=c("Data","Seasionally Adjsuted"))
+
+plastics%>% ggseasonplot()
+plastics%>% ggsubseriesplot()
+
+plastics%>% stl(s.window=1, robust=TRUE)%>%seasonal%>%autoplot()
+
+```
+
+### E
+
+Change one observation to be an outlier (e.g., add 500 to one observation), and recompute the seasonally adjusted data. What is the effect of the outlier?
+
+The outier changes the mean/median of the month where the obeservation was modified. There is a drop then an increase between June and July of the 5th year as a result of the new caculations with outlier.
+
+
+```{r}
+plastics2<-plastics
+plastics2[54]<-plastics2[54]-500
+
+autoplot(plastics2, series="Data") +
+  autolayer(ma(plastics2,12), series="Seasionally Adjsuted") +
+  xlab("Year") + ylab("Sales") +
+  ggtitle("Classical multiplicative decomposition of sales of plastics") +
+  scale_colour_manual(values=c("blue","red"),
+                      breaks=c("Data","Seasionally Adjsuted"))
+
+plastics2%>% ggseasonplot()
+plastics2%>% ggsubseriesplot()
+
+plastics2%>% stl(s.window=1, robust=TRUE)%>%seasonal%>%autoplot()
+```
+
+### F
+
+Does it make any difference if the outlier is near the end rather than in the middle of the time series?
+
+In the first outlier update the modificaiton was in the middle of the year. In this update the chanages are being adjusted end of year for December. The plots now show the increases/decreases are toward the end of the year.
+
+```{r}
+plastics3<-plastics
+plastics3[48]<-plastics3[48]-500
+
+autoplot(plastics3, series="Data") +
+  autolayer(ma(plastics3,12), series="Seasionally Adjsuted") +
+  xlab("Year") + ylab("Sales") +
+  ggtitle("Classical multiplicative decomposition of sales of plastics") +
+  scale_colour_manual(values=c("blue","red"),
+                      breaks=c("Data","Seasionally Adjsuted"))
+
+plastics3%>% ggseasonplot()
+plastics3%>% ggsubseriesplot()
+
+plastics3%>% stl(s.window=1, robust=TRUE)%>%seasonal%>%autoplot()
+```
+
+
+## Excercise 6.3
+
+Recall your retail time series data (from Exercise 3 in Section 2.10). Decompose the series using X11. Does it reveal any outliers, or unusual features that you had not noticed previously?
+
+The remainder section of the X11 plot shows that 2001 may have had an outlier. Looking at the data plot, outlier appears to have occurred mid year. We plotting the classical multiplicative chart, we confirm this anomoly, but also show some  additional variation between 1985 - 1990. There is also a difference in seasional plots between X11 and and Classical. The X11 confirms the variability in Classical plots in its seasonal downward trend, while the Classical seasonal plot shows a fairly event seasonal trend year to year. 
+
+```{r}
+retaildata <- readxl::read_excel("retail.xlsx", skip=1)
+retaildata_ts<-ts(retaildata[,"A3349397X"],frequency=12, start=c(1982,12), end=c(2013,12))
+
+retaildata_ts%>% seas(x11="")-> fit
+autoplot(fit)+
+  ggtitle("X11 decomposition of retail data")
+
+retaildata_ts %>% decompose(type="multiplicative")%>%
+  autoplot(frequency = frequency(retaildata)) + xlab("Year") +
+  ggtitle("Classical multiplicative decomposition of retail datas")
+
+```
+
+
+

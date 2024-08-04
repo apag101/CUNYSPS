@@ -1,0 +1,204 @@
+---
+title: "DATA 606 Fall 2018 - Final Exam"
+author: ''
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r, echo=FALSE}
+options(digits = 2)
+```
+
+# Part I
+
+Please put the answers for Part I next to the question number (2pts each):
+
+1. B
+2. A
+3. A
+4. D  
+5. B
+6. D
+
+7a. Describe the two distributions (2pts).
+
+The first distribuation is skewed to the right. The median will be to the left of the mean. The second distribution is symetrical and normally distributed. The mean and median should be close or the same.
+
+7b. Explain why the means of these two distributions are similar but the standard deviations are not (2 pts).
+
+The standard deviation and mean are both affected by skewness. However, since the sample in B has a larger sample size than A, the mean shifts to the center, standard deviation decreases and the distribution normalizes. 
+
+7c. What is the statistical principal that describes this phenomenon (2 pts)?
+
+This phenomenon is described in the Central Limit Theorom which states that as the sample size grow larger the sample mean will approach a normal distribution. As sample size increases SE will decreases.
+
+# Part II
+
+Consider the four datasets, each with two columns (x and y), provided below. Be sure to replace the `NA` with your answer for each part (e.g. assign the mean of `x` for `data1` to the `data1.x.mean` variable). When you Knit your answer document, a table will be generated with all the answers.
+
+```{r}
+options(digits=2)
+data1 <- data.frame(x=c(10,8,13,9,11,14,6,4,12,7,5),
+					y=c(8.04,6.95,7.58,8.81,8.33,9.96,7.24,4.26,10.84,4.82,5.68))
+data2 <- data.frame(x=c(10,8,13,9,11,14,6,4,12,7,5),
+					y=c(9.14,8.14,8.74,8.77,9.26,8.1,6.13,3.1,9.13,7.26,4.74))
+data3 <- data.frame(x=c(10,8,13,9,11,14,6,4,12,7,5),
+					y=c(7.46,6.77,12.74,7.11,7.81,8.84,6.08,5.39,8.15,6.42,5.73))
+data4 <- data.frame(x=c(8,8,8,8,8,8,8,19,8,8,8),
+					y=c(6.58,5.76,7.71,8.84,8.47,7.04,5.25,12.5,5.56,7.91,6.89))
+```
+
+For each column, calculate (to two decimal places):
+
+#### a. The mean (for x and y separately; 1 pt).
+
+```{r include=TRUE}
+data1.x.mean <- mean(data1$x)
+data1.y.mean <- mean(data1$y)
+data2.x.mean <- mean(data2$x)
+data2.y.mean <- mean(data2$y)
+data3.x.mean <- mean(data3$x)
+data3.y.mean <- mean(data3$y)
+data4.x.mean <- mean(data4$x)
+data4.y.mean <- mean(data4$y)
+```
+
+#### b. The median (for x and y separately; 1 pt).
+
+```{r include=TRUE}
+data1.x.median <- median(data1$x)
+data1.y.median <- median(data1$y)
+data2.x.median <- median(data2$x)
+data2.y.median <- median(data2$x)
+data3.x.median <- median(data3$x)
+data3.y.median <- median(data3$y)
+data4.x.median <- median(data4$x)
+data4.y.median <- median(data4$y)
+```
+
+#### c. The standard deviation (for x and y separately; 1 pt).
+
+```{r include=TRUE}
+data1.x.sd <- sd(data1$x)
+data1.y.sd <- sd(data1$y)
+data2.x.sd <- sd(data2$x)
+data2.y.sd <- sd(data2$y)
+data3.x.sd <- sd(data3$x)
+data3.y.sd <- sd(data3$y)
+data4.x.sd <- sd(data4$x)
+data4.y.sd <- sd(data4$y)
+```
+
+#### For each x and y pair, calculate (also to two decimal places; 1 pt):
+
+#### d. The correlation (1 pt).
+
+```{r include=TRUE}
+data1.correlation <- round(cor(data1$x, data1$y),2)
+data2.correlation <- round(cor(data2$x, data2$y),2)
+data3.correlation <- round(cor(data3$x, data3$y),2)
+data4.correlation <- round(cor(data4$x, data4$y),2)
+```
+
+#### e. Linear regression equation (2 pts).
+
+```{r include=TRUE}
+data1.slope <- coefficients(lm(data1$x~data1$y))[2]
+data2.slope <- coefficients(lm(data2$x~data2$y))[2]
+data3.slope <- coefficients(lm(data3$x~data3$y))[2]
+data4.slope <- coefficients(lm(data4$x~data4$y))[2]
+
+data1.intercept <- coefficients(lm(data1$x~data1$y))[1]
+data2.intercept <- coefficients(lm(data2$x~data2$y))[1]
+data3.intercept <- coefficients(lm(data3$x~data3$y))[1]
+data4.intercept <- coefficients(lm(data4$x~data4$y))[1]
+```
+
+#### f. R-Squared (2 pts).
+
+```{r include=TRUE}
+data1.rsquared <- summary(lm(data1$x~data1$y))$r.squared
+data2.rsquared <- summary(lm(data2$x~data2$y))$r.squared
+data3.rsquared <- summary(lm(data3$x~data3$y))$r.squared
+data4.rsquared <- summary(lm(data4$x~data4$y))$r.squared
+```
+
+```{r, echo=FALSE, results='asis'}
+##### DO NOT MODIFY THIS R BLOCK! ######
+# This R block will create a table to display all the calculations above in one table.
+library(knitr)
+library(kableExtra)
+results <- data.frame(
+    data1.x = c(data1.x.mean, data1.x.median, data1.x.sd, data1.correlation, data1.intercept, data1.slope, data1.rsquared),
+    data1.y = c(data1.y.mean, data1.y.median, data1.y.sd, NA, NA, NA, NA),
+    data2.x = c(data2.x.mean, data2.x.median, data2.x.sd, data2.correlation, data2.intercept, data2.slope, data2.rsquared),
+    data2.y = c(data2.y.mean, data2.y.median, data2.y.sd, NA, NA, NA, NA),
+    data3.x = c(data3.x.mean, data3.x.median, data3.x.sd, data3.correlation, data3.intercept, data3.slope, data3.rsquared),
+    data3.y = c(data3.y.mean, data3.y.median, data3.y.sd, NA, NA, NA, NA),
+    data4.x = c(data4.x.mean, data4.x.median, data4.x.sd, data4.correlation, data4.intercept, data4.slope, data4.rsquared),
+    data4.y = c(data4.y.mean, data4.y.median, data4.y.sd, NA, NA, NA, NA),
+    stringsAsFactors = FALSE
+)
+
+row.names(results) <- c('Mean', 'Median', 'SD', 'r', 'Intercept', 'Slope', 'R-Squared')
+names(results) <- c('x','y','x','y','x','y','x','y')
+options(knitr.kable.NA = '')
+kable(results, digits = 2, 
+	  align = 'r',
+	  row.names = TRUE, 
+	  format.args=list(nsmall = 2)) %>%
+	column_spec(2:9, width = ".35in") %>%
+	add_header_above(c(" " = 1, "Data 1" = 2, "Data 2" = 2, "Data 3" = 2, "Data 4" = 2))
+```
+
+#### g. For each pair, is it appropriate to estimate a linear regression model? Why or why not? Be specific as to why for each pair and include appropriate plots! (4 pts)
+
+Data1 appears to be nearly normally distributed and does not have any noticable outliers that would change the data. In addition, variability is constant. Therefore, data1 is appropriate for a linear regression model.
+
+```{r}
+library(ggplot2)
+
+data1.lm<-lm(x ~ y, data = data1)
+hist(data1.lm$residuals)
+qqnorm(data1.lm$residuals)
+qqline(data1.lm$residuals)
+ggplot(data1, aes(x=x, y)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+```
+
+Data2 does not appear to be nearly normally distributed. It is right skewed and does have some noticable outliers that would change the data. In addition, variability is in a curve and not constant. Therefore, data2 is not appropriate for a linear regression model.
+
+```{r}
+data2.lm<-lm(x ~ y, data = data2)
+hist(data2.lm$residuals)
+qqnorm(data2.lm$residuals)
+qqline(data2.lm$residuals)
+ggplot(data2, aes(x=x, y)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+```
+
+Data3 appears to be nearly normally distributed, but does have 1 noticable outlier that could change the data. In addition, variability is constant. Data3 may be appropriate for a linear regression model, however the 1 outlier appears to be a high leverage influential point.
+
+```{r}
+data3.lm<-lm(x ~ y, data = data3)
+hist(data3.lm$residuals)
+qqnorm(data3.lm$residuals)
+qqline(data3.lm$residuals)
+ggplot(data3, aes(x=x, y)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+```
+
+Data4 does not appear to be nearly normally distributed and does have noticable outliers that would change the data. In addition, variability is not constant. Therefore, data4 is not appropriate for a linear regression model.
+
+```{r}
+data4.lm<-lm(x ~ y, data = data4)
+hist(data4.lm$residuals)
+qqnorm(data4.lm$residuals)
+qqline(data4.lm$residuals)
+ggplot(data4, aes(x=x, y)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+
+```
+
+
+#### h. Explain why it is important to include appropriate visualizations when analyzing data. Include any visualization(s) you create. (2 pts)
+
+It is important to include appropriate visualization when analyzing data because it helps to check conditions for the linear model. In the 4 dataset examples we are checking if data is nearly normally distributed, that data does in fact have a linear relationship, that variability is constant and discover any outliers that may influence data in a positive or negative direction. The visualizations help identify these conditions so we can decide if the linear model is appropriate.
+

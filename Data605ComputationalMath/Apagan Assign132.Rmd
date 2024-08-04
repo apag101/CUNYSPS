@@ -1,0 +1,97 @@
+---
+title: "Data 605 Assignment 13"
+author: "Anthony Pagan"
+date: "April 28, 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW13
+
+WebTest Name: (Test)
+#1 Integration
+Use integration by substitution to solve the integral below.
+
+${\int{4e^{7x}dx}}$
+
+
+
+**T**
+
+
+#2 Function
+Biologists are treating a pond contaminated with bacteria. The level of contamination is changing at a rate of
+dN
+dt
+= ??? 3150
+t 4 ??? 220 bacteria per cubic centimeter per day, where t is the number of days since treatment began. Find a function N( t ) to estimate the level of contamination if the level after 1 day was 6530 bacteria per cubic centimeter.
+
+
+- **In the plots below you can see the residuals are not normally distributed**
+
+
+#3 Total Area
+Find the total area of the red rectangles in the figure below, where the 3. equation of the line is f ( x ) = 2x ??? 9.
+
+
+
+- **The F statistics of does is not useful here as we are using a one factor model and it is only useful for multiple regression. R^2 incrased alomst doubled to .552 it is low. Standard error is still high in comparison to the 1st and 3rd Qrt. Quarters should be 1 1/2 times STD Error. P-values gives probability that the corresponding coefficient is not revelant. P-values is again very low. **
+
+
+#4 Area Graphs
+Find the area of the region bounded by the graphs of the given equations.
+y = x2 ??? 2x ??? 2, y = x + 2
+4.
+
+
+
+- **QQ plots still is not normally distributed in the beginning of plot, but regress to a normal distribution when greater than -1**
+
+
+#5 Word Problem
+A beauty supply store expects to sell 110 flat irons during the next year. It costs $3.75 to store one flat iron for one year. There is a fixed cost of $8.25 for each order. Find the lot size and the number of orders per year that will minimize inventory costs.
+
+
+Use integration by parts to solve the integral below
+
+**Equations are Y= ax + b. The forecast for TotExp^.06 =1.5 is `r who.1`. The forecast for TotExp^.06 =2.5 is `r who.2`**
+
+
+
+#7 Probability
+Determine whether f ( x ) is a probability density function on the interval 1, e6. If not, determine the value of the definite integral.
+f ( x ) = 1
+6x
+7.
+2
+
+```{r}
+
+```
+- **The F statistics is large and indicates that the linear model is more compatible with the data than a constant average model. R^2 this percentage of how well the model describes measured data. In this case, at .2921 it is low. Standard error is the measure of total variation. Its seems lightly high in comparison to the 1st and 3rd Qrt. Quarters should be 1 1/2 times STD Error. P-values gives probability that the corresponding coefficient is not revelant. P-values in this case is lower than .05  so these values are revelant. The QQ plot shows these linear model is not normally distributed**
+
+```{r}
+who.lm <- lm(who$LifeExp ~ who$PropMD+who$TotExp+who$PropMD+who$TotExp)
+summary(who.lm)
+qqnorm(resid(who.lm))
+qqline(resid(who.lm))
+```
+
+
+##Forecast 2
+5. Forecast LifeExp when PropMD=.03 and TotExp = 14. Does this forecast seem realistic? Why or why not?
+
+
+```{r}
+who.3<-round(who.lm$coefficients[1] + (who.lm$coefficients[2]*.03) + (who.lm$coefficients[3]*14),2)
+
+```
+
+- **Equation is Y= ax + b1* .03 + b2* 14. The forecast for PropMD=.03 and TotExp = 14 is `r who.3`. **
+

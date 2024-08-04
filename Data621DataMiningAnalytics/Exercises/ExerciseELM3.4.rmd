@@ -1,0 +1,76 @@
+---
+title: "Data 621 ELMR Exercise 3.4"
+author: "Anthony Pagan"
+date: "10/27/2019"
+output: html_document
+css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+
+```{r}
+#ELMR 3.4
+require(ISLR)
+require(leaps)
+library("faraway")
+data(africa, package="faraway")
+names(africa)
+head(africa)
+```
+
+### LM shows oligarch, pollib and parties as being significant. Plot shows a trend and not spread of data.
+
+```{r}
+lmod<-lm(miltcoup ~., africa)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+summary(lmod)
+```
+
+### Stripchart shows some outliers on the size variable
+
+```{r}
+stripchart(africa)
+```
+
+### Set linear model with sqrt of response variable while adding log to predictor variable size. Parties variable is no longer signficant
+
+```{r}
+lmod<-lm(sqrt(miltcoup) ~.-size+log(size), family=poisson, africa)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+summary(lmod)
+```
+
+### Persons F-test shows pollit and parties with higher AIC values
+
+
+```{r}
+lmod<-glm(miltcoup ~oligarchy+pollib+parties, family=poisson,  africa)
+summary(lmod)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+halfnorm(residuals(lmod))
+```
+
+### GLM with oligarch and polib
+```{r}
+lmod<-glm(miltcoup ~oligarchy+pollib, family=poisson,  africa)
+summary(lmod)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+halfnorm(residuals(lmod))
+```
+
+### GLM with Parties and polib
+```{r}
+lmod<-glm(miltcoup ~pollib+parties, family=poisson,  africa)
+summary(lmod)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+halfnorm(residuals(lmod))
+
+```

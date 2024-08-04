@@ -1,0 +1,71 @@
+this  assignment you do not have to write any R script.
+No programming but function as a senior data scientist.
+here is some background:
+You hired Kansales Ruffio as a summer intern in winter for his ML and R hacking skills.
+You asked him to analyze a dataset from the internet. You provided him a training and test data partitions.
+KR bolted for 2/3 weeks showing up in his cubicle after 3 PM and working until you arrived in the office
+at 7 AM. Then, Ruffio showed up at 8 AM with an email to you saying he analyzed the dataset
+using several algorithms consistent with both No Free Lunch theorem and Occam's Razor.
+He claims you can simply source the R script which will create two files with confusion matrices
+and performance measures for classifiers.
+As his mentor and guide,
+1) you can  provide feedback how he can improve his approach to  data science.
+
+Cleanup the doors and persons columns to be more consistent, either set more to 5 or bin 1-3 doors and 4-5 doors. 
+Should use set.seed so the output values will be same when we rerun code. 
+The confuasionMXoutput may be adequate output since it mtab data is already available
+Use AUC/ROC plots to compare each model 
+Output file should include the classifier used to differentaite data.
+
+2) You may also identify and justify the choice of classifiers Ruffio ran to complete this task.
+
+Ruffio used the 7 classifiers discribed below:
+
+VGLM - Uses the GAM or genarlized additive model that fits a linear model to each X and adds each result together. One negative is doesn to for interaction groups natively it has to be added separately. GAM can be used for categorical values with 0 and 1 values. Since Y in this dataset has 4 posible values,  and would need the creation of dummy varialbes. GAM may not be the most efficient model.
+
+LDA- This classifier is also used for categorical values and would not be the best model where y has 4 possbile values since it would require additional dummy variables. 
+
+RPART- This is a basic regression tree which uses nested if then statements for predictors leaving simple averages. This model can overfit with too many trees. They may be better off using m5tree or bagging/boosting/Random forest
+
+Bagging -Uses bootstrapping to take multiple samples the averages all model prediction results. Usually used in regresion trees. Although it improves predictions it is not as interpretable as other models. Trees are not pruned unlike Random Forest, that is why bagging has high varinace but low bias.
+
+GBM 1-3 - GBM is used for boosting. Boosting is similar to bagging except each tree is grown using inforation form previously grown trees. Also it does not use bootstrap and instead each tree is fit on a modified version of the original dataset. 
+
+Random Forest is similar to bagging  with an added ability to of reduction number of predictors used at each level of the split.
+
+XGBOOST (xgb 4 and 5)- XBoost is a similar form of boosting but with better performance for learning. 
+
+Wtiout looking at peformanc metrics from the 2 linear classifiers GLM and LDA , LDA would be a better choice. As for the tree model classifiers i would lean toward Random Forest for its added ability to reduce the predictors. 
+
+3) You can compare the performance metrics of classifiers and provide an explanation for the observed performance variances.
+
+Each classifier uses different methods of prediction, some use averages of models while others take 1 pass. The different methods results in differetn confusion matrix results. The key metrics that I am looking at in Ruffio's approach and output is the accuracy, no information rate  and kappa. The accuracy gives us where the model predicted values true or false accurately. No information rate are the rate you can predict something is not in the class you are trying to predict for current distribution. If NIR is higher than accuracy you have a higher chance at predicting anything outside of predicted class. In the confusion matrix output the NIR were the same rate of ~68% . The Kappa tells us how good our predictions are versus random guessing. This is useful when we have an imablanced 
+dataset, which is the case here, with unacc being 70% of the data:
+
+acc  good unacc vgood 
+  263    46   858    43 
+
+The LDA classifer appears to be the clear winner for this dataset. With a high accuracy and high kappa score we can say this model has accurate predicdtion that is not based on the unbalanced data and is highly likely to be better than random guessing.
+
+       Accuracy : 0.9749          
+                 95% CI : (0.9575, 0.9866)
+    No Information Rate : 0.6795          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.9481    
+
+
+
+Ruffio can be given a pass grade if the script can be sourced free of errors.
+There are five files attached
+vglm_lda_script.txt is R script you can run on IBM without any modification
+the two output files that script generates
+and two data files for training and testing that Ruffio used.
+You do not have to do any work on IBM Cloud you can run without lifting a finger 
+But as per agreement I have uploaded it here -- now you have to make sure paths are
+consistent. 
+I will be reviewing the R code during the next two weeks during meetups
+while you will be analyzing the output
+and explaining the performance based on the kind of classifier used.
+Thank you
+Raman

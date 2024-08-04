@@ -1,0 +1,45 @@
+---
+title: "Data 605 Week 7 Discussion"
+author: "Anthony Pagan"
+date: "March 13, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+40) A bridge deck has 52 cards with 13 cards in each of four suits: spades, hearts,
+diamonds, and clubs. A hand of 13 cards is dealt from a shuffled deck. Find
+the probability that the hand has
+
+(a) a distribution of suits 4, 4, 3, 2 (for example, four spades, four hearts,
+three diamonds, two clubs).
+
+```{r}
+sp <- factorial(13)/(factorial(9)*factorial(4))
+ht <- factorial(13)/(factorial(9)*factorial(4))
+di <- factorial(13)/(factorial(10)*factorial(3))
+cl <- factorial(13)/(factorial(11)*factorial(2))
+all<- factorial(52)/(factorial(39)*factorial(13))
+
+p <- round((sp*ht*di*cl/all),4)
+
+```
+
+**The probability is of being dealt 4 spades, 4 hearts , 3 diamonds and 1 club is `r p*100`%**
+
+(b) a distribution of suits 5, 3, 3, 2.
+
+```{r}
+sp <- factorial(13)/(factorial(8)*factorial(5))
+ht <- factorial(13)/(factorial(10)*factorial(3))
+di <- factorial(13)/(factorial(10)*factorial(3))
+cl <- factorial(13)/(factorial(11)*factorial(2))
+all<- factorial(52)/(factorial(39)*factorial(13))
+
+p <- round((sp*ht*di*cl/all),4)
+
+```
+**The probability is of being dealt 5 spades, 3 hearts , 3 diamonds and 1 club is `r p*100`%**
+
+

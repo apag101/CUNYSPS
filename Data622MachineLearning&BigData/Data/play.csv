@@ -1,0 +1,14 @@
+outlook,temp,hum,windy,play
+Sunny,85,85,False,0
+Sunny,80,90,True,0
+Overcast,83,78,False,1
+Rain,70,96,False,1
+Rain,68,80,False,1
+Rain,65,70,True,0
+Overcast,64,65,True,1
+Sunny,72,95,False,0
+Sunny,69,70,False,1
+Rain,75,80,False,1
+Sunny,75,70,True,1
+Overcast,72,90,True,1
+Overcast,81,75,False,1

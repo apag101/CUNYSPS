@@ -1,0 +1,57 @@
+---
+title: "Data 605 Assignment 5"
+author: "Anthony Pagan"
+date: "March 1, 2019"
+output: html_document
+---
+
+Choose independently two numbers B and C at random from the interval [0, 1] with uniform density. Prove that B and C are proper probability distributions.
+Note that the point (B,C) is then chosen at random in the unit square.
+Find the probability that
+(a) B + C < 1/2.
+
+```{r}
+B=seq(0,1,length=2000)
+C=seq(0,1,length=2000)
+y=dnorm(A + B)
+plot(subset(y,y<.5),type="l", lwd=2, col="blue")
+length(subset(y,y<.5))/length(y)
+```
+
+(b) BC < 1/2.
+
+```{r}
+B=seq(0,1,length=2000)
+C=seq(0,1,length=2000)
+y=dnorm(B * C)
+plot(subset(y,y<.5),type="l", lwd=2, col="blue")
+length(subset(y,y<.5))/length(y)
+```
+
+(c) |B ??? C| < 1/2.
+
+```{r}
+B=seq(0,1,length=2000)
+C=seq(0,1,length=2000)
+y=dnorm(abs(B - C))
+plot(subset(y,y<.5),type="l", lwd=2, col="blue")
+length(subset(y,y<.5))/length(y)
+```
+(d) max{B,C} < 1/2.
+
+```{r}
+B=seq(0,1,length=2000)
+C=seq(0,1,length=2000)
+y=dnorm(max(B,C))
+plot(subset(y,y<.5),type="l", lwd=2, col="blue")
+length(subset(y,y<.5))/length(y)
+```
+(e) min{B,C} < 1/2.
+
+```{r}
+B=seq(0,1,length=2000)
+C=seq(0,1,length=2000)
+y=dnorm(min(B, C))
+plot(subset(y,y<.5),type="l", lwd=2, col="blue")
+length(subset(y,y<.5))/length(y)
+```

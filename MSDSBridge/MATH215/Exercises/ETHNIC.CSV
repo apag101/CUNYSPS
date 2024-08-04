@@ -1,0 +1,13 @@
+"REGION","STRATEGY","COUNT"
+"LatinAmer","None",24
+"LatinAmer","Mobil",31
+"LatinAmer","War",7
+"PostComm","None",32
+"PostComm","Mobil",23
+"PostComm","War",4
+"SEAsia","None",11
+"SEAsia","Mobil",22
+"SEAsia","War",26
+"Africa","None",39
+"Africa","Mobil",36
+"Africa","War",20

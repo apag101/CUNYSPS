@@ -1,0 +1,166 @@
+---
+title: 'Data 621 Homework 3: Insurance'
+author: ""
+date: "November 6, 2019"
+output:
+  html_document:
+    #css: style.css
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Get the data. Added na.strings to add na for records that have a blank value
+
+InsTrain <- read.csv("insurance_training_data.csv",na.strings="",header=TRUE)
+InsEval <- read.csv("insurance-evaluation-data.csv",na.strings="",header=TRUE)
+```
+
+
+# Overview
+
+## Missing Data
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+cc<-summary(complete.cases(InsTrain))
+cInsTrain<-subset(InsTrain, complete.cases(InsTrain))
+cc
+
+```
+
+If we remove all rows with incomplete rows, there will be a total of `r as.integer(cc[3])` rows out of `r nrow(InsTrain)` . We need to decide if using only `r round(as.integer(cc[3])/nrow(InsTrain),2)*100`% of the data suffice.
+
+We create a subset of data with complete cases only to use later in our analysis.
+
+```{r}
+glimpse(cInsTrain)
+```
+
+## Data Exploration 
+
+
+Using TARGET_FLAG as response variables we confirm  when TARGET_FLAG is 1  TARGET_AMOUNT >0 and when TARGET_FLAG is 0 when TARGET_AMOUNT  = 0
+
+```{r echo=TRUE}
+
+nrow(subset(InsTrain,TARGET_FLAG == 0))
+nrow(subset(InsTrain,TARGET_AMT == 0))
+nrow(subset(InsTrain,TARGET_FLAG > 0))
+nrow(subset(InsTrain,TARGET_AMT > 0))
+```
+
+A glimpse of the data shows that the following columns should be integers and not Factors:
+
+* INCOME
+* HOME_VAL
+* BLUEBOOK
+* OLDCLAIM
+* JOB
+
+We display and view data with all cases and only complete cases
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+glimpse(InsTrain)
+
+#describe(InsTrain)
+#describe(cInsTrain)
+
+#View(InsTrain)
+```
+
+We use Sapply function to review which columns have NA Values. It display columns and percent of values that are missing.  
+
+```{r}
+sapply(InsTrain, function(x) round(sum(is.na(x))/nrow(InsTrain)*100,1))
+vis_miss(InsTrain)
+
+```
+
+## Data Preperation
+
+As revealed earlier there were a list of columns with  factors that should be integers. We start by converting the columns to numeric.
+
+```{r}
+c<-c('INCOME','HOME_VAL','BLUEBOOK','OLDCLAIM', 'JOB')
+
+glimpse(InsTrain[,colnames(InsTrain) %in% c])
+
+InsTrain[,colnames(InsTrain) %in% c]<-data.frame(sapply(InsTrain[,colnames(InsTrain) %in% c], function(x) as.numeric(x)))
+
+glimpse(InsTrain[,colnames(InsTrain) %in% c])
+
+```
+
+Both boxplot and summary stats with the square root transform of Home_val and Income to confirm we can use median or mean values to replace NA values if we chose.
+
+```{r}
+r <- colnames(InsTrain)[ apply(InsTrain, 2, anyNA)]
+
+par(mar=c(9.5,3.5,.5,.5))
+
+boxplot(InsTrain$AGE,InsTrain$YOJ, InsTrain$CAR_AGE, sqrt(InsTrain$INCOME), sqrt(InsTrain$HOME_VAL), InsTrain$JOB,names = r,las = 2,col = c("orange","red", "blue", "yellow", "brown", "green"))
+
+describe(subset(InsTrain, select =r))
+
+```
+
+We next replace all NA values with mean values for cases that are missing values and rerun sapply function to confirm there are no longer any missing values.
+
+```{r}
+
+InsTrain[,colnames(InsTrain) %in% r]<-data.frame(sapply(InsTrain[,colnames(InsTrain) %in% r],
+      function(x) ifelse(is.na(x),
+            mean(x, na.rm = TRUE),
+            x)))
+
+sapply(InsTrain, function(x) round(sum(is.na(x))/nrow(InsTrain)*100,1))
+vis_miss(InsTrain)
+describe(subset(InsTrain, select =r))
+#View(InsTrain)
+```
+## Build Model
+
+
+
+```{r}
+m1<-glm(TARGET_FLAG~.-INDEX-TARGET_FLAG-TARGET_AMT,data=InsTrain,family="binomial"(link="logit"))
+summary(m1)
+b<-regsubsets(TARGET_FLAG~.-INDEX-TARGET_FLAG-TARGET_AMT,data=InsTrain)
+rs<-summary(b)
+rs$which
+AIC <- 50*log(rs$rss/50) +(2:8)*2
+plot(AIC~I(1:7), ylab="AIC", xlab="Number of Predictors")
+plot(2:8,rs$adjr2,xlab="No. of Parameters", ylab="Adjusted R-Square")
+which.max(rs$adjr2)
+plot(2:8,rs$cp,xlab="No. of Parameters",ylab="Cp Statistic")
+abline(0,1)
+step(m1)
+```
+
+## Select Model
+
+

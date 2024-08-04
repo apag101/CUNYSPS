@@ -1,0 +1,143 @@
+---
+title: "Data606 Homework1"
+author: "Anthony Pagan"
+date: "September 03, 2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+#####1.8 Smoking habits of UK residents. A survey was conducted to study the smoking habits of UK residents. Below is a data matrix displaying a portion of the data collected in this survey. 
+
+####(a) What does each row of the data matrix represent? 
+
+Each row of the matrix represents a case or record of the survey
+
+####(b) How many participants were included in the survey? 
+
+There were 1691 participants in this survey
+
+####(c) Indicate whether each variable in the study is numerical or categorical. If numerical, identify as continuous or discrete. If categorical, indicate if the variable is ordinal.
+
+Sex is categorical and nominal.
+Age is numerical and discrete.
+Marital is categorical and nominal.
+grossIncome is numerical and continuous.
+Smoke is categorical and nominal.
+amtWeekends is numerical and discreet.
+amtWeekdays is numerical and discreet.
+
+#####1.10 Cheaters, scope of inference. Exercise 1.5 introduces a study where researchers studying the relationship between honesty, age, and self-control conducted an experiment on 160 children between the ages of 5 and 15. The researchers asked each child to toss a fair coin in private and to record the outcome (white or black) on a paper sheet, and said they would only reward children who report white. Half the students were explicitly told not to cheat and the others were not given any explicit instructions. Di???erences were observed in the cheating rates in the instruction and no instruction groups, as well as some di???erences across children's characteristics within each group. 
+
+####(a) Identify the population of interest and the sample in this study. 
+The population were children between ages 5 and 15. The sample were 160 children between ages 5 and 15.
+
+####(b) Comment on whether or not the results of the study can be generalized to the population, and if the ???ndings of the study can be used to establish causal relationships.
+
+This study can be the generlized to the population if it generalizes specifically to the children ages 5-15 and a large enough sample was taken. Association does not  establish causation.
+
+#####1.28 Reading the paper. Below are excerpts from two articles published in the NY Times: (a) An article titled Risks: Smokers Found More Prone to Dementia states the following:61 "Researchers analyzed data from 23,123 health plan members who participated in a voluntary exam and health behavior survey from 1978 to 1985, when they were 50-60 years old. 23 years later, about 25% of the group had dementia, including 1,136 with Alzheimer's disease and 416 with vascular dementia. After adjusting for other factors, the researchers concluded that pack-aday smokers were 37% more likely than nonsmokers to develop dementia, and the risks went up with increased smoking; 44% for one to two packs a day; and twice the risk for more than two packs." 
+
+####Based on this study, can we conclude that smoking causes dementia later in life? Explain your reasoning. 
+
+No, because the sample is sampling members of a health care plan. The sample is not random enough and cannot speak to a popoulation of smokers as a whole
+
+#####(b) Another article titled The School Bully Is Sleepy states the following:62 The University of Michigan study, collected survey data from parents on each child's sleep habits and asked both parents and teachers to assess behavioral concerns. About a third of the students studied were identi???ed by parents or teachers as having problems with disruptive behavior or bullying. The researchers found that children who had behavioral issues and those who were identi???ed as bullies were twice as likely to have shown symptoms of sleep disorders." 
+
+####A friend of yours who read the article says, "The study shows that sleep disorders lead to bullying in school children." Is this statement justi???ed? If not, how best can you describe the conclusion that can be drawn from this study?
+
+The coclusion is an associcaiton and association does not result in causation. It is possible that lack of sleep can be a confounding variable and not the actual cause. More information is needed to make any conclusions.
+
+####1.36 Exercise and mental health. A researcher is interested in the effects of exercise on mental health and he proposes the following study: Use strati???ed random sampling to ensure representative proportions of 18-30, 31-40 and 41- 55 year olds from the population. Next, randomly assign half the subjects from each age group to exercise twice a week, and instruct the rest not to exercise. Conduct a mental health exam at the beginning and at the end of the study, and compare the results.
+
+####(a) What type of study is this? 
+
+This is a experimental study because they are interfering with how the data arise be asking a group to excercise and the other not to exercise. It also has an explanatory variable (excercise or not) and response variable (results of mental health exam)
+
+####(b) What are the treatment and control groups in this study? 
+
+The treatemnt group is the group asked to exercise twice a week. The control group is the group asked not to exercise.
+
+####(c) Does this study make use of blocking? If so, what is the blocking variable? 
+
+Yes it does , as it stratified by age then make a randomize selection per group.
+
+####(d) Does this study make use of blinding? 
+
+This does not make use of bliding as patients are told to excercise or not exercise and we are not sure if the research are aware who were told to excercise or not.
+
+####(e) Comment on whether or not the results of the study can be used to establish a causal relationship between exercise and mental health, and indicate whether or not the conclusions can be generalized to the population at large. 
+
+It cannot be used to establish a casual relationship as it was not a blind study. We cant generalize results to population at large since we do not know how large the sample is and it does not include all age groups. 
+
+####(f) Suppose you are given the task of determining if this proposed study should get funding. Would you have any reservations about the study proposal?
+
+I would have reservations on proposal. If the studay can narrow its scope to a specific age group or include the rest of the age range i may reconsider. 
+
+#####1.48 Stats scores. Below are the ???nal exam scores of twenty introductory statistics students.
+57, 66, 69, 71, 72, 73, 74, 77, 78, 78, 79, 79, 81, 81, 82, 83, 83, 88, 89, 94
+Create a box plot of the distribution of these scores. The ???ve number summary provided below may be useful.
+Min Q1 Q2 (Median) Q3 Max
+57 72.5 78.5 82.5 94
+```{r}
+sts <-c(57, 66, 69, 71, 72, 73, 74, 77, 78, 78, 79, 79, 81, 81, 82, 83, 83, 88, 89, 94)
+boxplot(sts)
+```
+
+#####1.50 Mix-and-match. Describe the distribution in the histograms below and match them to the box plots.
+
+a) A is symetric and matches boxplot 2. 
+b) B is bimodal and matches boxplot 3
+c) C is skewed to the right and matches boxplot 1.
+
+#####1.56 Distributions and appropriate statistics, Part II . For each of the following, state whether you expect the distribution to be symmetric, right skewed, or left skewed. Also specify whether the mean or median would best represent a typical observation in the data, and whether the variability of observations would be best represented using the standard deviation or IQR. Explain your reasoning. 
+
+####(a) Housing prices in a country where 25% of the houses cost below $350,000, 50% of the houses cost below $450,000, 75% of the houses cost below $1,000,000 and there are a meaningful number of houses that cost more than $6,000,000. 
+
+I would expect this to be skewed to the right. The meaningful number of houses more that 6 million will skew the numbers. The median would be the best represent a typical observation since the average will be affected by the right skew. In this case IQR would be best used for variability as it uses median rather than average for variability.
+
+####(b) Housing prices in a country where 25% of the houses cost below $300,000, 50% of the houses cost below $600,000, 75% of the houses cost below $900,000 and very few houses that cost more than $1,200,000.
+
+I would expect this to be symentrical with no skew. The very few houses more that 1.2 million will probably not skew the numbers. The mean would be the best represent a typical observation. In this case standard deviation would be best used for variability as it uses mean rather than median for variability.
+
+####(c) Number of alcoholic drinks consumed by college students in a given week. Assume that most of these students don't drink since they are under 21 years old, and only a few drink excessively. 
+
+I would expect this to be skewed to the left. The low the number of driking will cause affect skewing. The median would be the best represent a typical observation since the average will be affected by the left skew. In this case IQR would be best used for variability as it uses median rather than average for variability.
+
+####(d) Annual salaries of the employees at a Fortune 500 company where only a few high level executives earn much higher salaries than the all other employees.
+
+I would expect this to be skewed slightly to the right. Although there are  only a few executives who will have a higher salary it states much higher. The median would be the best represent a typical observation since the average will be affected by the right skew. In this case IQR would be best used for variability as it uses median rather than average for variability.
+
+#####1.70 Heart transplants. The Stanford University Heart Transplant Study was conducted to determine whether an experimental heart transplant program increased lifespan. Each patient entering the program was designated an ocial heart transplant candidate, meaning that he was gravely ill and would most likely bene???t from a new heart. Some patients got a transplant and some did not. The variable transplant indicates which group the patients were in; patients in the treatment group got a transplant and those in the control group did not. Another variable called survived was used to indicate whether or not the patient was alive at the end of the study.
+
+```{r}
+library(openintro)
+data(heartTr)
+```
+
+####(a) Based on the mosaic plot, is survival independent of whether or not the patient got a transplant? Explain your reasoning.
+
+Based on mosaic plat survival was not independent on whether or not the patient got a transplant. Based on chart  ~3x patients survived when getting transplant compare to those that did not.
+
+####(b) What do the box plots below suggest about the ecacy (effectiveness) of the heart transplant treatment. 
+
+The boxplot shows that most of the patients with treatment will outlive patients witout treatment.
+
+####(c) What proportion of patients in the treatment group and what proportion of patients in the control group died? 
+
+```{r}
+nrow(subset(heartTr, transplant == "treatment" & survived == "dead"))/nrow(subset(heartTr, transplant == "treatment"))
+nrow(subset(heartTr, transplant == "control" & survived == "dead"))/nrow(subset(heartTr , transplant == "control"))
+
+
+```
+####(d) One approach for investigating whether or not the treatment is effective is to use a randomization technique.
+####i. What are the claims being tested? 
+The study is to determine if transplants prolong lives and gives a patient a higher survival rate compared to a patient that does not get a transplant.
+
+####ii. The paragraph below describes the set up for such approach, if we were to do it without using statistical software. Fill in the blanks with a number or phrase, whichever is appropriate. 
+We write alive on ALIVE cards representing patients who were alive at the end of the study, and DEAD dead on cards representing patients who were not. Then, we shu???e these cards and split them into two groups: one group of TREATMENT size representing treatment, and another group of COTROL size representing control. We calculate the di???erence between the proportion of dead cards in the treatment and control groups (treatment control) and record this value. We repeat this 100 times to build a distribution centered at 50% . Lastly, we calculate the fraction of simulations where the simulated di???erences in proportions are DIFFERENT . If this fraction is low, we conclude that it is unlikely to have observed such an outcome by chance and that the null hypothesis should be rejected in favor of the alternative. 
+
+####iii. What do the simulation results shown below suggest about the e???ectiveness of the transplant program?
+
+THis shows that simulated differences are with -.05 and .05% in difference.

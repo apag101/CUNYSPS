@@ -1,0 +1,160 @@
+---
+title: "Data 624 Homework 2"
+author: "Anthony Pagan"
+date: "2/10/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+library(fpp2)
+library(dplyr)
+```
+
+## Excercise 3.1
+
+For the following series, find an appropriate Box-Cox transformation in order to stabilise the variance.
+usnetelec
+usgdp
+mcopper
+enplanements
+
+```{r}
+lambda<-BoxCox.lambda(usnetelec)
+autoplot(BoxCox(usnetelec, lambda))
+lambda
+lambda<-BoxCox.lambda(usgdp)
+autoplot(BoxCox(usgdp, lambda))
+lambda
+lambda<-BoxCox.lambda(mcopper)
+autoplot(BoxCox(mcopper, lambda))
+lambda
+lambda<-BoxCox.lambda(enplanements)
+autoplot(BoxCox(enplanements, lambda))
+lambda
+```
+
+
+## Excercise 3.2
+
+Why is a Box-Cox transformation unhelpful for the cangas data?
+
+A good forecast should have residuals that are uncorrelated, have a zero mean, have constant variance and be normally distributed. The residuals in the cangas data appear to be are slightly  right skewed in the histogram. The ACS plot shows some correlation there are rise and falls every 12 months. The autoplot appears to have a pattern where residuals are growingevery year. 
+
+```{r}
+res<-residuals(naive(cangas))
+#autoplot(res)+xlab("Day")+ylab("")+
+#  ggtitle("Residuals form naive method")
+#gghistogram(res) +ggtitle("Histogram of residuals")
+#ggAcf(res) + ggtitle("ACF of residuals")
+checkresiduals(naive(res))
+Box.test(res, lag=10, fitdf=0) #Box-Pierce test
+Box.test(res, lag=10, fitdf=0, type="Lj") #Box-Ljung test
+
+
+```
+
+
+## Excercise 3.3
+
+What Box-Cox transformation would you select for your retail data (from Exercise 3 in Section 2.10)?
+
+```{r}
+retaildata <- readxl::read_excel("retail.xlsx", skip=1)
+retaildata_ts<-ts(retaildata[,"A3349397X"],frequency=12, start=c(1982,12), end=c(2013,12))
+l<-BoxCox.lambda(retaildata_ts)
+```
+
+Based on plot graphs and accuracy stats Seasonal Naive is the best method for the retail data and the best tranformation lambda is `r round(l, 3)`. The Seasonal Naive method follows the historical trends much closer than the Mean and Naive methods. The acurracy error measures of RMSE, MAE, MAPE and MASE also confirm with lower values compared to the other two methods.
+
+```{r}
+retail1<-meanf(retaildata_ts,h=10,lambda=l)
+retail2<-rwf(retaildata_ts,h=10, lambda=l)
+retail3<-snaive(retaildata_ts,h=10, lambda=l)
+autoplot(window(retaildata_ts))+
+  autolayer(retail1, series = "Mean", PI=FALSE) +
+  autolayer(retail2, series = "Naive", PI=FALSE) +
+  autolayer(retail3, series = "Seasonal naive", PI=FALSE) +
+  xlab("Year") + ylab("Retail Sales") +
+  ggtitle("Forecasts for quarterly retail sales") +
+  guides(colur=guide_legend(titel="Forecast"))
+
+par(mfrow = c(1,3))
+autoplot(naive(retaildata_ts))
+autoplot(meanf(retaildata_ts))
+autoplot(snaive(retaildata_ts))
+
+retaildata_win<-ts(retaildata[,"A3349397X"],start=1982)
+accuracy(retail1, retaildata_win)
+accuracy(retail2, retaildata_win)
+accuracy(retail3, retaildata_win)
+```
+
+## Excercise 3.8
+
+For your retail time series (from Exercise 3 in Section 2.10):
+
+### A
+Split the data into two parts using
+
+```{r}
+
+retaildata.train <- window(retaildata_ts, end=c(2010,12))
+retaildata.test <- window(retaildata_ts, start=2011)
+```
+
+### B
+
+Check that your data have been split appropriately by producing the following plot.
+
+```{r}
+autoplot(retaildata_ts) +
+  autolayer(retaildata.train, series="Training") +
+  autolayer(retaildata.test, series="Test")
+```
+
+### C
+
+Calculate forecasts using snaive applied to myts.train.
+
+```{r}
+fc <- snaive(retaildata.train)
+fc
+```
+
+### D
+
+Compare the accuracy of your forecasts against the actual values stored in myts.test.
+
+```{r}
+accuracy(fc,retaildata.test)
+
+```
+
+### E
+
+Check the residuals. Do the residuals appear to be uncorrelated and normally distributed?
+
+The residuals appear to be uncorrlated and are normally distributed although there is a right skewed outlier. In addition the mean is shifted to the right of zero possible due to the outlier. 
+
+```{r}
+checkresiduals(fc)
+```
+
+### F
+
+How sensitive are the accuracy measures to the training/test split
+
+The acurracy measures appear to be fairly similar. A mase of 1 for the training set is less than 1.05 for test set is lower than the test set so is preferred. A mape of ~7% says the model is about 93% accurate. 
+
+```{r}
+accuracy(fc,retaildata.test)
+```
+
+
+

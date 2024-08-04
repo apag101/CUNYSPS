@@ -1,0 +1,11 @@
+select * from planes;
+select concat(month,'/',day,'/',year) from weather;
+select * from planes order by seats desc;
+select * from planes where engine = 'Reciprocating';
+select * from flights LIMIT 5;
+select air_time from flights order by air_time desc LIMIT 1;
+select air_time from flights where name = "Delta" and air_time is NOT NULL order by air_time LIMIT 1;
+select * from flights where carrier = 'AS' and month = 6 and year = 2013 and day between 1 and 3;
+select * from airlines where name like '%America%';
+select count(*) from flights where dest = 'Mia';
+select sum(alt)/count(*) from airports;

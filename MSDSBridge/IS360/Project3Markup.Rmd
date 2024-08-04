@@ -1,0 +1,53 @@
+---
+title: "Baseball Statistics OBP/BA vs Salary"
+author: "Anthony Pagan"
+date: "Monday, October 20, 2014"
+output: html_document
+---
+
+This data was retrieved from <http://www.amstat.org/publications/jse/v6n2/datasets.watnik.html>. It provides baseball statistcis for players including their salaries from 1991-1992 season. 
+
+> Here is a summray of the data:
+ 
+```{r echo = FALSE}
+tf <- "C:\\Users\\Development\\Desktop\\CUNYSPS\\IS360\\bbproj.csv"
+tb <- read.table(file = tf, header = TRUE, stringsAsFactors = FALSE, sep = ",")
+bb <- data.frame(tb)
+require(dplyr)
+obp <- select(bb, Pname, Sal, BA, OBP)
+summary(obp)
+```
+
+
+###The tale of two box plots
+
+**My objective for analysis was to see if player salaries correlated to "on base percentage" or "batting average". **
+
+* One box plot comapares OBP to salaries. The first box plot has no skewing, but does have several outliers. 
+* The second box plot compares batting average to salaries. This box plot has some skewing towoard a lower batting average and has several outliers.
+
+```{r}
+library(ggplot2)
+require(ggplot2)
+ggplot(obp, aes(x = Sal, y = OBP)) + geom_boxplot()
+ggplot(obp, aes(x = Sal, y = BA)) + geom_boxplot()
+```
+
+### The chicken or the egg delima
+
+
+**These two line charts also compare OBP to salaries and batting average to salaries. Both charts have an uptrend showing that a higher salary has some correlation to higher batting average and OBP.** 
+
+* Does higher OBP/BA results in higher salary, or...
+* Does higher salary results in higher OBP/BA ?
+
+One argument to my analysis would be, the salary increase may be due to teams paying players higher saleries because of their OBP and BA performance or the BA and OBP could have increased because of the higher salary. 
+
+My theory is that players are being paid more because of their performance. To investigate further we would need players statistics and salary increases from year to year throughout their careers and further analyze.
+
+```{r}
+ggplot(obp, aes(x = Sal, y = OBP)) +geom_line()
+ggplot(obp, aes(x = Sal, y = BA)) + geom_line()
+```
+
+

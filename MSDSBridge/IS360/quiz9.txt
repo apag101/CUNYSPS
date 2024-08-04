@@ -1,0 +1,8 @@
+Week 9 Quiz
+1) API is a more structured way to get data. The access is already defined by the developer. When the API provides the data and there are methods already available to get the data, it would be better to use API. Web scraping is not as structured and because of that it is more flexible. When an API doesnt provide the data or methods to get the data, may be better to do web scraping.
+
+2) Web crawling is when you automatically retreive pages and their links, web scraping is when you extract information from web pages to a table.
+
+3) Robots.txt file tells search robots which pages you would not like them to visit.
+
+4) R is adequate for scraping web pages. There are other tools available to do same funtions. I think R does statistical analysis well. 

@@ -1,0 +1,78 @@
+---
+title: "IS607 Assignement 5"
+author: "Anthony Pagan"
+date: "September 30, 2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+#
+#
+####Import CSV file file with stringsAsFactors set to false
+
+```{r warning=FALSE}
+td<-read.csv(file = 'tidydata.csv', stringsAsFactors = FALSE, sep = ",")
+head(td)
+```
+
+
+####Setup to use Dplyr and Tidyr Libraries
+```{r warning=FALSE}
+##Load libraries
+library(dplyr)
+library(tidyr)
+```
+
+
+#### Remove any rows with NA
+```{r warning=FALSE}
+#Omit NA rows
+td1 <-na.omit(td)
+td1
+```
+
+####Update table with any missing Airline names
+```{r warning=FALSE}
+td1$X<- c("ALASKA", "ALASKA", "AM WEST", "AM WEST")
+```
+
+####Gather City Times into 1 column
+```{r warning=FALSE}
+td2<-td1%>%
+    gather(city, value, 3:7)
+td2
+```
+
+#####Spread the X.1 column to 2 columns for Delayed and OnTime data
+```{r warning=FALSE}
+td3<-spread(td2,X.1, value)
+td3
+```
+
+####Rename columns with descriptive names
+```{r warning=FALSE}
+td3<-rename(td3, "airline"="X",
+            "on-time" = "on time")
+td3
+```
+
+####Analysis: Average delay by airline shows AM WEST had the highest average delay
+```{r warning=FALSE}
+avgdlbyal<-td3 %>% group_by(airline)%>% summarise(delayedmean = mean(delayed))%>%arrange(airline, delayedmean)
+avgdlbyal
+```
+
+####Analysis: Average delay by city shows Phoenix and Seattle had the highest average delays
+```{r warning=FALSE}
+avgdlbyct<-td3 %>% group_by(airline,city)%>% summarise(delayedmean = mean(delayed))%>%arrange(airline, delayedmean)
+avgdlbyct
+```
+
+####Graph confirms 2 Cities with highest rate is Seatel and Pheonix and AM West inclued the city wiht  highestaverage delays
+```{r warning=FALSE}
+library(ggplot2)
+ggplot(data= td3, mapping = aes(x = airline, y=delayed)) +
+    geom_point(mapping = aes(size = delayed,  color = city))
+```
+

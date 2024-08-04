@@ -1,0 +1,103 @@
+---
+title: 'Data 621 Final Project'
+author: Tommy Jenkins, Violeta Stoyanova, Todd Weigel, Peter Kowalchuk, Eleanor R-Secoquian,
+  Anthony Pagan
+date: "December 09, 2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    number_sections: yes
+    theme: paper
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Get the data. Added na.strings to add na for records that have a blank value
+train <- read.csv("train.csv",na.strings="",header=TRUE)
+test <- read.csv("test.csv",na.strings="",header=TRUE)
+
+```
+
+# OVERVIEW
+
+
+
+## Objective: 
+
+
+
+# DATA EXPLORATION
+
+## Data Summary 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+summary(train)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+```
+
+
+
+## Missing Data
+
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+
+
+```{r}
+glimpse(cInsTrain)
+```
+
+
+
+## Data Exploration 
+
+ARGET_AMOUNT >0 and when TARGET_FLAG is 0 when TARGET_AMOUNT  = 0
+
+```{r echo=TRUE}
+
+```
+
+## Data Summary 
+
+# Data Prepartion
+
+# Visualizations
+
+
+# APPENDIX
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+

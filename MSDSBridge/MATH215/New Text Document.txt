@@ -1,0 +1,31 @@
+a) The random numbers represent the number of people waiting on line at a fast food outlet.
+
+Sample 30
+Range 0-99
+Median 46
+Mean 49.06
+
+The random numbers show on average there would be 49 people waiting on line, with a median of 46. The numbers appear unreasonable under the context of "number of customer waiting online at a FASTfood outlet". To be more reasonable,  the min and max random number generation should be set to a range of 0-20.
+
+b) These random numbers represent simulated grades on statistic tests.
+
+Sample 30
+Range 0-99
+Median 44
+Mean 49.06
+
+These random numbers show on average students grades on statistic tests will be 49 , with a median of 44. In the context of "student grades in statistics" the range 0-100 is reasonable, however , the actual mean and median appear to be an anomoly. If compared to grades of different subjects it is quite probable these numbers will fall in outlier area. These numbers can also be uncovered as measurment error where actual numbers were misapplied.  
+
+v	0	2	4	6	16
+	6	6	6	6	6
+	7	7	7	7	7
+	7	7	7	7	7
+	8	8	8	8	8
+	8	8	8	8	8
+	8	8	8	8	8
+	9	9	9	9	9
+	9	9	9	9	9
+	10	10	10	10	10
+Mean	7.2	7.4	7.6	7.8	8.8
+Median	8	8	8	8	8
+St/Dev	2.638181192	2.107130751	1.624807681	1.2489996	2.638181192

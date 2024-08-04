@@ -1,0 +1,13 @@
+name: final_project
+title:
+username:
+account: apag101
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1583507
+bundleId: 2674261
+url: https://apag101.shinyapps.io/final_project/
+when: 1576551477.38301
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: 2013_-_2014_DOE_High_School_Performance-Directory.csv|Data 608 Final project proposal.docx|Data608FinalPrj.mp4|Data608FinalPrj.pptx|Data608FinalProject.html|Data608FinalProject.Rmd|DOE_High_School_Directory_2013-2014.csv|DOE_High_Shool_Directory_2013-2014.xlsx|doe_hsdirectory_school_column_description.csv|Final Project Proposal.pdf|Final Project.pdf|finalproject.html|finalproject.Rmd|schooldataupdated.csv|style.css|app/app.R|rsconnectbak/documents/Data608FinalProject.Rmd/rpubs.com/rpubs/Document.dcf|rsconnectbak/documents/Data608FinalProject.Rmd/rpubs.com/rpubs/Publish Document.dcf

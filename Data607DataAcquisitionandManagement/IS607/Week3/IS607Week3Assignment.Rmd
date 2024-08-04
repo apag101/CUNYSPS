@@ -1,0 +1,115 @@
+---
+title: "IS607 Week 3 Assignment"
+author: "Anthony Pagan"
+date: "September 12, 2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+####Read Data
+
+```{r}
+raw.data <-c("555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert")
+```
+
+####Recreate name with standard Firstnames and Lastnames
+
+```{r}
+library(stringr)
+#original extracted names
+name <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+name
+
+#Converted to Firstnames Lastnames 
+names(name)<-c("v")
+v<-str_split_fixed(name, ",", n=2)
+t<-str_trim(sub(pattern = "\\w*\\.", replacement = "",x = str_c(v[,ncol(v)], v[,1], sep = " ")))
+t
+```
+
+####Detect if name had a Title (ie.. Rev or DR)
+
+```{r}
+#List Names with Title
+ttl <-unlist(str_extract_all(name, c("Rev.*","Dr.*")))
+ttl
+
+#State wether a name contains a Dr or Rev title
+ttl.logic<-str_detect(name, c("Rev.*","Dr.*"))
+ttl.log<-data.frame(t, ttl.logic)
+names(ttl.log)<-c("Names", "Title")
+ttl.log
+```
+
+####Detect if person had a middlename
+```{r}
+s.logic<-unlist(str_detect(name, " \\w{1}\\.{1}"))
+s.log<-data.frame(t, s.logic)
+names(s.log)<-c("Names", "MiddleName")
+s.log
+```
+
+####Determine regular expression use case
+
+This regular expression ([0-9]+\\\\$) can be used for any string that contains numbers followed by a $. Any other character can come before or  after, but has to contain a number followed by a $.
+
+```{r}
+stringz<- c("123$", "12333$$$","111a$", "aaa111$")
+stringz.logic <-str_detect(stringz, "[0-9]+\\$")
+data.frame(stringz, stringz.logic)
+
+```
+
+This regular expression (\\\\b[a-z]{1,4}\\\\b) would take up to 4 alphabet characters. If there is a 5 letters or any other letters than alpha it would be false.
+
+```{r}
+stringy<- c("dbddd", "abcd","111addd$", "aaaa")
+stringy.logic <-str_detect(stringy, "\\b[a-z]{1,4}\\b")
+data.frame(stringy, stringy.logic)
+
+```
+
+This regular expression (.*?\\\\.txt$) would be good for files with any characters and period and a txt at the end. This expression would be good find files that end in .txt.
+
+```{r}
+stringx<- c("dbddd.txt", "dddtxt","1114@.txt", ".txtaaaa")
+stringx.logic <-str_detect(stringx, ".*?\\.txt$")
+data.frame(stringx, stringx.logic)
+```
+
+This regular expression (\\\\d{2}/\\\\d{2}/\\\\d{4}) would for 2 digits followed by a slash, 2 digits followed by another slash and 4 digits. This would be good to detect a date if it includes a start and an end using ^ and $ like (^\\\\d{2}/\\\\d{2}/\\\\d{4}$)
+
+```{r}
+stringx<- c("dbdd22/2/2", "dd/22/22/2019dtxt","02/12/2009", "04/02/2017")
+stringx.logic <-str_detect(stringx, "\\d{2}/\\d{2}/\\d{4}")
+data.frame(stringx, stringx.logic)
+stringxs.logic <-str_detect(stringx, "^\\d{2}/\\d{2}/\\d{4}$")
+data.frame(stringx, stringxs.logic)
+```
+
+This regular expression (<(.+?)>.+?</\\\\1) would be good to use with html code.
+
+```{r}
+stringx<- c("<(a)>aa</(a)", "<(test)>aa</(test)","<(a)>aa", "<(a)>a")
+stringx.logic <-str_detect(stringx, "<(.+?)>.+?</\\1")
+data.frame(stringx, stringx.logic)
+```
+
+####Crack it with an R expression
+
+```{r echo=TRUE}
+j <-"clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5 fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
+
+m<-str_extract_all(j, "[[:alnum:] ]*\\.?")
+f<-str_c(str_extract_all(m, "[[:upper:]]"), sep = ".")
+mf<- str_replace_all(f, "\" ?,? ?" , "")
+str_replace_all(mf,"c\\(|\\)","")
+```
+
+

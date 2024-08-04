@@ -1,0 +1,124 @@
+---
+title: "Data 624 Homework 10"
+author: "Anthony Pagan"
+date: "5/3/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 5
+        css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+#knitr::opts_chunk$set(echo = TRUE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(mlbench)
+library(e1071)
+library(fpp2)
+library(mlr)
+library(arules)
+library(arulesViz)
+library(cluster)
+library(igraph)
+library(visNetwork)
+```
+
+# Introduciton
+
+Imagine 10000 receipts sitting on your table. Each receipt represents a transaction with items that were purchased. The receipt is a representation of stuff that went into a customer’s basket - and therefore ‘Market Basket Analysis’.
+
+That is exactly what the Groceries Data Set contains: a collection of receipts with each line representing 1 receipt and the items purchased. Each line is called a transaction and each column in a row represents an item.  The data set is attached.
+
+Your assignment is to use R to mine the data for association rules. You should report support, confidence and lift and your top 10 rules by lift. 
+
+# Data Summary
+
+**The data summary details the most popular items. In this dataset, the top 3 most popular after items after other are yogurt, whole milk and other vegetables.**
+
+```{r}
+gcds <- read.transactions("GroceryDataSet.csv", header = F, format = 'basket', sep=',')
+summary(gcds)
+#itemFrequency(gcds)
+```
+
+# Frequency Plot
+
+**The frequency plot gives us 2 other ways to look at populuar items, absolute and relative. The absolute plot details a specific item on the plot while the relative plot shows the item in relation to other items on the datsset. Both plots have similar listed items and frequencies.**
+
+```{r}
+par(mfrow=c(1,2))
+itemFrequencyPlot(gcds, topN=10, type="absolute", main="Absolute")
+itemFrequencyPlot(gcds, topN=10, type="relative", main="Relative")
+```
+
+# Rules Plot
+
+**In the apriori plot we are using a support of .01 and conf of.10. Support gives us the threshold of popularity for the item and the confidence shows how likely item y  was purchased when item x was purchased. The initial confidence level of .8 resulted in no rules, .5 resulted in 15 rule and .1 resulted in 435. This example uses .49 which visualizes more than one order. **
+
+```{r}
+
+rules<-apriori(gcds, parameter = list(supp=0.01, conf=.49))
+summary(rules)
+inspect(rules)
+
+plot(rules, jitter=3)
+plot(rules, jitter=3, method = "two-key plot")
+```
+
+# Lift and Confidence Plot
+
+**Lift gives us how likely item Y is purchased when X is purchased while controlling Y. Below we are plotting the lift and confidence of each item.**
+
+
+```{r}
+
+top10rules2<-head(rules, n=10, by = "lift")
+plot(top10rules2,  method = "paracoord")
+top10rules<-head(rules, n=10, by = "confidence")
+plot(top10rules, method = "graph", engine = "htmlwidget")
+
+
+```
+
+# Cluster Analysis
+
+**The cluster plot groups similar rules, then shows grouped distribution of the rules. In the below plots we are we are using 10 as the number of clusters**
+
+```{r}
+
+plot(rules, method = "grouped", control = list(k = 10))
+subrules <- head(sort(rules, by = "lift"), 10)
+plot(subrules, method = "graph")
+
+
+```
+
+
+# APPENDIX
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+

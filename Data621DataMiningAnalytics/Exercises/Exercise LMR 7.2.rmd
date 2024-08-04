@@ -1,0 +1,65 @@
+---
+title: "Data 621 ELMR Exercise 7.2"
+author: "Anthony Pagan"
+date: "11/24/2019"
+output: 
+    html_document:
+        css: style.css   
+        toc: yes
+        toc_depth: 2
+        toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+```{r echo=FALSE}
+#ELMR 7.2
+library(MASS)
+library(faraway)
+library(nnet)
+
+data(rats)
+summary(rats)
+par(mfrow=(c(1,2)))
+plot(time~.^2,rats)
+
+llmd<-lm(log(time)~.^2,rats)
+rlmdl<-step(llmd)
+summary(rlmdl)
+
+gmdl<-glm(time~.^2,family=Gamma(link=log),rats)
+rgmdl<-step(gmdl)
+summary(rgmdl)
+cat("Gamma Dispersion:", gamma.dispersion(rgmdl))
+
+igmdl<-glm(time~.^2,family=inverse.gaussian(link="identity"),rats)
+summary(igmdl)
+cat("Gamma Dispersion:", gamma.dispersion(igmdl))
+
+
+par(mfrow=(c(1,2)))
+plot(residuals(gmdl)~log(fitted(gmdl)),ylab="Deviance residuals",xlab=expression(log(hat(mu))))
+abline(h=0)
+
+plot(residuals(igmdl)~log(fitted(igmdl)),ylab="Inverse Deviance residuals",xlab=expression(log(hat(mu))))
+abline(h=0)
+
+
+
+```
+
+
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+
+

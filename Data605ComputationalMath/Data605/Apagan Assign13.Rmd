@@ -1,0 +1,119 @@
+---
+title: "Data 605 Assignment 13"
+author: "Anthony Pagan"
+date: "April 29, 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW13
+
+#1) Integration by substitution
+
+Use integration by substitution to solve the integral below.
+
+${\int{4e^{-7x}dx}}$ = 
+
+ * u = ${e^{-7x}}$
+ * ${{4}\int e^{-7x}dx}$
+
+#2) Functions
+Biologists are treating a pond contaminated with bacteria. The level of contamination is changing at a rate of ${\frac{dN}{dt}=\frac{3150}{t^4}-2}$ bacteria per cubic centimeter per day, where t is the number of days since treatment began. Find a function N( t ) to estimate the level of contamination if the level after 1 day was 6530 bacteria per cubic centimeter.
+
+f(x)= ${{6530}{t^{1/4}}-2}$ =
+
+ * ${\int_1^tf(x)\frac{dN}{dt}}$
+
+
+#3) Area Functions
+Find the total area of the red rectangles in the figure below, where the equation of the line is f ( x ) = 2x-9
+
+ * f(x) = 2x -9
+ * Solve for y
+ * 2x - 9 = 0
+ * x = 4.5
+ * y = 2x -9
+ * A = 1/2(x*y)
+```{r}
+integrand <- function(x) {2*x-9} 
+A<-integrate(integrand, lower = 4, upper = 9)
+A<-A[1]
+```
+
+
+**Total area is approx `r A`**
+
+#4) Graph Areas
+Find the area of the region bounded by the graphs of the given equations.
+y = x2-2x-2, y = x + 2
+
+
+```{r}
+eq <- function(x){x^2-2*x-2}
+eq2<-function(x){x+2}
+plot(eq(1:5), type='l')
+lines(eq2(1:5), type='l')
+
+integrand <- function(x) {(x^2-2*x-2)-(x+2)} 
+A<-integrate(integrand, lower = 1, upper = 4)
+A<-A[1]
+```
+
+**Area of region is approx `r A`**
+
+#5) Word Problems
+A beauty supply store expects to sell 110 flat irons during the next year. It costs $3.75 to store one flat iron for one year.There is a fixed cost of $8.25 for each order. Find the lot size and the number of orders per year that will minimize inventory costs.
+
+* Expected Unit Sales = 110
+* Storage Costs = 3.75*(110-UnitsSold)
+* Fixed Costs = -x*8.25
+
+```{r}
+x<-110
+eq<- function(x){3.75*(110-x)+x*8.25}
+plot(eq(1:100), type='l')
+integrand <- function(x) {3.75*(110-x)+x*8.25}
+A<-integrate(integrand, lower = 0, upper = 1)
+A<-as.double(A[1])
+A<-A/100
+```
+
+**Selling `r A` lots of a 100 will minimize cost**
+
+#6) Integration II
+Use integration by parts to solve the integral below.
+${\int{ln(9x)}* x^6dx}$
+
+* u = ln(9x) = ${\frac{9}{x}}$
+* v = ${x^6dx}$ = ${5x^5}$
+* = -ln(${\frac{9}{x}}$)-${5x^5}$+C
+
+#7) Density Function
+Determine whether f ( x ) is a probability density function on the interval ${[1,e^6}]$ . If not, determine the value of the definite integral.
+
+f(x) = ${\frac{1}{6x}}$ =
+
+* ${\int_0^1\frac{-1}{6x^2}dx}$
+
+```{r}
+eq<-function(x){1/(6*x)}
+eq2<- function(x){exp(x)}
+plot(eq(1:100), type='l')
+plot(eq2(1:100),type='l')
+
+integrand <- function(x) {-1/(6*x^2)} 
+A<-integrate(integrand, lower = 1, upper = 10)
+A<-A[1]
+E<-integrand(1)
+O<-integrand(exp(6))
+
+```
+
+
+**The integrate is `r A`. The results when x = ${e^6}$ is `r E` and the results for when x =1 is `r O`. The probability is `r as.double(A)-as.double(E[1])+(O[1])/as.double(E[1])+as.double(O[1])`**

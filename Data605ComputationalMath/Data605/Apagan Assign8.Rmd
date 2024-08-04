@@ -1,0 +1,98 @@
+---
+title: "Data 605 Assignment 8"
+author: "Anthony Pagan"
+date: "March 22, 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW8
+
+#Lightbulbs
+
+A company buys 100 lightbulbs, each of which has an exponential lifetime of 1000 hours. What is the expected time for the first of these bulbs to burn out? (See Exercise 10.)
+
+```{r message=FALSE, warning=FALSE}
+n <-c(1:100)
+f <- 1/1000
+nf <-999/1000
+ff<-round(1000-sum(exp(log(nf^n))),0)
+```     
+
+**The expected time for the first of these bulbs to burn out is on the `r ff`th hour **
+
+#Random Variable
+
+Assume that X1 and X2 are independent random variables, each having anexponential density with parameter delta. Show that Z = X1 - X2 has density fZ(z) = (1/2)delta e - delta|z|
+
+```{r message=FALSE, warning=FALSE}
+X1 <- runif(1000)
+X2 <- runif(1000)
+Z = X1 - X2
+x1 = Z + X2
+x2 = -Z + X1
+f<- density(1/2 *(x1-x2)*(exp(-(x1-x2)*abs(Z))))
+plot(f)
+```     
+
+
+** **
+
+#Continous Random
+
+Let X be a continuous random variable with mean  = 10 and variance = 100/3. Using Chebyshev's Inequality, find an upper bound for the following probabilities.
+
+
+**Chebyshev Inequality 1/k^2 gives the percentage of data from a sample that must fall within K standard deviations from the mean **
+
+```{r}
+#Chebyshev Inequality 1/k^2 
+f<-function(x)
+{
+m <- 10
+s <- sqrt(100/3)
+p <-1-1/x^2
+lb<- round(p * ((2*s) - m),2)
+ub<- round(p * ((2*s) + m),2)
+ub
+}
+```
+
+
+##A) P(|X - 10| >= 2)
+
+```{r message=FALSE, warning=FALSE}
+a<-f(2)
+```     
+
+**The upper bound for sample >=2 is `r a`**
+
+##B) P(|X - 10| >= 5)
+
+```{r message=FALSE, warning=FALSE}
+b<-f(5)
+```     
+
+**The upper bound for sample >=5 is `r b`**
+
+##C) P(|X - 10| >= 9)
+
+```{r message=FALSE, warning=FALSE}
+c<-f(9)
+```     
+
+**The upper bound for sample >=9 is `r c`**
+
+##D) P(|X - 10| >= 20)
+
+```{r message=FALSE, warning=FALSE}
+d<-f(20)
+```     
+
+**The upper bound for sample >=20 is `r d`**

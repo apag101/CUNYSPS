@@ -1,0 +1,90 @@
+<<<<<<< HEAD
+# Created by .gitignore support plugin (hsz.mobi)
+### Python template
+=======
+# text editor swap files
+*.swp
+*~
+
+>>>>>>> 985195ec62b14134ac908eb045b3bbbabf025d3a
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+<<<<<<< HEAD
+=======
+bin/
+>>>>>>> 985195ec62b14134ac908eb045b3bbbabf025d3a
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+<<<<<<< HEAD
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+=======
+>>>>>>> 985195ec62b14134ac908eb045b3bbbabf025d3a
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# Translations
+*.mo
+<<<<<<< HEAD
+*.pot
+
+# Django stuff:
+*.log
+=======
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Rope
+.ropeproject
+
+# Django stuff:
+*.log
+*.pot
+>>>>>>> 985195ec62b14134ac908eb045b3bbbabf025d3a
+
+# Sphinx documentation
+docs/_build/
+
+<<<<<<< HEAD
+# PyBuilder
+target/
+
+# PyCharm
+.idea/
+=======
+>>>>>>> 985195ec62b14134ac908eb045b3bbbabf025d3a

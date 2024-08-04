@@ -1,0 +1,43 @@
+---
+title: "Data621 Exercise1.4"
+author: "Anthony Pagan"
+date: "August 31, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 1.4
+
+Both QQ Plots show that Salary and Expenditure are positively correlated with Total SAT scores
+
+```{r cars}
+#1.4
+data(sat, package="faraway")
+
+qqplot(sat$salary, sat$total)
+qqplot(sat$expend, sat$total)
+
+```
+
+
+
+When combining expenditure with Salary with Expendity, Salary seems to be more correlated based on the lower tvalue.
+
+```{r }
+lm1<-lm(sat$total ~sat$expend+sat$salary)
+summary(lm1)
+
+```
+
+GGPLOT shows a combination of salary and expenditure is also strongly correlated with total SAT scores.
+
+```{r}
+ggplot(data= sat) +
+    geom_point(mapping = aes(x = lm1$residuals, y = total, size= total), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(size=9))
+```

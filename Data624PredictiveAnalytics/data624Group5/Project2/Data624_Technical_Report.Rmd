@@ -1,0 +1,726 @@
+---
+title: Analysis of the Beverage Production Factors that Impact Product pH at ABC Beverage
+  Company - Technical Report
+author: "Zach Herold, Anthony Pagan, Betsy Rosalen"
+date: "5/10/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    df_print: kable
+    fig_caption: yes
+    fig_height: 4
+    fig_width: 4
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(scipen=999, digits = 2)
+
+library(AppliedPredictiveModeling)
+library(caret)
+library(corrplot)
+library(e1071)
+library(earth)
+library(faraway)
+library(fpp2)
+library(ggplot2)
+library(gridExtra)
+library(kableExtra)
+require(knitr)
+library(leaps)
+library(lubridate)
+library(MASS)
+library(mlbench)
+library(naniar)
+library(pander)
+library(pROC)
+library(pscl)
+library(psych)
+library(randomForest)
+library(readxl)
+library(reshape)
+library(reshape2)
+library(rpart.plot)
+library(tidyverse)
+library(tseries)
+library(urca)
+library(ZIM)
+
+# Table formatting functions
+# kab_tab <- function(df, cap){
+#   df %>% kable(caption=cap) %>%
+#   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), 
+#                 full_width = T)
+# }
+# kab_tab2 <- function(df, cap){
+#   df %>% kable(caption=cap) %>%
+#   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), 
+#                 full_width = F)
+# }
+# For pdf output
+kab_tab <- function(df, cap){
+    kable(df, caption=cap, "latex", booktabs = T) %>%
+        kable_styling(latex_options = c("striped", "HOLD_position", "scale_down"))
+}
+kab_tab2 <- function(df, cap){
+    kable(df, caption=cap, "latex", booktabs = T) %>%
+        kable_styling(latex_options = c("striped", "HOLD_position"))
+}
+```
+
+# Project Description 
+
+The data science team at ABC Beverage has been asked to provide an analysis of our manufacturing process, the predictive factors, and a predictive model of PH in order to comply with new regulations.  This report details the steps taken in our analysis, including the assumptions made, the methodology used, the models tested, the model selected and the selection process, and the findings and conclusions reached from our analysis.
+
+# Data Description
+
+We were given a dataset that consisted of 31 numerical predictor variables detailing a wide range of production processes, 1 categorical variable `Brand.Code`, and our target variable, `PH`.  Summary statistics for these variables can be seen in the two tables below.
+
+```{r}
+
+#Import Data
+stEval<- read.csv("https://raw.githubusercontent.com/apag101/data624Group5/master/Project2/StudentEvaluation.csv?token=AB3M6K7RXH65YIAKWZBQ6KK6XA7R2", header = TRUE)
+stDatao<- read.csv("https://raw.githubusercontent.com/apag101/data624Group5/master/Project2/StudentData.csv?token=AB3M6K4AYHCT5HBFJYHCCSC6XBACQ", header = TRUE)
+```
+
+```{r}
+
+# move PH to the first column of the dataframe
+stData <- stDatao[,c(26,1:25,27:33)]
+stEval <- stEval[,c(26,1:25,27:33)]
+```
+
+```{r}
+
+# https://stackoverflow.com/questions/5863097/selecting-only-numeric-columns-from-a-data-frame
+
+num_sum <- describe(Filter(is.numeric, stData))
+kab_tab(num_sum[,c(2,3,4,8,5,9,10:13)], cap="Summary statistics for numerical variables")
+
+cat_sum <- summary(Filter(is.factor, stData))
+kab_tab2(cat_sum, cap="Summary of categorical variable, Brand.Code")
+```
+
+\pagebreak
+
+## Distributions
+
+Our predictors have a wide range of distributions with some normal, some skewed, some bi-modal, and some with high zero inflation.  Standardization and normalization were used for model building, the specifics of which will be described for each model in the "Models" section of the report below.  Our target, `PH`, has a mostly normal distribution.
+
+```{r fig.height=7, fig.width=9}
+
+stData[,-2] %>%
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram(fill = '#4575b4') +
+  theme(panel.background = element_blank(), legend.position="top")
+```
+
+Since we only have one categorical variable, `Brand.Code`, which is related to brand and marketing rather than manufacturing process, we plotted it against each predictor and the target to see if there were any noticeable patterns that may be relevant to our model.  As you can see in the plots below the brand code is evenly distributed among most predictors and most importantly evenly distributed in our target variable, `PH`, so it does not appear to have any predictive value and so was removed from our dataset for model training.  
+
+```{r fig.height=7, fig.width=9}
+
+stData %>%
+  gather(-Brand.Code, key = "var", value = "val") %>%
+  ggplot(aes(x = val, fill=Brand.Code)) +
+  geom_histogram(bins=10, alpha=1) +
+  facet_wrap(~ var, scales = "free") +
+  scale_fill_manual("Brand.Code",
+                    values = c('#d73027','#fc8d59','#fee090',
+                               '#e0f3f8','#91bfdb','#4575b4')) +
+  xlab("") +
+  ylab("") +
+  theme(panel.background = element_blank(), legend.position="top")
+```
+
+\pagebreak
+
+## Missing Values
+
+There was some missing data in our predictors most noticeably in `MFR`, which had 8.25% missing values as can be seen in the plot below.  There doesn't seem to be any pattern in the missingness however, so it is unlikely that it has any predictive value.  
+
+```{r fig.height=8, fig.width=10}
+
+# Missing Data
+vis_miss(stData[-2])
+```
+
+The plot below confirms that there is no apparent pattern in the missing values.  Incomplete cases comprise only about 17% of the substantial dataset, and since there did not seem to be any patterns to the missingness, the decision was made to remove them completely from our dataset leaving us with the remaining 2129 complete cases.
+
+```{r fig.height=6, fig.width=7}
+
+gg_miss_upset(stData,
+              nsets = 12,
+              nintersects = 18)
+```
+
+```{r}
+
+cstData <- subset(stData[-2], complete.cases(stData))
+```
+
+\pagebreak
+
+## Relationships Between Variables
+
+The plots below were used to assess if there were any clear linear relationships between the predictors and the target, `PH`.  Few, if any, relationships are immediately apparent.
+
+```{r fig.height=7, fig.width=9}
+
+#plot checks
+featurePlot(cstData[-1],cstData$PH)
+```
+
+A correlation plot shows some strong correlations between predictors.  The `findCorrelation` function from the `caret` library recommends removing the `MFR`, `Hyd.Pressure2`, `Carb.Rel`, `Air.Pressurer`, `Carb.Flow`, `Hyd.Pressure4`, and `Filler.Level` variables at a 0.85 correlation cutoff.  Upping the cutoff to 0.9 only removes one variable, `Carb.Flow`, from that list.  
+
+```{r fig.height=7, fig.width=8}
+
+#Correlation Matrix
+cor.plt <- cor(cstData, use = "pairwise.complete.obs", method = "pearson")
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(cor.plt, method="color", col=col(200),  
+         type="upper", order="hclust",
+         tl.col="black", tl.srt=45, tl.cex=0.5,
+         diag=FALSE 
+         )
+```
+
+```{r}
+
+kab_tab2(names(cstData)[findCorrelation(cor(cstData[-1]), cutoff = .85)], 
+        cap = "Variables recommended for removal by caret::findCorrelation function at the 0.85 cutoff")
+```
+
+Before we removed any variables we decided to do our own analysis of the highly correlated variables to see if we came up with the same conclusions as the `findCorrelation` function. First we found all pairs of variables that had a 0.85 correlation or more, which was 13 pairs.  Then we found the frequency of each variable that was a member of one or more of these pairs.  The results can been seen in the two tables below.
+
+```{r}
+
+#Displaying highly correlated pairs
+cor.plt2 <- cor(cstData, use = "pairwise.complete.obs", method = "pearson")
+cor.plt2[lower.tri(cor.plt2,diag=TRUE)] = NA #Prepare to drop duplicates and meaningless information
+cor.plt2 <- as.data.frame(as.table(cor.plt2)) #Turn into a 3-column table
+cor.plt2 <- na.omit(cor.plt2) #Get rid of the junk (NA's) we flagged above
+cor.plt2 <- subset(cor.plt2, abs(cor.plt2$Freq)>0.85)
+cor.plt2 <- cor.plt2[order(-abs(cor.plt2$Freq)),] #Sort by highest correlation (whether +ve or -ve)
+rownames(cor.plt2) <- c()
+names(cor.plt2)[3] <- "Correlation"
+kab_tab2(cor.plt2, cap="Highly Correlated Variable Pairs")
+```
+
+```{r}
+
+vars <- c(as.character(cor.plt2$Var1), as.character(cor.plt2$Var2))
+vars <- as.data.frame(table(vars))
+vars <- vars[order(-vars$Freq),]
+rownames(vars) <- c()
+kab_tab2(vars, cap="Frequency of Variables Involved in Highly Correlated Pairs")
+```
+
+What we found is that there were exactly 5 variables that were most frequently associated with highly correlated pairs.  Each of these variables, `Alch.Rel`, `Balling`, `Balling.Lvl`, `Carb.Rel`, `Density` was involved in 4 pairs.  None of the other variables were involved in more than one pair.  By removing `Balling.Lvl`, we could eliminate 4 of our highly correlated pairs, by removing `Density` we got rid of 3 more, and with `Balling` 2 more. so we were left with only the following 4 pairs of highly correlated variables.  
+
+```{r}
+
+cstData2 <- subset(cstData, select = -c(Balling.Lvl, Density, Balling))
+cor.plt3 <- cor(cstData2, use = "pairwise.complete.obs", method = "pearson")
+cor.plt3[lower.tri(cor.plt3,diag=TRUE)] = NA #Prepare to drop duplicates and meaningless information
+cor.plt3 <- as.data.frame(as.table(cor.plt3)) #Turn into a 3-column table
+cor.plt3 <- na.omit(cor.plt3) #Get rid of the junk (NA's) we flagged above
+cor.plt3 <- subset(cor.plt3, abs(cor.plt3$Freq)>0.85)
+cor.plt3 <- cor.plt3[order(-abs(cor.plt3$Freq)),] #Sort by highest correlation (whether +ve or -ve)
+rownames(cor.plt3) <- c()
+names(cor.plt3)[3] <- "Correlation"
+kab_tab2(cor.plt3, cap="Highly Correlated Variable Pairs")
+```
+
+Each of the variables in these pairs only appears once so we needed to get rid of one variable from each pair in order to eliminate all pairs of variables with a 0.85 correlation or more.  So we decide to remove the 4 with the lowest correlation to `PH` without removing two from the same pair.  This eliminated `Filler.Speed`, `Alch.Rel`, `Hyd.Pressure2` and `Filler.Level`.  
+
+```{r}
+
+temp <- subset(cstData2, 
+               select = c(Alch.Rel, Bowl.Setpoint, Carb.Rel,	Filler.Level,
+                          Filler.Speed, Hyd.Pressure2, Hyd.Pressure3,	MFR, PH))
+temp <- (cor(temp, use = "pairwise.complete.obs", method = "pearson")[1:8,9])
+# sort(abs(temp))
+```
+
+```{r}
+
+cstData3 <- subset(cstData2, select = -c(Filler.Speed, Alch.Rel, Hyd.Pressure2, Filler.Level))
+```
+
+So in the end we still removed 7 variables but not all the same ones recommended by the `findCorrelation` function.  Only 2 of the variables recommended by the function matched our list, `Hyd.Pressure2` and  `Filler.Level`.
+
+\pagebreak
+
+# Models
+
+Next we partitioned our dataset into training and validation subsets by randomly selecting 70% for training and leaving the remaining 30% set aside for testing.
+
+```{r}
+
+#Partition Data
+set.seed(123)
+trainidx<-sample(nrow(cstData3),round(0.7*nrow(cstData3)),replace=F)
+traindata<-cstData3[trainidx,]
+testdata<-cstData3[-trainidx,]
+```
+
+We then tuned a full range of model types including: Linear Regression, Ridge Regression, Lasso, Random Forest, Tree Bag, CTree, Classification and Regression Tree (CART), Multivariate Adaptive Regression Splines (MARS), K-Nearest Neighbors (KNN) and Support Vector Machine (SVM) using repeated cross-validation on all models.  The RMSE, $R^2$, and MAE statistics for each of these models are presented in the table below, ordered by the lowest RMSE to highest and thus best predictive performance to worst.
+
+```{r cache=TRUE}
+
+require(caret)
+set.seed(555)
+trctrl<- trainControl(method="repeatedcv", number=3, repeats=2)
+
+##Linear Regression
+linreg <- caret::train(PH~., data=traindata, method="lm", 
+                trControl=trctrl)
+linPred <- predict(linreg, newdata = testdata)
+m1<-data.frame(postResample(pred = linPred, obs = testdata$PH)) #0.1414880 0.3775156
+
+##Ridge Regression
+ridge <- caret::train(PH~., data=traindata, method="ridge", 
+                trControl=trctrl)
+ridgePred <- predict(ridge, newdata = testdata)
+m2<-data.frame(postResample(pred = ridgePred, obs = testdata$PH)) #0.1414837 0.3775762
+
+##Lasso Regression
+lasso <- caret::train(PH~., data=traindata, method="lasso", 
+                trControl=trctrl)
+lassoPred <- predict(lasso, newdata = testdata)
+m3<-data.frame(postResample(pred = lassoPred, obs = testdata$PH)) #0.1418941 0.3762947
+
+##RandomForest (Processed)
+rforest <- caret::train(PH~., data=traindata, method="cforest", 
+                trControl=trctrl,
+                tuneLength =2)
+forPred <- predict(rforest, newdata = testdata)
+m4<-data.frame(postResample(pred = forPred, obs = testdata$PH)) #0.11550844 0.59451507
+
+##Tree Bag
+bag <- caret::train(PH~., data=traindata, method="treebag", 
+                trControl=trctrl,
+                tuneLength =2)
+bagPred <- predict(bag, newdata = testdata)
+m5<-data.frame(postResample(pred = bagPred, obs = testdata$PH)) #0.12790436 0.50718903
+
+##CTree
+ctre <- caret::train(PH~., data=traindata, method="ctree2", 
+                trControl=trctrl,
+                tuneLength =2)
+ctrePred <- predict(ctre, newdata = testdata)
+m6<-data.frame(postResample(pred = ctrePred, obs = testdata$PH)) #0.1519582 0.2804008
+
+##CART
+rcart<- caret::train(PH~., data=traindata, method="rpart",
+                trControl=trctrl,
+                tuneLength =2)
+cartPred <- predict(rcart, newdata = testdata)
+m7<-data.frame(postResample(pred = cartPred, obs = testdata$PH)) #0.1593219 0.2053639
+
+##MARS
+marsFit <- earth(PH~., data = traindata, degree=2, nprune=14)
+marsPred <- predict(marsFit, newdata = testdata)
+m8<-data.frame(postResample(pred = marsPred, obs = testdata$PH)) #0.1399919 0.3912855
+
+##KNN
+knnGrid <-  expand.grid(k = 1:20)
+knnFit <- caret::train(PH~., data = traindata, 
+                method = "knn",
+                trControl = trctrl, 
+                tuneGrid = knnGrid)
+knnPred <- predict(knnFit, newdata = testdata)
+m9<-data.frame(postResample(pred = knnPred, obs = testdata$PH)) #0.1278504 0.5088682
+
+##SVM (Radial Kernel)
+svmGrid <-  expand.grid(C = c(1,1000))
+svmFit <- caret::train(PH~., data = traindata, 
+                 #type='eps-regression',
+                 method = 'svmRadialCost', 
+                 trControl = trctrl, 
+                 tuneGrid = svmGrid)
+svmPred <- predict(svmFit, newdata = testdata)
+m10<-data.frame(postResample(pred = svmPred, obs = testdata$PH)) #0.13136218 0.48751241
+
+df<-data.frame(rbind(m1[,1],m2[,1],m3[,1],m4[,1],m5[,1],m6[,1],m7[,1],
+                     m8[,1],m9[,1],m10[,1]))
+rownames(df)<-c("Linear Regression","Ridge Regression","Lasso","Random Forest",
+                "Tree Bag","CTree","CART","MARS","KNN","SVM")
+colnames(df)<-c("RMSE","Rsquared","MAE")
+df <- df[order(df$RMSE),]
+options(digits = 3)
+kab_tab2(df, cap="MODELS")
+```
+
+\pagebreak
+
+## Random Forest Model
+
+The random forest model was selected for further tuning based on the lowest RMSE and MAE statistics.  Although it also had the highest $R^2$ value that statistic should only be used to compare performance between variously tuned models of the same type, not between models of different types, so it's relevance is not significant in this case.  
+
+#### Top Ten Variables in the Initial Random Forest Model by Importance Score
+
+```{r fig.height=5, fig.width=7}
+
+#Variable Importance Ranking (Random Forest)
+rfImp <- varImp(rforest, scale = TRUE)
+bookTheme()
+plot(rfImp, top=15, scales = list(y = list(cex = 0.8)))
+```
+
+```{r}
+
+options(digits = 5)
+rfImp2 <- rfImp$importance[order(-rfImp$importance$Overall), , drop=FALSE]
+kab_tab2(head(rfImp2, 10), cap="Variable Importance Scores")
+```
+
+For comparison we also plotted a tree diagram which gave us similar results with the top three predictors also taking the top 3 nodes in the tree.  
+
+```{r fig.height=5, fig.width=7}
+
+tree <- rpart(PH~., data=traindata)
+prp(tree)
+```
+
+## Fine Tuning the Random Forest Model
+
+Since we had removed 7 predictors before tuning our models we decided to try re-tuning the best performing model, the random forest model, using the full set of predictors.  This resulted in a small improvement in performance on the validation set as measured by the RMSE and MAE as well as the improved $R^2$ value as shown in the table below.  
+
+```{r}
+
+#Using full dataset (applying na.roughfix to missing values)
+cstData_all<-subset(stData[-2])
+set.seed(123)
+trainidx2<-sample(nrow(cstData_all),round(0.7*nrow(cstData_all)),replace=F)
+traindata2<-cstData_all[trainidx2,]
+testdata2<-cstData_all[-trainidx2,]
+
+##Additional Random Forest tuning (TUNE HERE)
+#rf.model2 <- randomForest(PH~., data=traindata2, na.action=na.roughfix)
+rf.model2 <- randomForest(PH~., data=traindata2, na.action=na.roughfix, importance=TRUE) 
+rfPred2 <- predict(rf.model2, newdata = testdata2)
+m11 <- data.frame(postResample(pred = rfPred2, obs = testdata2$PH)) #0.1097018 0.6173039
+m11 <- t(m11)
+row.names(m11) <- c("Random Forest Model All Predictors")
+kab_tab2(m11, "Accuracy Measures for Random Forest Model using Full Set of Predictors")
+```
+
+#### Top 10 Variables in the Random Forest Model using all Predictors by Importance Score
+
+```{r}
+
+#with importance=TRUE, uses approach by Breiman to calculate the variable importance reported as MeanDecreaseAccuracy
+#https://stackoverflow.com/questions/37888619/difference-between-varimp-caret-and-importance-randomforest-for-random-fores
+rfImp2 <- as.data.frame(importance(rf.model2, scale = FALSE))
+options(digits = 5)
+kab_tab2(head(rfImp2[order(-rfImp2[,2]),], 10), cap="Variable Importance Scores")
+```
+
+Three more linear models were tested using the top predictors from our random forest model, however, none of them resulted in any improvement in performance.  
+
+```{r}
+
+#Comparing Adj. Rsquared for OLS Linear Regression models, inputting the top-ten most important variables from Random Forest
+##Linear Regression using all variables 
+linreg2 <- caret::train(PH~., data=traindata, method="lm",  trControl=trctrl)
+# summary(linreg2) #Adjusted R-squared:  0.356
+linPred2 <- predict(linreg2, newdata = testdata)
+m12<-data.frame(postResample(pred = linPred2, obs = testdata$PH)) #0.1414880 0.3775156
+
+##Linear Regression using only top 10 variables 
+linreg3 <- caret::train(PH ~ Mnf.Flow + Usage.cont + Carb.Rel + Bowl.Setpoint + 
+                          Temperature + Pressure.Vacuum	 + Air.Pressurer + 
+                          Oxygen.Filler + Pressure.Setpoint + Hyd.Pressure3, 
+                        data=traindata, method="lm",  trControl=trctrl)
+# summary(linreg3) # Adjusted R-squared:  0.328 
+linPred3 <- predict(linreg3, newdata = testdata)
+m13<-data.frame(postResample(pred = linPred3, obs = testdata$PH)) #0.1414880 0.3775156
+
+##Linear Regression using only top 8 variables (Removing Pressure.Vacuum	 + Air.Pressurer)
+linreg4 <- caret::train(PH ~ Mnf.Flow + Usage.cont + Carb.Rel + Bowl.Setpoint + 
+                          Temperature + 
+                          Oxygen.Filler + Pressure.Setpoint + Hyd.Pressure3, 
+                        data=traindata, method="lm", trControl=trctrl)
+# summary(linreg4) # Adjusted R-squared:  0.329
+linPred4 <- predict(linreg4, newdata = testdata)
+m14<-data.frame(postResample(pred = linPred4, obs = testdata$PH)) #0.1414880 0.3775156
+
+
+df<-data.frame(rbind(m12[,1],m13[,1],m14[,1]))
+rownames(df)<-c("Linear Regression 2","Linear Regression 3","Linear Regression 4")
+colnames(df)<-c("RMSE","Rsquared","MAE")
+df <- df[order(df$RMSE),]
+options(digits = 3)
+kab_tab2(df, cap="MODELS")
+# df
+```
+
+One interesting finding from this experiment was that we were able to determine that the impact of `Mnf.Flow`, `Usage.conf`, `Temperature`, `Oxygen.Filler`, and `Pressure.Setpoint` are negative due to negative coefficients and the impact of `Carb.Rel`, `Bowl.Setpoint`, and `Hyd.Pressure3` are positive due to positive coefficients.  So there is a balancing act between these variables with some pulling in one direction on the pH and some in the other.  Thus a change in one may necessitate a change in the others.  The model coefficients can be seen in the model summary below.
+
+```{r}
+
+summary(linreg4) # Adjusted R-squared:  0.329
+```
+
+\pagebreak
+
+## `Mnf.Flow` Analysis
+
+According to the random forest and linear regression (with scaled data) models, the variable which accounts for the highest proportion of model variance is the `Mnf.Flow` (minimum night flow?) measure.
+
+It is not surprising that `Mnf.Flow` appears in our model as the most critical, given that it is also the variable that has the highest absolute correlation with `PH` (-.459). Top-ranking correlations to `PH` are listed here by absolute value:
+
+```{r eval=FALSE}
+cor.ph <- t(as.data.frame(cor(as.matrix(stData['PH']), 
+                              as.matrix(stData[,c(-1,-2)]), 
+                              use = 'complete.obs')))
+idx <- order(-abs(cor.ph[,1]))
+cor.ph <- data.frame(correlation=cor.ph[idx,])
+head(cor.ph,10)
+```
+
+However as we investigate further into the predictive value of this variable, we note its tri-modal shape, with a huge spike at -100, accounting for over 46% of all values. There is another spike close to 0 (3% of observations), and then a third near-normal distribution centered around 140. Furthermore, when we test the correlation between `PH` and `Mnf.Flow` for only strictly positive values of `Mnf.Flow`, any correlation almost completely disappears (-0.05567). 
+
+```{r fig.height=4, fig.width=7}
+par(mfrow=c(1,2))
+#Visualing the Mnf.Flow column
+plot(stData$Mnf.Flow, stData$PH, main='pH/Mnf.Flow Scatterplot', xlab='Mnf.Flow values',ylab='pH')
+hist(stData$Mnf.Flow, main='Histogram for Mnf.Flow', xlab='Mnf.Flow values')
+```
+
+The irregular distribution of the data for this variable allows us to consider that we are actually looking at four distinct manufacturing processes, and that the -100 value is actually more of a categorical placekeeper. As such, we delve into this variable further by mutating into four ordinal values separated by buckets of `Mnf.FLow` in the following ranges {1: [-1000, -1), 2: [-1, 1), 3: [1, 140), 4: [140, 1000]}
+
+Here we are careful to retain the original dataset, rather than one which removed incomplete cases. We do so because a disproportionate amount of cases of type 2 (in range of -1 to 1) have at least one missing value. In fact only 1% of the observations in that range are complete. 
+
+```{r}
+stData2 <- stData
+#Separating the Mnf.Flow column by thresholds
+stData2$Mnf.Flow_ord <- cut(
+  stData2$Mnf.Flow,
+  breaks = c(-Inf, -1, 1, 140, Inf),
+  labels = c(1, 2, 3, 4),
+  right  = FALSE
+)
+table(stData2$Mnf.Flow_ord)
+```
+
+With further evidence from the means of the binned Mnf.Flow data, we observe that although type 1 (negative Mnf.Flow) have much higher pH on average, type 2 (near-zero) has much lower pH, types 3 and 4 (positive above and below mean values) have little difference in mean pH. This is supported by the lack of correlation with pH with Mnf.Flow reported above, and the violinplot of pH values for each type below:
+
+```{r}
+print(paste("mean of type 1 (neg.) is: ", round(mean(stData2[stData2$Mnf.Flow_ord==1,]$PH,na.rm=T), 4)))
+print(paste("mean of type 2 (near-zero) is: ", round(mean(stData2[stData2$Mnf.Flow_ord==2,]$PH,na.rm=T), 4)))
+print(paste("mean of type 3 (pos. below mean) is: ", round(mean(stData2[stData2$Mnf.Flow_ord==3,]$PH,na.rm=T), 4)))
+print(paste("mean of type 4 is (pos. above mean): ", round(mean(stData2[stData2$Mnf.Flow_ord==4,]$PH,na.rm=T), 4)))
+```
+
+```{r fig.height=4, fig.width=7}
+#Violin plot of Mnf.Flow by bins
+g <-ggplot(stData2, aes(x=factor(stData2$Mnf.Flow_ord), y=stData2$PH))
+g+geom_violin(alpha=0.5, color='grey') +
+  geom_jitter(alpha=0.5, size=4, aes(), position = position_jitter(width = 0.1), color='darkblue', show.legend=FALSE) +
+  ggtitle("PH by Mnf.Flow classification") +
+  coord_flip() +
+  xlab("Mnf.Flow") +
+  ylab("pH") +
+  theme(panel.background = element_blank(), legend.position="top")
+```
+
+As such, the greatest predictor of beverage pH is whether Mnf.Flow has a negative value. The quantity itself is not likely to be useful as a model input as the negative value likely references an entirely different production process. 
+
+\pagebreak
+
+## Modeling by Brand
+
+In another experiment we divided the dataset into subsets according to `Brand.Code` in order to assess what production processes are most relevant for each brand type.  We imputed missing values by replacing them with the trimmed mean and then applied a random forest model to each of the four sets.  Our aim was to determine if the variables found to be most important for the whole dataset carry through to the subsets. 
+
+
+```{r}
+
+#Subsetting data by brand
+brandA <- stDatao[stDatao$Brand.Code == 'A',]
+brandB <- stDatao[stDatao$Brand.Code == 'B',]
+brandC <- stDatao[stDatao$Brand.Code == 'C',]
+brandD <- stDatao[stDatao$Brand.Code == 'D',]
+```
+
+```{r}
+
+###Add Trimmed Means to NA Value
+r <- colnames(cstData_all)[ apply(cstData_all, 2, anyNA)]
+
+cstData_all[,colnames(cstData_all) %in% r]<-data.frame(sapply(cstData_all[,colnames(cstData_all) %in% r],
+      function(x) ifelse(is.na(x),
+            mean(x, na.rm = TRUE, trim = .1),
+            x)))
+```
+
+
+```{r}
+
+df<-data.frame()
+#BrandA Training/Test Splitting
+set.seed(123)
+trainidxA<-sample(nrow(brandA),round(0.7*nrow(brandA)),replace=F)
+traindataA<-cstData_all[trainidxA,]
+testdataA<-cstData_all[-trainidxA,]
+
+##RandomForest (on BrandA)
+trctrl<- trainControl(method="repeatedcv", number=2,repeats=2)
+rforestA <- caret::train(PH~., data=traindataA, method="cforest", 
+                trControl=trctrl, tuneLength =2, na.action=na.omit)
+forPredA <- predict(rforestA, newdata = testdataA)
+l1<-data.frame(postResample(pred = forPredA, obs = testdataA$PH))
+
+#BrandB Training/Test Splitting
+set.seed(123)
+trainidxB<-sample(nrow(brandB),round(0.7*nrow(brandB)),replace=F)
+traindataB<-cstData_all[trainidxB,]
+testdataB<-cstData_all[-trainidxB,]
+
+##RandomForest (on BrandB)
+trctrl<- trainControl(method="repeatedcv", number=2,repeats=2)
+rforestB <- caret::train(PH~., data=traindataB, method="cforest", 
+                trControl=trctrl, tuneLength =2, na.action=na.omit)
+forPredB <- predict(rforestB, newdata = testdataB)
+l2<-data.frame(postResample(pred = forPredB, obs = testdataB$PH))
+
+#BrandC Training/Test Splitting
+set.seed(123)
+trainidxC<-sample(nrow(brandC),round(0.7*nrow(brandC)),replace=F)
+traindataC<-cstData_all[trainidxC,]
+testdataC<-cstData_all[-trainidxC,]
+
+##RandomForest (on BrandC)
+trctrl<- trainControl(method="repeatedcv", number=2,repeats=2)
+rforestC <- caret::train(PH~., data=traindataC, method="cforest", 
+                trControl=trctrl, tuneLength =2, na.action=na.omit)
+forPredC <- predict(rforestC, newdata = testdataC)
+l3<-data.frame(postResample(pred = forPredC, obs = testdataC$PH))
+
+#BrandD Training/Test Splitting
+set.seed(123)
+trainidxD<-sample(nrow(brandD),round(0.7*nrow(brandD)),replace=F)
+traindataD<-cstData_all[trainidxD,]
+testdataD<-cstData_all[-trainidxD,]
+
+##RandomForest (on BrandD)
+trctrl<- trainControl(method="repeatedcv", number=2,repeats=2)
+rforestD <- caret::train(PH~., data=traindataD, method="cforest", 
+                trControl=trctrl, tuneLength =2, na.action=na.omit)
+forPredD <- predict(rforestD, newdata = testdataD)
+l4<-data.frame(postResample(pred = forPredD, obs = testdataD$PH))
+```
+
+Interestingly the random forest model performed most poorly on the brand with the highest frequency in our dataset as can be seen in the table below.
+
+```{r}
+
+freq <- as.data.frame(table(stDatao$Brand.Code))
+rownames(freq)<-c("", "A","B","C","D")
+freq <- freq[2:5,2]
+
+df <-data.frame(rbind(l1[,1],l2[,1],l3[,1],l4[,1]))
+rownames(df)<-c("A","B","C","D")
+colnames(df)<-c("RMSE","Rsquared","MAE")
+df <- cbind(df, freq)
+df <- df[order(df$RMSE),]
+kab_tab2(df, cap="BRANDS")
+```
+
+The mean pH for our dataset is 8.55, however, it is possible that pH may vary with brand profile.  From this violin plot, we observe that the distribution of pH values for Brand D tends to be above mean, while that of Brand C is markedly below mean. We further investigated what factors determine the acidic signature of Brand C, with the conclusion that lower balling method levels (which promote solution alkalinity) may at least partially contribute.
+
+```{r fig.height=4, fig.width=7}
+
+#pH by Brand
+ggplot(stData, aes(Brand.Code, PH)) +
+  geom_violin(color = 'grey') +
+  geom_jitter(aes(color = Brand.Code), size = 0.8) +
+  ggtitle('pH by Brand') +
+  geom_hline(yintercept =8.55) +
+  coord_flip() +
+  theme(panel.background = element_blank(), legend.position="top")
+```
+
+We discovered that `Mnf.Flow` is no longer the most important variable at the brand level; rather, `Temperature` is, ranking in the top five for each of the four brands.  By contrast `Mnf.Flow` only shows up in the top 5 list for two brands and in the 3rd and 5th spots. These results suggest that `Mnf.Flow` may not be as robust a predictor as our other models indicated.
+
+```{r fig.height=3.5, fig.width=3.5}
+
+# par(mfrow=c(2,2)) # Doesn't work!
+#Variable Importance Ranking (on Brand A)
+rfImpA <- varImp(rforestA, scale = FALSE)
+plot(rfImpA, top=5, scales = list(y = list(cex = 0.8)))
+
+#Variable Importance Ranking (on Brand B)
+rfImpB <- varImp(rforestB, scale = FALSE)
+plot(rfImpB, top=5, scales = list(y = list(cex = 0.8)))
+
+#Variable Importance Ranking (on Brand C)
+rfImpC <- varImp(rforestC, scale = FALSE)
+plot(rfImpC, top=5, scales = list(y = list(cex = 0.8)))
+
+#Variable Importance Ranking (on Brand D)
+rfImpD <- varImp(rforestD, scale = FALSE)
+plot(rfImpD, top=5, scales = list(y = list(cex = 0.8)))
+
+
+```
+
+\pagebreak
+
+# Predictions
+
+The goodness of fit plot below shows that our predictors fall close to the fit line. See the accompanying Excel file, "predicted_eval_values_PH.csv" for predictions of pH made by applying our Random Forest model to new data. 
+
+```{r}
+
+eval_p2 <- predict(rf.model2, newdata = stEval[-2]) # -2 to remove Brand.Code categorical variable
+
+PHMut <- mutate(stEval, predProb = predict(rf.model2 ,stEval,type = "response"))
+grpPH <- group_by(PHMut, cut(eval_p2, breaks = unique(quantile(eval_p2, (0:25)/26, na.rm=TRUE))))
+
+#hosmer-lemeshow stat
+hlDf <- summarise(grpPH, y= sum(PH), pPred=mean(predProb), count = n())
+hlDf <- mutate(hlDf, se.fit=sqrt(pPred * (1-(pPred)/count)))
+ggplot(hlDf,aes(x=pPred,y=y/count,ymin=y/count-2*se.fit,ymax=y/count+2*se.fit)) +
+    geom_point()+geom_linerange(color=grey(0.75))+geom_abline(intercept=0,slope=1) +
+    xlab("Predicted Probability") +
+    ylab("Observed Proportion")
+
+
+write.csv(eval_p2,"predicted_eval_values_PH.csv")
+save.image(file = "Data624_Project2.RData")
+```
+
+# Conclusions
+
+* The main processes putting downward (acetic) pressure on pH are: `Mnf.Flow`, `Usage.conf`, `Temperature`, `Oxygen.Filler`, and `Pressure.Setpoint` when increased;  Positive adjustment may be attained through increase in `Carb.Rel`, `Bowl.Setpoint`, and `Hyd.Pressure3`;
+
+* There is strong correlation between several of the manufacturing processes, in particular: `MFR`, `Hyd.Pressure2`, `Carb.Rel`, `Air.Pressurer`, `Carb.Flow`, `Hyd.Pressure4`, and `Filler.Level`;
+
+* Some of the observations have missing data in our predictors, most noticeably in `MFR`, which had 8.25% missing values, as well as `Mnf.Flow` when in the range of 0 to 1. 
+
+* The metric most highly-correlated with `PH`, `Mnf.Flow`, has an irregular tri-modal distribution, with approx. 46% of values -100 or less, indicative of a distinct qualitative process of itself. Barring the negative and near-zero values, the positive values, which are approximately normal in distribution, have little correlation to `PH`. `Mnf.Flow`'s statistically significant predictive value can be wholly distilled from its transformation into a three-class categorical variable.
+
+* When the entire dataset is subsetted according to `Brand.Code`, a different series of critical variables emerges for each class from those of the general model. `Mnf.Flow` loses its force as a predictor, while `Temperature` and `Air.Pressurer` become key, ranking in the top five most important variables for each of the four brands under a random forest model.
+
+* pH varies with brand profile, especially in the case of Brand D (tending to be above-mean) and Brand C (markedly below mean). We further investigate what factors determine the acidic signature of Brand C, with the conclusion that lower `balling` method levels (which promote solution alkalinity) may at least partially contribute.
+
+# Recommendations for Further Analysis
+
+Since we had success in strengthening `Mnf.Flow`'s predictive value by transforming it into a categorical variable, we may want to investigate using the same transformation on some of the other variables with multi-modal distributions.  Some of the variables with multi-modal distributions include: `Alch.Rel`, `Balling`, `Balling.Lvl`, `Carb.Flow`, `Carb.Rel`, `Density` and all three `Hyd.Pressure` variables.  In addition, rather than transforming these variables, we may want to investigate using piecewise linear or MARS models with finer tuning in order to preserve the distributions in each bin.
+
+\pagebreak
+
+# Appendix
+
+**Code used in analysis**
+
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+

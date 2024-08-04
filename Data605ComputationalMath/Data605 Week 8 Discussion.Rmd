@@ -1,0 +1,22 @@
+---
+title: "Data 605 Week 8 Discussion"
+author: "Anthony Pagan"
+date: "March 20, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+5) 5 Let X be a random variable with E(X) = 0 and V (X) = 1. What integer value k will assure us that P(|X| >= k) <= .01?
+
+```{r}
+#Chebyshev Inequality 1/k^2 to get K use square toot
+
+sqrt(1/.01)
+
+
+```
+
+
+**K is equal to `r sqrt(1/.01)`**

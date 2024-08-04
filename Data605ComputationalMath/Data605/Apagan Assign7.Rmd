@@ -1,0 +1,103 @@
+---
+title: "Data 605 Assignment 7"
+author: "Anthony Pagan"
+date: "March 16, 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW7
+
+#1) Uniform Distribution
+
+Let X1, X2, . . . , Xn be n mutually independent random variables, each of which is uniformly distributed on the integers from 1 to k. Let Y denote the minimum of the Xi's. Find the distribution of Y .
+
+**The uniform distribution formula of Y is Y = 1/xa-xa**
+
+```{r message=FALSE, warning=FALSE}
+a <- runif(1000)
+d <-density(1/(max(a)-min(a)),min(a))
+plot(d)
+d
+```     
+
+#2) Machine Lifetime
+
+Your organization owns a copier (future lawyers, etc.) or MRI (future doctors). This machine has a manufacturer's expected lifetime of 10 years. This means that we expect one failure every ten years. (Include the probability statements and R Code for each part.).
+
+##a) Geometric
+
+What is the probability that the machine will fail after 8 years?. Provide also the expected value and standard deviation. Model as a geometric. (Hint: the probability is equivalent to not failing during the first 8 years..)
+
+```{r message=FALSE, warning=FALSE}
+c<-c(1,2,3,4,5,6,7,8,9,10)
+f<- 1/10
+nf<- 9/10
+n <- 8
+m<- 1/10
+nf8<- round(nf^n,2)
+ev<-sum(c[1:8]*nf+c[9:10]*f)/10
+std<-sd(c[1:8]*nf+c[9:10]*f)
+```
+
+**The geometric probability of the machine failing after 8 years is `r nf8`, expected value is `r ev` and standard deviation is `r std`**
+
+##b) Exponential
+
+What is the probability that the machine will fail after 8 years?. Provide also the expected value and standard deviation. Model as an exponential.
+
+```{r message=FALSE, warning=FALSE}
+nf8 <- round(exp(log(nf^n)),2)
+ev<-sum(c[1:8]*nf+c[9:10]*f)/10
+std<-sd(c[1:8]*nf+c[9:10]*f)
+```
+
+**The expected exponential probability of the machine failing after 8 years is `r nf8`**
+
+##c) Binomial
+
+What is the probability that the machine will fail after 8 years?. Provide also the expected value and standard deviation. Model as a binomial. (Hint: 0 success in 8 years)
+
+```{r message=FALSE, warning=FALSE}
+f<-dbinom(8,10,.9)
+nf<- 1-dbinom(8,10,.9)
+cf<- c(9,10)
+cnf<-c(1,2,3,4,5,6,7,8)
+ecf <- sum(f*cf)/10
+ecnf <- sum(nf*cnf)/10
+sdcf <- sd(f*cf)
+sdnf <- sd(nf*cnf)
+ef<- round(ecf + ecnf, 2)
+std<- round(sdcf + sdnf, 2)
+nf8 <- round((1- f*nf)/2, 2)
+```
+
+**The expected  probability of the machine as a binomial failing after 8 years is `r nf8`, standard deviation is `r std` and expected value is `r ef`**
+
+##d) Poisson
+
+
+What is the probability that the machine will fail after 8 years?. Provide also the expected value and standard deviation. Model as a Poisson.
+
+```{r message=FALSE, warning=FALSE}
+f<-rpois(8, .1)
+nf<-rpois(8, .9)
+cf<- c(9,10)
+cnf<-c(1,2,3,4,5,6,7,8)
+ecf <- sum(f*cf)/10
+ecnf <- sum(nf*cnf)/10
+sdcf <- sd(f*cf)
+sdnf <- sd(nf*cnf)
+ref<- round(ecf + ecnf, 2)/2
+rstd<- round(sdcf + sdnf, 2)/2
+rnf8 <- round((1-(sum(f)/length(f))*(sum(nf)/length(nf))), 2)/2
+
+```
+
+**The expected  probability and SD of the machine failing after 8 years is `r rnf8`, standard deviation is `r rstd` and expected value is `r ref`**

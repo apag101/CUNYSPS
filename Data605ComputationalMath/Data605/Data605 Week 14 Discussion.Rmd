@@ -1,0 +1,21 @@
+---
+title: "Data 605 Week 14 Discussion"
+author: "Anthony Pagan"
+date: "May 05, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+Page 475
+24. Write out first 5 terms of the Binomial series with given k-value
+k= 4
+
+Maclaurin Series of f(x): ${\Sigma_{n=0}^\infty\frac{f^{(n)}(0)}{n!}x^n}$
+
+= ${(1+x)^4}$
+
+= 1 + k + ${\frac{k(k-1)}{2!}+\frac{k(k-1)(k-2)}{3!}+\frac{k(k-1)(k-2)(k-3)}{4!}}$
+
+= 1 + 4x + ${6x^2}$ + ${4x^3}$ + ${x^4}$
+

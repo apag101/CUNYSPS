@@ -1,0 +1,66 @@
+---
+title: "Data 621 LMR Exercise 8.2"
+author: "Anthony Pagan"
+date: "11/03/2019"
+output: 
+    html_document:
+        css: style.css   
+        toc: yes
+        toc_depth: 2
+        toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+Fit model with all data model, suggested model, backward elimination model and GLS Model
+
+```{r}
+#LMR 8.2
+library(mgcv)
+library("faraway")
+data(divusa, package="faraway")
+
+lmod<-lm(divorce ~ ., data = divusa)
+lmod$coefficients
+summary(lmod,cor = T)
+cor(residuals(lmod)[-1],residuals(lmod)[-length(residuals(lmod))])
+
+lmod1<-lm(divorce ~ unemployed + femlab+ marriage+ birth +military, data = divusa)
+lmod1$coefficients
+summary(lmod1,cor = T)
+cor(residuals(lmod1)[-1],residuals(lmod1)[-length(residuals(lmod1))])
+
+lmod2<-lm(divorce ~  femlab+ marriage+ birth, data = divusa)
+lmod2$coefficients
+summary(lmod2,cor = T)
+cor(residuals(lmod2)[-1],residuals(lmod2)[-length(residuals(lmod2))])
+
+glmod <- gls(divorce ~ unemployed + femlab+ marriage+ birth +military, correlation = corAR1 (form= ~year), data=na.omit(divusa))
+glmod$coefficients
+summary(glmod)
+cor(residuals(glmod)[-1],residuals(glmod)[-length(residuals(glmod))])
+
+
+plot(lmod$residuals,lmod$fitted.values)
+abline(lmod$residuals,lmod$fitted.values)
+abline(lmod1$residuals,lmod1$fitted.values, lty =1)
+abline(lmod2$residuals,lmod2$fitted.values, lty =2)
+abline(glmod$residuals,glmod$fitted, lty = 3)
+
+par(mfrow=c(2,2), cex=1.1)
+acf(resid(lmod), main="acf(lomd)")
+acf(resid(lmod1), main="acf(lomd1)")
+acf(resid(lmod2), main="acf(lomd2)")
+acf(resid(glmod), main="acf(glomd)")
+
+
+``` 
+
+
+

@@ -1,0 +1,686 @@
+---
+title: "Data624Notes"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Forecasting: Principles and Practice
+
+Chapter 1 Getting Started
+
+```{r}
+NULL
+```
+
+Chapter 2 Time series Graphics
+
+```{r}
+y<- ts(c(123,39,47,78,52,110), start=2012)
+y
+y<-ts(z, start=2003, frequency =12)
+y
+
+autoplot(melsyd[,"Economy.Class"]) +
+  ggtitle("Economy class passengers: Melbourne-Sydney") +
+  xlab("Year") +
+  ylab("Thousands")
+
+autoplot(a10) +
+  ggtitle("Antidiabetic drug sales") +
+  ylab("$ million") +
+  xlab("Year")
+
+ggseasonplot(a10, year.labels=TRUE, year.labels.left=TRUE) +
+  ylab("$ million") +
+  ggtitle("Seasonal plot: antidiabetic drug sales")
+
+ggseasonplot(a10, polar=TRUE) +
+  ylab("$ million") +
+  ggtitle("Polar seasonal plot: antidiabetic drug sales")
+
+ggsubseriesplot(a10) +
+  ylab("$ million") +
+  ggtitle("Seasonal subseries plot: antidiabetic drug sales")
+
+autoplot(elecdemand[,c("Demand","Temperature")], facets=TRUE) +
+  xlab("Year: 2014") + ylab("") +
+  ggtitle("Half-hourly electricity demand: Victoria, Australia")
+
+qplot(Temperature, Demand, data=as.data.frame(elecdemand)) +
+  ylab("Demand (GW)") + xlab("Temperature (Celsius)")
+
+autoplot(visnights[,1:5], facets=TRUE) +
+  ylab("Number of visitor nights each quarter (millions)")
+
+GGally::ggpairs(as.data.frame(visnights[,1:5]))
+
+beer2 <- window(ausbeer, start=1992)
+gglagplot(beer2)
+
+ggAcf(beer2)
+
+aelec <- window(elec, start=1980)
+autoplot(aelec) + xlab("Year") + ylab("GWh")
+
+ggAcf(aelec, lag=48)
+
+set.seed(30)
+y <- ts(rnorm(50))
+autoplot(y) + ggtitle("White noise")
+
+ggAcf(y)
+```
+
+Chapter 3 The forecasters toolbox
+
+```{r}
+
+```
+
+Chapter 4 Judgmental forecasts
+
+```{r}
+
+```
+
+Chapter 5 Time series regression models
+
+```{r}
+
+```
+
+Chapter 6 Time series decomposition
+
+```{r}
+
+```
+
+Chapter 7 Exponential smoothing
+
+```{r}
+
+```
+
+Chapter 8 ARIMA Models
+
+```{r}
+library(fpp2)
+Box.test(diff(goog200), lag=10, type="Ljung-Box")
+
+cbind("Sales ($million)" = a10,
+      "Monthly log sales" = log(a10),
+      "Annual change in log sales" = diff(log(a10),12)) %>%
+  autoplot(facets=TRUE) +
+    xlab("Year") + ylab("") +
+    ggtitle("Antidiabetic drug sales")
+
+cbind("Billion kWh" = usmelec,
+      "Logs" = log(usmelec),
+      "Seasonally\n differenced logs" =
+        diff(log(usmelec),12),
+      "Doubly\n differenced logs" =
+        diff(diff(log(usmelec),12),1)) %>%
+  autoplot(facets=TRUE) +
+    xlab("Year") + ylab("") +
+    ggtitle("Monthly US net electricity generation")
+
+library(urca)
+goog %>% ur.kpss() %>% summary()
+
+ndiffs(goog)
+
+usmelec %>% log() %>% nsdiffs()
+
+usmelec %>% log() %>% diff(lag=12) %>% ndiffs()
+
+autoplot(uschange[,"Consumption"]) +
+  xlab("Year") + ylab("Quarterly percentage change")
+
+fit <- auto.arima(uschange[,"Consumption"], seasonal=FALSE)
+fit %>% forecast(h=10) %>% autoplot(include=80)
+ggAcf(uschange[,"Consumption"])
+ggPacf(uschange[,"Consumption"])
+
+(fit2 <- Arima(uschange[,"Consumption"], order=c(3,0,0)))
+
+(fit3 <- auto.arima(uschange[,"Consumption"], seasonal=FALSE,
+  stepwise=FALSE, approximation=FALSE))
+
+elecequip %>% stl(s.window='periodic') %>% seasadj() -> eeadj
+autoplot(eeadj)
+
+eeadj %>% diff() %>% ggtsdisplay(main="")
+
+(fit <- Arima(eeadj, order=c(3,1,1)))
+
+checkresiduals(fit)
+
+autoplot(forecast(fit))
+
+autoplot(fit)
+
+autoplot(euretail) + ylab("Retail index") + xlab("Year")
+
+euretail %>% diff(lag=4) %>% ggtsdisplay()
+
+euretail %>% diff(lag=4) %>% diff() %>% ggtsdisplay()
+
+euretail %>%
+  Arima(order=c(0,1,1), seasonal=c(0,1,1)) %>%
+  residuals() %>% ggtsdisplay()
+
+fit3 <- Arima(euretail, order=c(0,1,3), seasonal=c(0,1,1))
+checkresiduals(fit3)
+
+fit3 %>% forecast(h=12) %>% autoplot()
+
+auto.arima(euretail)
+
+lh02 <- log(h02)
+cbind("H02 sales (million scripts)" = h02,
+      "Log H02 sales"=lh02) %>%
+  autoplot(facets=TRUE) + xlab("Year") + ylab("")
+
+lh02 %>% diff(lag=12) %>%
+  ggtsdisplay(xlab="Year",
+    main="Seasonally differenced H02 scripts")
+
+(fit <- Arima(h02, order=c(3,0,1), seasonal=c(0,1,2),
+  lambda=0))
+
+h02 %>%
+  Arima(order=c(3,0,1), seasonal=c(0,1,2), lambda=0) %>%
+  forecast() %>%
+  autoplot() +
+    ylab("H02 sales (million scripts)") + xlab("Year")
+
+fets <- function(x, h) {
+  forecast(ets(x), h = h)
+}
+farima <- function(x, h) {
+  forecast(auto.arima(x), h=h)
+}
+
+# Compute CV errors for ETS as e1
+air <- window(ausair, start=1990)
+e1 <- tsCV(air, fets, h=1)
+e2 <- tsCV(air, farima, h=1)
+mean(e1^2, na.rm=TRUE)
+mean(e2^2, na.rm=TRUE)
+air %>% ets() %>% forecast() %>% autoplot()
+
+# Consider the qcement data beginning in 1988
+cement <- window(qcement, start=1988)
+# Use 20 years of the data as the training set
+train <- window(cement, end=c(2007,4))
+
+(fit.arima <- auto.arima(train))
+checkresiduals(fit.arima)
+
+(fit.ets <- ets(train))
+checkresiduals(fit.ets)
+
+# Generate forecasts and compare accuracy over the test set
+a1 <- fit.arima %>% forecast(h = 4*(2013-2007)+1) %>%
+  accuracy(qcement)
+a1[,c("RMSE","MAE","MAPE","MASE")]
+
+a2 <- fit.ets %>% forecast(h = 4*(2013-2007)+1) %>%
+  accuracy(qcement)
+a2[,c("RMSE","MAE","MAPE","MASE")]
+
+# Generate forecasts from an ETS model
+cement %>% ets() %>% forecast(h=12) %>% autoplot()
+```
+
+Chapter 9 Dynamic regression models
+
+```{r}
+
+```
+
+Chapter 10 Forecasting hierarchical or grouped time series
+
+```{r}
+
+```
+
+Chapter 11 Advanced forecasting methods
+
+```{r}
+
+```
+
+Chapter 12 Some practical forecasting issues
+
+```{r}
+
+```
+
+Applied Predictive Modeling
+
+Chapter 1 Introduction
+
+```{r}
+
+```
+
+Chapter 2 A Short Tour of the Prodiective Modeling Process
+
+```{r}
+
+```
+
+
+Chapter 3 Data Pre-processing
+
+```{r cars}
+library(AppliedPredictiveModeling)
+apropos("matrix")#search any loading R packages for the given term
+RSiteSearch("confusion", restrict="functions")#will search online and display result si browser
+data("segmentationOriginal")
+names(segmentationOriginal)
+segData<-subset(segmentationOriginal, Case == "Train")
+cell <-segData$Cell
+class<-segData$Class
+case<-segData$Case
+segData<-segData[,-(1:3)]
+
+statusColNum<-grep("Status", names(segData))
+statusColNum
+segData<- segData[, -statusColNum]
+
+library(e1071)
+skewValues<-apply(segData, 2, skewness)
+head(skewValues)
+
+library(caret)
+Ch1AreaTrans<- BoxCoxTrans(segData$ConvexHullPerimRatioCh1)
+Ch1AreaTrans
+head(segData$ConvexHullPerimRatioCh1)
+predict(Ch1AreaTrans, head(segData$ConvexHullPerimRatioCh1))
+
+pcaObject<-prcomp(segData, center=TRUE, scale. = TRUE)#Principle Component Analysis transformation
+percentVariance<- pcaObject$sd^2/sum(pcaObject$sd^2)*100
+percentVariance[1:3]
+head(pcaObject$x[, 1:5])
+head(pcaObject$rotation[, 1:3])
+spatialSign(segData)
+
+trans<-preProcess(segData, method=c("BoxCox","center","scale","pca"))#applies all transformations listed
+trans
+transformed<-predict(trans,segData)
+head(transformed[,1:5])
+
+nearZeroVar(segData)
+correlations<-cor(segData)
+dim(correlations)
+correlations[1:4,1:4]
+
+library(corrplot)
+corrplot(correlations, order = "hclust")
+highcorr<-findCorrelation(correlations, cutoff = .75)#find corr up to cutoff
+length(highcorr)
+head(highcorr)
+filteredSegData<-segData[, -highcorr]
+filteredSegData
+
+library(caret)
+data(cars)
+type <- c("convertible", "coupe", "hatchback", "sedan", "wagon")
+cars$Type <- factor(apply(cars[, 14:18], 1, function(x) type[which(x == 1)]))
+carSubset <- cars[sample(1:nrow(cars), 20), c(1, 2, 19)]
+head(carSubset)
+names(cars)
+levels(cars$Type)
+simpleMod<-dummyVars(~Mileage+Type, data=carSubset,levelsOnly = TRUE)
+simpleMod
+predict(simpleMod, head(carSubset))
+withInteraction<-dummyVars(~Mileage+Type+Mileage:Type, data=carSubset,levelsOnly = TRUE)
+withInteraction
+predict(withInteraction, head(carSubset))
+```
+
+Chapter 4 Over-Fitting and Model Tuning
+
+```{r}
+
+```
+
+Chapter 5 Measuring Performance in Regression Models
+
+Chapter 6 Linear Regression and Its Cousins
+
+```{r}
+library(AppliedPredictiveModeling)
+data(solubility)
+ls(pattern = "solT")
+
+set.seed(2)
+sample(names(solTrainX),8)
+
+trainingData<- solTrainXtrans
+trainingData$Solubility<-solTrainY
+
+lmFitAllPredictors<-lm(Solubility~., data=trainingData)
+summary(lmFitAllPredictors)
+
+lmPred1<-predict(lmFitAllPredictors, solTestXtrans)
+head(lmPred1)
+
+library(MASS)
+library(caret)
+lmValues1<-data.frame(obs = solTestY, pred=lmPred1)
+defaultSummary(lmValues1) #estimate test performance
+rlmFitAllPredictors<-rlm(Solubility~.,data=trainingData) #robust linear regression from MASS package which employs the Huber approach
+
+library(caret)
+ctrl<-trainControl(method="cv", number=10) #10 fold cross-validation using trainControl from caret library
+set.seed(100)
+lmFit1<-train(x = solTrainXtrans, y=solTrainY, method="lm", trControl =ctrl)
+lmFit1
+
+xyplot(solTrainY ~ predict(lmFit1), 
+       type = c("p", "g"), 
+       xlab = "Predicted", ylab="Observed")
+xyplot(resid(lmFit1) ~ predict(lmFit1), 
+       type = c("p", "g"), 
+       xlab = "Predicted", ylab="Residuals")
+
+corThresh <- .9
+tooHigh<- findCorrelation(cor(solTrainXtrans), corThresh)
+corrPred<-names(solTrainXtrans)[tooHigh]
+trainXfiltered<-solTrainXtrans[, -tooHigh]
+testXfiltered<- solTestXtrans[, -tooHigh]
+set.seed(100)
+lmFiltered<-train(solTrainXtrans, solTrainY, method="lm", trControl=ctrl)
+lmFiltered
+
+set.seed(100)
+rlmPCA<-train(solTrainXtrans, solTrainY,
+              method = "rlm",
+              preProcess = "pca",
+              trControl = ctrl)
+rlmPCA
+
+#Parial Least Square
+library(pls)
+plsFit<- plsr(Solubility~., data=trainingData)
+predict(plsFit, solTestXtrans[1:5,], ncomp=1:2)
+
+set.seed(100)
+plsTune<-train(solTrainXtrans, solTrainY,
+               method="pls",
+               tuneLength = 20,
+               trControl=ctrl,
+               preProc=c("center", "scale"))
+plsTune
+
+#Ridge Model
+library(elasticnet)
+ridgeModel<- enet(x=as.matrix(solTrainXtrans), y= solTrainY,
+                  lambda = .001)
+ridgePred<- predict(ridgeModel, newx = as.matrix(solTestXtrans),
+                    s=1, mode="fraction",
+                    type="fit")
+head(ridgePred$fit)
+ridgeGrid<-data.frame(.lambda = seq(0, .1, length=15))
+set.seed(100)
+ridgeRegFit<- train(solTrainXtrans, solTrainY,
+                    method="ridge",
+                    tuneGrid=ridgeGrid,
+                    trControl=ctrl,
+                    preProc = c("center", "scale"))
+
+ridgeRegFit
+
+enetModel<- enet(x = as.matrix(solTrainXtrans), y=solTrainY,
+                 lambda = .01, normalize = TRUE)
+enetPred<- predict(enetModel, newx = as.matrix(solTestXtrans),
+                   s =.1, mode = "fraction",
+                   type = "fit")
+names(enetPred)
+head(enetPred$fit)
+enetCoef<-predict(enetModel, newx = as.matrix(solTestXtrans), 
+                  s=.1, mode ="fraction",
+                  type = "coefficients")
+tail(enetCoef$coefficients)
+enetGrid<-expand.grid(.lambda = c(0,0.01,.1),
+                      .fraction = seq(.05,1, length=20))
+set.seed(100)
+enetTune<-train(solTrainXtrans, solTrainY,
+                method = "enet",
+                tuneGrid = enetGrid,
+                trControl = ctrl,
+                preProc = c("center", "scale"))
+plot(enetTune)
+```
+
+
+Chapter 7 Nonlinear Regression Models
+
+```{r}
+#Neural Networks
+library(nnet)
+library(AppliedPredictiveModeling)
+library(caret)
+library(earth)
+library(kernlab)
+library(nnet)
+data(solubility)
+set.seed(2)
+sample(names(solTrainX),8)
+
+trainingData<- solTrainXtrans
+trainingData$Solubility<-solTrainY
+
+nnetfit<- nnet(solTrainXtrans, solTrainY,
+               size = 5,
+               decay = .01,
+               linout = TRUE,
+               trace = FALSE,
+               maxit = 500,
+               MaxNWts = 5*(ncol(lmFitAllPredictors)+1)+5+1)
+
+nnetAvg<- avNNet(solTrainXtrans, solTrainY,
+               size = 5,
+               decay = .01,
+               repeats = 5,
+               linout = TRUE,
+               trace = FALSE,
+               maxit = 500,
+               MaxNWts = 5*(ncol(lmFitAllPredictors)+1)+5+1)
+
+predict(nneFit, newData)
+predict(nnetAvg, newData)
+
+tooHigh<-findCorrelation(cor(solTrainXtrans),cutoff=.75)
+trainXnnet<-solTrainXtrans[,tooHigh]
+testXnnet<-solTestXtrans[, -tooHigh]
+nnetGrid<-expand.grid(.decay=c(0,.01,.1),
+                      .size=c(1:10),
+                      .bag=FALSE)
+set.seed(100)
+nnetTune<- train(solTrainXtrans, solTrainY,
+               method = "avNNet",
+               tuneGrid = nnetGrid,
+               #trControl = ctrl,
+               predProc = c("center","scale"),
+               linout = TRUE,
+               trace = FALSE,
+               maxit = 500,
+               MaxNWts = 110*(ncol(trainXnnet)+1)+10+1)
+
+ir <- rbind(iris3[,,1], iris3[,,2], iris3[,,3])
+targets <- class.ind( c(rep("s", 50), rep("c", 50), rep("v", 50)) )
+samp <- c(sample(1:50,25), sample(51:100,25), sample(101:150,25))
+ir1 <- nnet(ir[samp,], targets[samp,],size = 5, rang = 0.1,
+            decay = 5e-4, maxit = 200)
+test.cl <- function(true, pred){
+        true <- max.col(true)
+        cres <- max.col(pred)
+        table(true, cres)
+}
+test.cl(targets[-samp,], predict(ir1, ir[-samp,]))
+
+#Multivariate Adaptive Regression Splines
+library(earth)
+library(caret)
+marsFit <- earth(solTrainXtrans, solTrainY)
+marsFit
+summary(marsFit)#h hinge
+marsGrid<-expand.grid(.degree = 1:2, .nprune =2:38)
+set.seed(100)
+marsTuned<-caret::train(solTrainXtrans, solTrainY,
+                 method = "earth",
+                 tuneGrid= marsGrid,
+                 trControl = trainControl(method = "cv"))
+marsTuned
+head(predict(mmarsTuned, solTestXtrans))
+varImp(marmarsTuned)
+
+#Support Vector Machines SVM
+svmFit<-ksvm(x=solTrainXtrans, y=solTrainY,
+             kernel="rbfdot",kpar="automatic",
+             C=1, epsilon=0.1)
+
+svmRTuned<-train(solTrainXtrans, solTrainY,
+                 method = "svmRadial",
+                 preProc = c("center", "scale"),
+                 tuneLength = 14,
+                 trControl = trainControl(method="cv"))
+svmRTuned
+
+#K-Nearest Neighbors
+knnDescr <- solTrainXtrans[,-nearZeroVar(solTrainXtrans)]
+set.seed(100)
+knnTune<- train(knnDescr,
+                solTrainY,
+                method = "knn",
+                preProc=c("center", "scale"),
+                tuneGrid=data.frame(.k=1:20),
+                trControl = trainControl(method="cv"))
+
+
+```
+
+
+Chapter 8 Regression Tree and Rule-Based Models
+
+```{r}
+library(nnet)
+library(AppliedPredictiveModeling)
+require(caret)
+library(earth)
+library(kernlab)
+library(nnet)
+library(rpart)
+data(solubility)
+
+#Single Trees
+rpartTree <- rpart(y~., data=traindata)
+ctreeTree<- ctree(y~., data=traindata)
+
+set.seed(100)
+rpartTune<-train(solTrainXtrans, solTrainY,
+                 method="rpart2",
+                 tuneLength =10,
+                 trControl = trainControl(method = "cv"))
+plot(rpartTune)
+
+require(partykit)
+rpartTree2<-as.party(rpartTree)
+plot(rpartTree2)
+
+#Model Trees
+
+library(RWeka)
+require(caret)
+m5tree<-M5P(y~., data=traindata)
+m5rules<-M5Rules(y~., data=traindata)
+
+m5tree<-M5P(y~., data=traindata,control=Weka_control(M=10))
+set.seed(100)
+m5Tune<- train(solTrainXtrans, solTrainY,
+               method="M5",##Use M5 or M5Rules for rules based model
+               trControl=trainControl(method="cv"),
+               control=Weka_control(M=10))##numbe of samples splits
+plot(m5Tune)
+
+#Bagged Tree
+
+library(ipred)
+baggedTree<-ipredbagg(solTrainY, solTrainXtrans)
+baggedTree<- bagging(y~., data=traindata)
+
+library(party)
+bagCtrl <- cforest_control(mtry=ncol(traindata)-1)
+baggedtree<-cforest(y~., data=traindata ,controls= bagCtrl)
+
+#Random Forest
+
+library(randomForest)
+rfModel<-randomForest(solTrainXtrans, solTrainY)
+rfModel<-randomForest(y~., data=traindata)
+
+rfModel<- randomForest(solTrainXtrans, solTrainY,
+                       importance=TRUE,
+                       ntrees=1000)
+plot(rfModel)
+
+#Boosted Trees by GBM or Gradent Boosting Machines
+
+library(gbm)
+gbmModel<-gbm.fit(solTrainXtrans, solTrainY, distribution = "gaussian")
+gbmModel<-gbm(y~.,data=traindata, distribution = "gaussian")#Dittribution defines type of loss function that will b optimized during bossting
+
+gbmGrid<- expand.grid(.interaction.depth=seq(1,7, by=2),
+                      .n.trees = seq(100, 1000, by=50),
+                      .shrinkage = c(.01, .1),
+                      .n.minobsinnode = FALSE)
+
+set.seed(100)
+gbmTune<- train(solTrainXtrans, solTrainY,
+                method = "gbm",
+                tuneGrid = gbmGrid,
+                verbose = FALSE)
+plot(gbmTune)
+
+#Cubist
+
+library(Cubist)
+cubistMod<-cubist(solTrainXtrans, solTrainY)
+predict(cubistMod, solTestXtrans)
+cubistTuned<-train(solTrainXtrans, solTrainY, method="cubist")
+plot(cubistTuned)
+```
+
+
+Chapter 9 A Summary of Solubility Models
+
+Chapter 10 Case Study: Compressive Strength of Concrete
+
+Chapter 11 Measuring Performance in Classification Models
+
+Chapter 12 Discriminant Analysis and Other Linear Classification Models
+
+Chapter 13 Nonlinear Classification Models
+
+Chapter 14 Classification Trees and Rule-Based Models
+
+Chapter 15 A Summary of Grant Application Models
+
+Chapter 16 Remedies of Severe Class Imbalance
+
+Chapter 17 Case Study: Job Scheduling
+
+Chapter 18 Measuring Predictor Importance
+
+Chapter 19 An Introduction to Feature Selection
+
+Chapter 20 Factors That Can Affect Model Performance
+
+

@@ -1,0 +1,68 @@
+Consider a dataset as shown below
+
+
+X,      Y,      label
+5,      a,      BLUE
+5,      b,      BLACK
+5,      c,      BLUE
+5,      d,      BLACK
+5,      e,      BLACK
+5,      f,      BLACK
+19,     a,      BLUE
+19,     b,      BLUE
+19,     c,      BLUE
+19,     d,      BLUE
+19,     e,      BLACK
+19,     f,      BLUE
+35,     a,      BLACK
+35,     b,      BLACK
+35,     c,      BLUE
+35,     d,      BLACK
+35,     e,      BLACK
+35,     f,      BLACK
+51,     a,      BLACK
+51,     b,      BLACK
+51,     c,      BLUE
+51,     d,      BLACK
+51,     e,      BLACK
+51,     f,      BLACK
+55,     a,      BLACK
+55,     b,      BLACK
+55,     c,      BLACK
+55,     d,      BLACK
+55,     e,      BLACK
+55,     f,      BLACK
+63,     a,      BLACK
+63,     b,      BLUE
+63,     c,      BLUE
+63,     d,      BLUE
+63,     e,      BLUE
+63,     f,      BLUE
+
+Run kNN, Tree, NB, LDA and LR, SVM with RBS Kernel (60%) and 
+determine the AUC, ACCURACY, TPR,FPR for each algorithm, create a table as shown below
+ALGO   AUC,ACC,TPR,FPR
+LR
+LDA
+NB
+SVM
+kNN
+TREE
+Rubric: 15%
+Summarize and provide a explanatory commentary on the observed performance of these classifiers
+Rubric: 15% 
+(What aspects of the data and or aspects of the algorithms, explain these performance differences)
+
+
+THESE ARE WICKED-SCIENCE PROBLEMS AND THERE IS NO PRECISE ANSWER. Please base your
+observations on common-sense,facts with appropriate citation. 
+--------------------
+There is a deadline consistent with my earlier announcement -- but I do not enforce deadlines while you are learning ...
+* it does not matter at what rate you learn what matters is at what rate you apply when you are called upon to solve a real problem *
+I expect you to gather and prepare to run these for 15 minutes
+load the data 5 minutes
+run each model and gather performance measures 5 to 10 minutes each
+organize and print table 15 minutes
+summary and analysis 15 minutes 3 sentences per algorithm 
+
+please submit simple txt ....

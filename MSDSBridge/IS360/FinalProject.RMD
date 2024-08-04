@@ -1,0 +1,103 @@
+---
+title: "Final Project"
+author: "Anthony Pagan"
+date: "Monday, December 15, 2014"
+output: slidy_presentation
+---
+
+#  Project Summary
+
+In our final project we needed to develop an approach to combine hflights R data and with flights data PostgreSQL. 
+
+## Data combination approach
+
+- Use deplyr to put hflight data into a data frame omitting NA values
+- Export datasets to a CSV file
+- Run sql code to create tables and insert data
+- Create a sql view to combine SQL data with data imported from R
+- Calculate average delay time to determine if it is better to get to Houston or New York
+- Create a summary set aggregated dataset to create a Gplot
+
+## Use dplyr to put hflight data into a data frame omitting NA values
+
+```{r, eval=FALSE}
+install.packages("dplyr")
+require(dplyr)
+library(hflights)
+dflights <- tbl_df(hflights)
+dfflights <- na.omit(dflights)
+```
+
+## Export data to CSV file
+
+```{r, eval=FALSE}
+#Export airplane summary flight data
+
+write.csv(airplaneSum, "airplaneSums.csv", row.names=F)
+
+#Export all dfligh data. 
+
+write.csv(dfflights, "Dflights.csv", row.names=F)
+```
+
+##SQL Code to create tables and insert data
+
+```{r, eval=FALSE}
+--CREATE SQL TABLES
+
+create table dflights
+("Year" Int Null, "Month" Int Null, DayofMonth Int Null, DayOfWeek Int Null, 	
+DepTime Int Null, ArrTime	Int Null, UniqueCarrier varchar(10) Null, 	
+FlightNum Int NOT NULL, TailNum varchar(10) Null, ActualElapsedTime Int Null, 	
+AirTime Int Null, ArrDelay Int Null, DepDelay Int Null, Origin varchar(10) Null, 
+Dest varchar(10) Null, Distance Int Null, TaxiIn Int Null, TaxiOut Int Null, 
+Cancelled Int Null, Diverted Int Null)
+
+create table AirplaneSum
+(FlightNum Int PRIMARY KEY NOT NULL,FlighTime Int NULL,TaxI float NULL,
+ TaxO float Null,CancelCount float Null);
+
+Import data from R to Prostgres SQL
+Copy airplaneSum from 'C:\Program Files\PostgreSQL\9.3\share\airplaneSum.csv' 
+DELIMITER ',' CSV;
+
+Import All data from R to Postgres SQL
+Copy Dflights from 'C:\Program Files\PostgreSQL\9.3\share\Dflights.csv' 
+DELIMITER ',' CSV;
+```
+
+## SQL data with R Data
+
+```{r, eval=FALSE}
+
+create view flightscombined as 
+select tailnum, concat("month",'/',"day",'/',"year") as FlightDate, 
+Dep_delay as DepDelay, Arr_delay as ArrDelay, Dest, Origin from flights
+union all
+select tailnum, concat("Month",'/',DayofMonth,'/',"Year") as FlightDate, 
+depdelay, arrdelay, Dest, Origin from dflights;
+
+select round(avg(depdelay), 2) as avg_depDelay, round(avg(arrdelay),2) as 
+avg_arrDelay, dest, origin from flightscombined where dest in ('JFK', 'LGA') 
+and origin = 'HOU'or dest = 'HOU' and origin in ('JFK', 'LGA')
+group by dest, origin;--Create combined view
+```
+
+#Aggregated dataset to create a Gplot
+
+```{r, eval=FALSE}
+airplaneSum <- dflights %>% 
+group_by(FlightNum) %>%
+summarise(FlighTime = mean(ActualElapsedTime, na.rm = TRUE), 
+TaxI = mean(TaxiIn, na.rm = TRUE), TaxO = mean(TaxiOut, na.rm = TRUE), 
+CancelCount = sum(Cancelled, na.rm = TRUE))
+
+require(ggplot2)
+
+ggplot(airplaneSum, aes(TaxI + TaxO, CancelCount)) +
+geom_point(aes(size = CancelCount), alpha = 1/2) +
+geom_smooth() +
+scale_size_area()
+```
+
+

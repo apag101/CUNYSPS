@@ -1,0 +1,70 @@
+---
+title: "Data606 Lab0"
+author: "Anthony Pagan"
+date: "August 29, 2018"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Data606 Lab0
+
+What command would you use to extract just the counts of girls baptized? Try it!
+
+```{r}
+source("more/arbuthnot.R")
+arbuthnot$girls
+```
+
+Is there an apparent trend in the number of girls baptized over the years?
+How would you describe it?
+
+Yes after 1660 girl population more than doubled
+
+```{r}
+plot(x = arbuthnot$year, y = arbuthnot$girls, type = "l")
+```
+
+Now, make a plot of the proportion of boys over time. What do you see? Tip: If you use the up and down arrow keys, you can scroll through your previous commands, your so-called command history. You can also access it by clicking on the history tab in the upper right panel. This will save you a lot of typing in the future.
+
+```{r}
+plot(arbuthnot$year, arbuthnot$boys / (arbuthnot$boys + arbuthnot$girls), type = "l")
+```
+
+On Your Own
+In the previous few pages, you recreated some of the displays and preliminary analysis of Arbuthnot's baptism data. Your assignment involves repeating these steps, but for present day birth records in the United States. Load up the present day data with the following command.
+
+source("more/present.R")
+The data are stored in a data frame called present.
+```{r}
+source("more/present.R")
+```
+
+What years are included in this data set? What are the dimensions of the data frame and what are the variable or column names?
+
+```{r}
+present$year     
+dim(present)
+names(present)
+```
+How do these counts compare to Arbuthnot's? Are they on a similar scale?
+
+The arbuthnot scale was in 10 thousands, present are in the millions
+```{r}
+present 
+```
+
+Make a plot that displays the boy-to-girl ratio for every year in the data set. What do you see? Does Arbuthnot's observation about boys being born in greater proportion than girls hold up in the U.S.? Include the plot in your response.
+
+```{r}
+plot(present$year, present$boys / (present$boys + present$girls), type ="l")
+```
+
+In what year did we see the most total number of births in the U.S.? You can refer to the help files or the R reference card http://cran.r-project.org/doc/contrib/Short-refcard.pdf to find helpful commands.
+
+```{r}
+head(present[order((present$boy + present$girls), decreasing= T),], n = 1)
+plot(present$year, (present$boys + present$girls), type ="l")
+```

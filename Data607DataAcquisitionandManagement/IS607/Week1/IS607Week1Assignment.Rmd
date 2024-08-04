@@ -1,0 +1,97 @@
+---
+title: "IS607 Week1 Assignment"
+author: "Anthony Pagan"
+date: "August 30, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## IS607 Week1 Assignment
+The task is to study the dataset and the associated description of the data (i.e. "data dictionary").  You may need to look around a bit, but it's there!  You should take the data, and create a data frame with a subset of the columns in the dataset.  You should include the column that indicates edible or poisonous and three or four other columns.  You should also add meaningful column names and replace the abbreviations used in the data.
+
+## Get the DATA
+
+```{r}
+theurl <- "https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data"
+thedata <- read.table(file = theurl, header = FALSE, sep = ",")
+head(thedata)
+```
+
+## Add Descriptive Columns
+
+```{r}
+names(thedata)
+names(thedata) <-c("classes","cshape","csurface","ccolor","bruises?","odor", "gattachment", "gspacing", "gsize","gcolor", "sshape", "sroot", "ssurfacearing", "ssurfacebring", "scoloraring", "scolorbring", "vtype", "vcolor", "rnumber", "rtype", "sprintcolor", "population", "habitat")
+names(thedata)
+```
+
+## Replace abbreviated data
+
+```{r}
+library(plyr)
+thedata$classes <-mapvalues(thedata$classes, c("e","p"), c("edible","poisonous"))
+
+thedata$cshape <-mapvalues(thedata$cshape, c("b","c","x","f","k","s"), c("bell","conical","convex","flat","knobbed","sunken"))
+
+thedata$csurface <-mapvalues(thedata$csurface, c("f","g","y","s"), c("fibrous","grooves","scaly","smooth"))
+
+thedata$ccolor <-mapvalues(thedata$ccolor, c("n","b","c","g","r","p","u","e","w","y"), c("brown","buff","cinnamon","gray","green","pink","purple","red","white","yellow"))
+
+thedata$bruises <-mapvalues(thedata$bruises, c("t","f"), c("bruises","no"))
+
+thedata$odor <-mapvalues(thedata$odor, c("a","l","c","y","f","m","n","p","s"), c("almond","anise","creosote","fishy","foul","musty","none","pungent","spicy"))
+
+thedata$gattachment <-mapvalues(thedata$gattachment, c("a","d","f","n"), c("attached","descending","free","notched"))
+
+thedata$gspacing <-mapvalues(thedata$gspacing, c("c","w","d"), c("close","crowded","distant"))
+
+thedata$gsize <-mapvalues(thedata$gsize, c("b","n"), c("broad","narrow"))
+
+thedata$gcolor <-mapvalues(thedata$gcolor, c("k","n","b","h","g","r","o","p","u","e","w","y"), c("black","brown","buff","chocolate","gray","green","orange","pink","purple","red","white","yellow"))
+
+thedata$sshape <-mapvalues(thedata$sshape, c("e","t"), c("enlarging","tapering"))
+
+thedata$sroot <-mapvalues(thedata$sroot, c("b","c","u","e","z","r","?"), c("bulubous","clud","cup","equal","rhizomorphs","rooted","missing"))
+
+thedata$ssurfacearing <-mapvalues(thedata$ssurfacearing, c("f","y","k","s"), c("fibrous","scaly","silky","smooth"))
+
+thedata$ssurfacebring <-mapvalues(thedata$ssurfacebring, c("f","y","k","s"), c("fibrous","scaly","silky","smooth"))
+
+thedata$scoloraring <-mapvalues(thedata$scoloraring, c("n","b","c","g","o","p","e","w","y"), c("brown","buff","cinnamon","gray","orange","pink","red","white","yellow"))
+
+thedata$scolorbring <-mapvalues(thedata$scolorbring, c("n","b","c","g","o","p","e","w","y"), c("brown","buff","cinnamon","gray","orange","pink","red","white","yellow"))
+
+thedata$vtype <-mapvalues(thedata$vtype, c("p","u"), c("partial","universal"))
+
+thedata$vcolor <-mapvalues(thedata$vcolor, c("b","n","w","y"), c("brown","orange","white","yellow"))
+
+thedata$rnumber <-mapvalues(thedata$rnumber, c("n","o","t"), c("none","one","two"))
+
+thedata$rtype <-mapvalues(thedata$rtype, c("c","e","f","l","n","p","s","z"), c("coweboy","evanescent","flaring","large","none","pendant","sheathing","zone"))
+
+thedata$sprintcolor <-mapvalues(thedata$sprintcolor, c("k","n","b","h","r","o","u","w","y"), c("black","brown","buff","chocolate","green","orange","purple","white","yellow"))
+
+thedata$population <-mapvalues(thedata$population, c("a","c","n","s","v","y"), c("abundant","clustered","numerous","scattered","several","solitary"))
+
+thedata$habitat <-mapvalues(thedata$habitat, c("g","l","m","p","u","w","d"), c("grasses","leaves","meadows","paths","urban","waste","woods"))
+
+head(thedata)
+
+```
+
+##Getting Subset of data for Classes = Edible
+
+```{r}
+thedataedible <-head(subset(thedata, classes == "edible", select = c('classes','sshape','rnumber','vcolor','population','odor','gspacing','habitat')))
+head(thedataedible)
+```
+
+##Getting Subset of data for Classes = Poisonus
+
+```{r}
+thedatapoisonous <-head(subset(thedata, classes == "poisonous", select = c('classes','sshape','rnumber','vcolor','population','odor','gspacing','habitat')))
+head(thedatapoisonous)
+```

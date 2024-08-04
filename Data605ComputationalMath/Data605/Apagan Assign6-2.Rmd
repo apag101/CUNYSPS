@@ -1,0 +1,273 @@
+---
+title: "Data 605 Assignment 6"
+author: "Anthony Pagan"
+date: "March 9, 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW6
+
+#1) Box of Marbles
+A box contains 54 red marbles, 9 white marbles, and 75 blue marbles. If a marble is randomly selected from the box,
+what is the probability that it is red or blue? Express your answer as a fraction or a decimal number rounded to four
+decimal places.
+
+```{r}
+
+rm <- 54
+wm <- 9
+bm <- 75
+am <- sum(rm,wm , bm)
+
+rbm <- round((rm/am + bm/am),4) 
+
+```
+
+**The probability that marbles will be red or blue is `r rbm`**
+
+#2) Golf Balls
+You are going to play mini golf. A ball machine that contains 19 green golf balls, 20 red golf balls, 24 blue golf balls, and
+17 yellow golf balls, randomly gives you your ball. What is the probability that you end up with a red golf ball? Express
+your answer as a simplified fraction or a decimal rounded to four decimal places.
+
+```{r}
+gb <- 19
+rb <- 20
+bb <- 24
+yb <- 17
+ab <- sum(gb, rb, bb, yb)
+prb <- round((rb/ab),4)
+```
+
+**The probability of getting a red golf ball is `r prb`**
+
+#3) Pizza Delivery
+
+A pizza delivery company classifies its customers by gender and location of residence. The research department has
+gathered data from a random sample of 1399 customers. The data is summarized in the table below.
+Gender and Residence of Customers
+Males Females
+Apartment 81 228
+Dorm 116 79
+With Parent(s) 215 252
+Sorority/Fraternity House 130 97
+Other 129 72
+
+What is the probability that a customer is not male or does not live with parents? Write your answer as a fraction or a
+decimal number rounded to four decimal places.
+Determine if the following events are independent.
+Going to the gym. Losing weight.
+
+```{r}
+f <-c(228,79,252,97,72)
+m <-c(81,116,215,130,129)
+lwp <-c(215,252)
+sf <-sum(f)
+sm <-sum(m)
+stotal <-sum(sf,sm)
+slwp <- sum(lwp)
+nm <- round((1 -sm/stotal),4)
+snlwp <- round((1 - slwp/stotal),4)
+nmsnlwp<- nm+snlwp - round((lwp[1]/slwp),4)
+
+```
+
+**The probability customer is not male or does not live with parents is `r nmsnlwp`**
+
+#4) Gym 
+
+Determine if the following events are independent.
+Going to the gym. Losing weight.
+Answer: A) Dependent B) Independent
+
+**Going to the gym and losing weight are independent. Not all people go to gym to lose weight. Some go to the gym to gain muscle mass and/or just to stay healthy. Also, some people who go to the gym to lose weight don't always succeed.**
+
+#5) Veggie Wrap
+A veggie wrap at City Subs is composed of 3 different vegetables and 3 different condiments wrapped up in a tortilla. If
+there are 8 vegetables, 7 condiments, and 3 types of tortilla available, how many different veggie wraps can be made?
+
+```{r}
+v <- 8
+c <- 7
+t <- 3
+vw <- (factorial(v)/(factorial(3) * factorial(v-3))) * (factorial(c)/(factorial(3) * factorial(c-3))) * t
+choose(8,3)
+```
+
+ **`r vw` different veggie wraps can be made**
+
+#6) Gas and News
+Determine if the following events are independent.
+Jeff runs out of gas on the way to work. Liz watches the evening news.
+
+Answer: A) Dependent B) Independent
+
+**These events are independent. Running out of gas has no dependency with Liz watching the eveninng news.**
+
+#7) Candidates
+The newly elected president needs to decide the remaining 8 spots available in the cabinet he/she is appointing. If there
+are 14 eligible candidates for these positions (where rank matters), how many different ways can the members of the
+cabinet be appointed?
+
+```{r}
+s <- 8
+c <- 14
+
+a<- factorial(s) / factorial(c-s)
+
+```
+
+**There are `r a` different ways to appoint members to the cabinet.**
+
+#8) Jellybeans
+A bag contains 9 red, 4 orange, and 9 green jellybeans. What is the probability of reaching into the bag and randomly
+withdrawing 4 jellybeans such that the number of red ones is 0, the number of orange ones is 1, and the number of green
+ones is 3? Write your answer as a fraction or a decimal number rounded to four decimal places.
+
+```{r}
+r <- 9
+o <- 4
+g <- 9
+
+a<- sum(r,o,g)
+pr <- round(r/a,4)
+po <- round(o/a,4)
+pg <- round(g/a,4)
+
+prob<-round(((1-pr)*po*(3*pg)),4)
+```
+
+**The probability of withrawing 4 jellybeans where 0 are red, 1 is orange and 3 are green is `r prob`**
+
+#9) Evaluate Expression
+Evaluate the following expression.
+11!
+7!
+
+```{r}
+f<- factorial(11) / factorial(7)
+```
+
+
+**The expression gives the number of different permutations if 7 items were select from 11 where order does not matter. In this case the number of permuations are `r f`**
+
+#10) The complement
+
+Describe the complement of the given event.
+67% of subscribers to a fitness magazine are over the age of 34.
+
+**The complement of 67% of subscribers of a fitness magazine over age 34 would be 100-67% or 33% of subscribers that are under the age of 34**
+
+#11) Coin Toss
+If you throw exactly three heads in four tosses of a coin you win $97. If not, you pay me $30.
+Step 1. Find the expected value of the proposition. Round your answer to two decimal places.
+Step 2. If you played this game 559 times how much would you expect to win or lose? (Losses must be entered as
+negative.)
+
+```{r}
+#Step 1
+h <- dbinom(3,4,.5)
+t <- dbinom(1,4,.5)
+
+w <- 97
+l <- -30
+wev <- h*w
+lev <- t*l
+exp1 <- round((wev + lev),2)
+
+#Step 2
+h <- mean(rbinom(559,4,.5)==3)
+t <- mean(rbinom(559,4,.5)==1)
+
+wev <- h*w
+lev <- t*l
+exp2 <- round((wev + lev),2)
+```
+
+**STEP1 The expected value of 4 coins tosses is `r exp1`**
+**STEP2 The expected value of 559 coin tosses is `r exp2`**
+
+#12) Coin Toss 2
+
+Flip a coin 9 times. If you get 4 tails or less, I will pay you $23. Otherwise you pay me $26.
+Step 1. Find the expected value of the proposition. Round your answer to two decimal places.
+Step 2. If you played this game 994 times how much would you expect to win or lose? (Losses must be entered as
+negative.)
+
+```{r}
+#Step 1
+h <- dbinom(4,9,.5)
+t <- dbinom(5,9,.5)
+
+w <- 23
+l <- -26
+wev <- h*w
+lev <- t*l
+exp1 <- round((wev + lev),2)
+
+#Step 2
+h <- mean(rbinom(994,9,.5)<=4)
+t <- mean(rbinom(994,9,.5)>4)
+
+wev <- h*w
+lev <- t*l
+exp2 <- round((wev + lev),2)
+```
+
+**STEP1 The expected value of 9 coins tosses is `r exp1`**
+**STEP2 The expected value of 994 coin tosses is `r exp2`**
+
+#13) Polygraph
+
+The sensitivity and specificity of the polygraph has been a subject of study and debate for years. A 2001 study of the use of polygraph for screening purposes suggested that the probability of detecting a liar was .59 (sensitivity) and that the probability of detecting a "truth teller" was .90 (specificity). We estimate that about 20% of individuals selected for the screening polygraph will lie.
+
+**The below matrix provides the probability matrix for answers a-c**
+
+```{r}
+
+l <- .59
+t <- .9
+ll <- .2
+tt <- .8
+
+matrix(c(ll,l, ll*l, ll, 1-l, ll*(1-l), tt, t, t*tt, tt,  1-t, tt*(1-t)), 4,3,byrow =TRUE)
+```
+
+##a. Liar
+What is the probability that an individual is actually a liar given that the polygraph detected him/her as such? (Show me the table or the formulaic solution or both.)
+
+
+```{r}
+
+lie<- l*ll
+
+```
+
+**The probabiliy that the individual is a liar given they are detected as such is `r lie`**
+
+##b. Truth-teller
+What is the probability that an individual is actually a truth-teller given that the polygraph detected him/her as such? (Show me the table or the formulaic solution or both.)
+
+```{r}
+truth<- tt*t
+
+```
+
+
+**The probabiliy that the individual is a true-teller given they are detected as such is `r truth`**
+
+##c. Liar-Liar
+What is the probability that a randomly selected individual is either a liar or was identified as a liar by the polygraph? Be sure to write the probability statement.
+
+```{r}
+lil<- lie + (tt*(1-t))
+```
+
+**The probabiliy that the individual is either a liar or they are detected as such is `r lil`**

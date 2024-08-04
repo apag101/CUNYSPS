@@ -1,0 +1,152 @@
+---
+title: "IS607 Project 4"
+author: "Anthony Pagan"
+date: "November 4, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 4
+
+####Load Libraries
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(readr)
+library(tidytext)
+library(stringr)
+library(ggplot2)
+library(wordcloud)
+library(topicmodels)
+```
+
+####In this code we are:
+* Setting Spam File folder
+* Extracting Files and lines from folder to a dataframe
+* Filtering data to rmeove text and remove lines with unwante text
+* Generate workd list
+* Remove stop words
+```{r message=FALSE, warning=FALSE}
+#Set Spam file folder
+spfolder<-"./spam_2"
+
+#Extract files and lines from folder to a dataframe
+srawdata<-data_frame(file= dir(spfolder, full.names =TRUE))%>%
+    mutate(text = map(file,read_lines))%>%
+    transmute(id = basename(file), text)%>%
+    unnest(text)
+
+#Filter clean data from unwanted text
+clsp<-srawdata%>%
+    group_by(id)%>%
+    filter(cumsum(text =="") >0,
+           cumsum(str_detect(text,"^--")) == 0)%>%
+    ungroup()
+
+#More text cleaning and extracting word list
+stf_idf <- clsp%>%
+    filter(cumsum(str_detect(text,"<")) == 0) %>%
+    unnest_tokens(word, text)
+
+#Remove stop words
+stf_idf<-stf_idf%>%
+    anti_join(stop_words)%>%
+    count(word, sort=TRUE)
+```    
+
+####GGPLOT 
+* List top 25 word count
+* Words with less than 20 characers
+
+```{r message=FALSE, warning=FALSE}
+stf_idf%>%
+    filter(nchar(word)<20) %>%
+    mutate(word = reorder(word, n))%>%
+    top_n(25)%>%
+    ggplot(aes(word, n)) +
+    geom_col()+
+    xlab(NULL)+
+    coord_flip()
+```
+
+####WordCloud with words with at least 1 frequency
+
+```{r message=FALSE, warning=FALSE}
+wordcloud(stf_idf$word, min.freq = 1)
+```
+
+####In this code we are:
+* Setting HAM File folder
+* Extracting Files and lines from folder to a dataframe
+* Filtering data to rmeove text and remove lines with unwante text
+* Generate workd list
+* Remove stop words
+
+```{r message=FALSE, warning=FALSE}
+#Set Ham Folder
+hfolder<-"./easy_ham_2"
+
+#Extract files and lines into a data frame
+rawdata<-data_frame(file= dir(hfolder, full.names =TRUE))%>%
+    mutate(text = map(file,read_lines))%>%
+    transmute(id = basename(file), text)%>%
+    unnest(text)
+
+#Clean data remove lines with unwanted text
+clh<-rawdata%>%
+    group_by(id)%>%
+    filter(cumsum(text =="") >0,
+           cumsum(str_detect(text,"^--")) == 0)%>%
+    ungroup()
+
+#Exract words
+htf_idf <- clh%>%
+    unnest_tokens(word, text)%>%
+    filter(str_detect(word, "[a-z']$"))
+ 
+#Remove stop words
+htf_idf<-htf_idf%>%
+    anti_join(stop_words)%>%
+    count(word, sort=TRUE)
+```
+
+####GGPLOT
+* Top 25 words with 100 or more words
+
+```{r message=FALSE, warning=FALSE}
+htf_idf%>%
+    filter(n>100) %>%
+    mutate(word = reorder(word, n))%>%
+    top_n(25)%>%
+    ggplot(aes(word, n)) +
+    geom_col()+
+    xlab(NULL)+
+    coord_flip()
+```
+
+####Word cloud listing words with a max of 400 word count
+
+```{r message=FALSE, warning=FALSE}
+wordcloud(htf_idf$word, max = 400)
+```
+
+####Extracting emails that have SPAM words 
+```{r}
+#pass rawdata to a data frame
+df<-rawdata
+
+#Find Emails with Spam words and add column with y or n
+for (i in stf_idf$word)
+{
+    df$spam <- ifelse(grepl(i,df$text),'y','n')
+}
+
+#Filter for emails that have spam column as y
+sdf<-df %>%
+    filter(spam =="y")
+sdf
+```

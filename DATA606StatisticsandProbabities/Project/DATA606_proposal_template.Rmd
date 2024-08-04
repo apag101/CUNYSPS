@@ -1,0 +1,262 @@
+---
+title: DATA 606 Final Project 
+author: Anthony Pagan
+date: "December 12, 2018"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+---
+
+
+## Research question 
+
+Baseball began testing for steroid/PEDS usage in 2003. There is a debate on wether a player that has tested positive should be elected to the hall of fame.
+
+For the research question we will be comparing stats of players that tested positive for steroids vs non-steroid player. Will the stats vary enough to  predict if any Hall of Fame players  may have used steroids or performance enhancing drugs?
+
+ - Cases - The cases are all major players with a total of 12717 players.
+
+ - Data collection - The initial data will come from  www.seanlahman.com/baseball-archive/statistics/. Additional sources will be needed  to extract players that have tested postitive of steroids.**
+
+ - Type of study  - This study will be an observational study as it will take data from past baseball statistics
+
+ - Data Source - The data was collected from www.seanlahman.com/baseball-archive/statistics/
+
+ - Dependent Variable - The dependent variable is steroid use and is qualitative
+
+ - Independent Variable - The indpendent variables are the baseball statistics. The statistics will be quantitative. A positive for Steroid use would be a quantitative variable
+
+
+## Data Preparation
+
+In the data preparation we joined players, batting, positve for steroid  and hall of fame players. We synced all columns, combined into one dataframe. We then filtered for players with 10 or more years in the league and over 3000 atbats to remove any non-position players or pitchers. We then created separate data frames for HOFP, Steroid Players and all other players. NOTE: The Hits and HRs were a combination of the total hits and hrs for each player.
+
+```{r setup, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+#Load Libraries
+library(dplyr)
+library(tidyverse)
+library(stringr)
+library(RCurl)
+library(ggplot2)
+library(plotly)
+
+# load data
+
+#Players
+p<-read.csv(file = 'people.csv', stringsAsFactors =FALSE)
+
+#Player Statistics
+b<-read.csv(file = 'batting.csv', stringsAsFactors =FALSE)
+
+#Players with Awards
+h<-read.csv(file = 'halloffame.csv', stringsAsFactors =FALSE)
+
+#Players accused of steroid Use
+s<-read.csv(file = 'steroidPlayers.csv', stringsAsFactors =FALSE)
+
+# Modify full name remove _  
+sl<-s%>%
+    mutate(fullname = str_replace_all(s$fullname, "_", " "))%>%
+    mutate(steroiduse = "Y")
+
+ub<-b%>%
+    select(playerID, yearID, HR, H, G, AB)%>%
+    group_by(playerID)%>%
+    summarise(HRs = sum(HR), Hits = sum(H), Games = sum(G), Atbats= sum(AB), Years = length(yearID))
+    
+#Join Data
+
+#All players and statistics
+a<-inner_join(p, ub, by="playerID")%>%
+    mutate(fullname = str_c(nameFirst,nameLast, sep = " "))%>%
+    select(playerID, nameGiven, fullname, HRs, Hits, Games, Atbats, Years)%>%
+    group_by(nameGiven)
+
+#Join Hall of fame players and all player statistics
+hofp<-left_join(a, h, by="playerID")%>%
+    #filter(inducted == "Y")%>%
+    select(playerID, nameGiven, fullname, HRs, Hits, Games, Atbats, Years, inducted)%>%
+    group_by(playerID)
+
+#Join Steroid Players with Statistics
+sp<-inner_join(a, sl, by="fullname")
+
+
+#Join all players with statistics and HOFP/Steroid use classificaton
+all <-full_join(hofp, sp, by="fullname")%>%
+    rename(playerID = playerID.x,HRs = HRs.x, Hits = Hits.x, Games = Games.x, Atbats = Atbats.x, Years = Years.x)%>%
+    select(fullname, HRs, Hits, Games, Atbats, Years, inducted, steroiduse)%>%
+    group_by(playerID, fullname)
+
+all1<-left_join(a, all, by="playerID")%>%
+     rename(fullname = fullname.x, Hits = Hits.x, Games = Games.x, Atbats = Atbats.x, Years = Years.x, HRs = HRs.x)%>%
+    select(playerID,fullname, HRs, Hits, Games, Atbats, Years, inducted, steroiduse)%>%
+    group_by(playerID)
+
+#Update and NA values in inducted and Steroid Use to N
+allp<-all1%>%
+    mutate(inducted = ifelse(is.na(inducted), "N", inducted))%>%
+    mutate(steroiduse = ifelse(is.na(steroiduse), "N", steroiduse))
+
+#Filter for players who have played at least 10 years and had more than 3000 atbats
+allpl<-allp%>% filter(Years >= 10 & Atbats > 3000)%>%
+    unique()
+
+#Get all steroid players a
+allpl_s <-allpl%>%
+    filter(steroiduse == 'Y')
+
+#Get All HOF Players
+allpl_h<-allpl%>%
+    filter(inducted == 'Y')
+
+```
+
+## Relevant summary statistics 
+
+A comparision of Hits and HR will was right skewed. The expectation is 40 Hr/250 H/year  would be Hall of fame caliber player. That will equate to approximatley 400 HRs and 2500 hits in 10 years.
+
+Summary statistics show hits are about the same for mean non steroid players vs steroid players, but Hall of fame players are lifetime ~25% more than averge of both. However HRs, Steroid players are slighty higher mean than Hall of Fame players on average and almost double all other players
+
+```{r sumstats, message=FALSE, warning=FALSE}
+
+summary(allpl$Hits)
+summary(allpl_s$Hits)
+summary(allpl_h$Hits)
+
+summary(allpl$HRs)
+summary(allpl_s$HRs)
+summary(allpl_h$HRs)
+```
+
+## Plots - Analysis
+
+### Strip chart
+This strip chart shows lifetime Hits and homeruns for all players. Homeruns appear to have a bigger spread than hits
+ 
+```{r message=FALSE, warning=FALSE}
+stripchart(allpl_h$HRs)
+stripchart(allpl$Hits)
+```
+
+### Box Plots
+In below boxplots we show Hits, Homeruns comparison of HOFP, Steroid Players and others. The plot shows that steroid players lifetime median number of hits was similar to other non HOFP, but the median number of homeruns were similar to HOFP.
+
+```{r message=FALSE, warning=FALSE}
+
+boxplot(allpl$Hits,allpl_s$Hits,allpl_h$Hits, names = c("OtherHits", "SteroidHits", "HOFPHits"),
+las = 2,
+col = c("orange","red", "blue"))
+boxplot(allpl$HRs,allpl_s$HRs,allpl_h$HRs, names = c("OtherHRs", "SteroidHRss", "HOFPHRss"),
+las = 2,
+col = c("orange","red", "blue"))
+
+```
+
+
+###Linear Model- Predictor
+Here we are creating a linear model for hits and homeruns for each class of players, HOFP, Steroids and others. We then create a predicted box plot to compare each.
+
+If steroid use did not make a difference we would expect the predictions to be the same as above graph. However, the predictions show that steroid playeres should be the same as the other players for both hits and hrs and not same or more than HOFP.
+
+```{r message=FALSE, warning=FALSE}
+all_lmhits<-lm(allpl$Atbats~allpl$Hits)
+all_lmhr<-lm(allpl$Atbats~allpl$HRs)
+
+all_lmhits_s<-lm(allpl_s$Atbats~allpl_s$Hits)
+all_lmhr_s<-lm(allpl_s$Atbats~allpl_s$HRs)
+
+all_lmhits_h<-lm(allpl_h$Atbats~allpl_h$Hits)
+all_lmhr_h<-lm(allpl_h$Atbats~allpl_h$HRs)
+   
+boxplot(predict(all_lmhits),predict(all_lmhits_s),predict(all_lmhits_h), names = c("OtherHits", "SteroidHits", "HOFPHits"),
+las = 2,
+col = c("orange","red", "blue"))
+boxplot(predict(all_lmhr),predict(all_lmhr_s),predict(all_lmhr_h), names = c("OtherHRs", "SteroidHRs", "HOFPHRs"),
+las = 2,
+col = c("orange","red", "blue"))
+
+#residuals(all_lmh)
+```
+
+
+###GGPlots - Steroid vs NonSteroids
+Here we are setting some ggplots to compare non-steroid to steroid players by Hits and by Hrs. 
+
+Both plots include LM lines to show anomalies. The hits LM seems to be consistant for steroid and non steroid use players. However, the HR LM lines show a big break between steroid and Non-Steroid users. 
+
+```{r message=FALSE, warning=FALSE}
+
+
+#All Players atbats vs hrs/hits and steroid use
+hits<-ggplot(allpl, aes(x=Atbats, y=Hits, color = steroiduse)) +geom_point() +stat_smooth(method="lm", se=FALSE)
+
+ggplotly(hits,width = 700, height = 600)                                                                                                                                
+hrs<-ggplot(allpl, aes(x=Atbats, y=HRs, color = steroiduse)) +geom_point() +stat_smooth(method="lm", se=FALSE)
+
+ggplotly(hrs,width = 700, height = 600)   
+
+```
+
+
+###Plotly Side By Side
+Here we are comparing hits and Hrs to inducted HOFP vs not inducted. We have one plot with the LM line and another that splits inducted vs non inducted. The second plot includes player names as you highlight dots. Once again, HR LM seem to diverge , while hits remain  consistantly close to the LM line. It is interesting to see some non-HOFP together that have been expected of using steroids although they were not found guilty, together with some HOFPs.
+
+```{r message=FALSE, warning=FALSE}
+
+#All Players atabats vs hrs/hits and inducted
+hrs_i<-ggplot(allpl, aes(x=Atbats, y=HRs, color = inducted)) +geom_point() +stat_smooth(method="lm", se=FALSE)
+
+ggplotly(hrs_i,width = 700, height = 600) 
+
+hrs_i<-ggplot(allpl, aes(x=Atbats, y=HRs, text =paste("Name:", fullname),color = inducted))  +stat_smooth(method="lm", se=FALSE)+geom_point()+
+     facet_wrap(~ steroiduse) 
+
+ggplotly(hrs_i,width = 700, height = 600)   
+
+hits_i<-ggplot(allpl, aes(x=Atbats, y=Hits, color = inducted)) +geom_point() +stat_smooth(method="lm", se=FALSE)
+
+ggplotly(hits_i,width = 700, height = 600)   
+
+hits_i<-ggplot(allpl, aes(x=Atbats, y=Hits, text =paste("Name:", fullname),color = inducted))  +stat_smooth(method="lm", se=FALSE)+geom_point()+
+     facet_wrap(~ steroiduse) 
+
+ggplotly(hits_i,width = 700, height = 600) 
+
+```
+
+##Conclusion
+The plots and stats hint that a good way to gauge which HOFP may have used PEDs during their carreer may be HRs,  as hits do not seem to show anomolies in comparison to other players. We also can see from list of players with over 600 HRs, which are very few, more than half have been suspected of using PEDs. With these facts and plotted data, we may infer that any players with over 600 HRs and are HOFP may have been especially  talented or some other unknown variable may have  contributed to their success and longevity. 
+
+```{r message=FALSE, warning=FALSE}
+
+spl<-allpl%>%
+    filter(HRs > 600)%>%
+    select(-playerID, -nameGiven)
+spl
+```
+
+
+```{r}
+allpl<-allpl%>%
+    mutate( st_bin= ifelse(steroiduse == "Y", 1, 0))%>%
+    mutate( hofp_bin= ifelse( inducted== "Y", 1, 0))
+
+allpl.slm<-glm(st_bin ~ HRs, data = allpl, family=binomial)
+summary(allpl.slm)
+
+ggplot(allpl.slm, aes(x=HRs, y=st_bin)) + geom_point() +
+    geom_smooth(method = "glm", method.args =list(family="binomial")) 
+
+allpl.hlm<-glm(hofp_bin ~ HRs, data = allpl, family=binomial)
+summary(allpl.hlm)
+
+ggplot(allpl.hlm, aes(x=HRs, y=hofp_bin)) + geom_point() +
+    geom_smooth(method = "glm", method.args =list(family="binomial"))
+
+
+```

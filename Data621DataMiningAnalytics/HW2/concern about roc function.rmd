@@ -1,0 +1,59 @@
+---
+title: "concern about roc function.R"
+author: "Todd Weigel"
+date: "October 7, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+options(scipen = 999)
+library(pROC)
+library(ggplot2)
+class_data <- read.csv("classification-output-data.csv", header = TRUE)
+df <- class_data
+df <- df[order(df$scored.probability, decreasing = TRUE),]
+df$class <- as.numeric(as.character(df$class))
+df$scored.class <- as.numeric(as.character(df$scored.class))
+TP<-vector()
+FP<-vector()
+for(t in seq(0,1,1/181)) {
+    TP<-c(TP,nrow(df[which(df$class==1 & df$scored.probability>t),]))
+    FP<-c(FP,nrow(df[which(df$class==0 & df$scored.probability>t),]))
+
+    
+}
+#smoothingSpline = smooth.spline(FP/124, TP/57, spar=0.35)
+#plot(FP/124,TP/57, type = "l")
+#lines(smoothingSpline)
+AUC<-sum(abs(c(diff(FP,1),0)*TP))/(max(TP)*max(FP))
+
+AUC
+
+
+
+
+rocPkg <- roc(class ~ scored.probability, data = class_data)
+g1 <- ggplot(data.frame(sensitivities = rocPkg$sensitivities, specificities = rocPkg$specificities), aes(1-sensitivities, specificities))  +
+    geom_line() +
+    ggtitle("Graph from Data from the pROC Package")
+
+require(gridExtra)
+
+
+dfSort <- data.frame(sensitivities = (FP/124), specificities= (TP/57))
+dfSort <- dfSort[order(dfSort$specificities, dfSort$sensitivities),]
+g2 <- ggplot(data.frame(dfSort), aes(sensitivities, specificities))  +
+    geom_line()
+    ggtitle("Graph using data from our function.")
+
+gridExtra::grid.arrange(g1,g2)

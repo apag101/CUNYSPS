@@ -1,0 +1,106 @@
+---
+title: "Data 605 Assignment 12"
+author: "Anthony Pagan"
+date: "April 18, 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW12
+
+#Who DataSet
+
+The attached who.csv dataset contains real-world data from 2008. The variables included follow.
+
+##Simple Regression
+
+1. Provide a scatterplot of LifeExp~TotExp, and run simple linear regression. Do not transform the variables. Provide and interpret the F statistics, R^2, standard error,and p-values only. Discuss whether the assumptions of simple linear regression met.
+
+
+- **The F statistics of is not useful here as we are using a one factor model and it is only useful for multiple regression. R^2 this percentage of how well the model describes measured data. In this case, at .2537 it is low. Standard error is the measure of total variation. Its seems pretty high in comparison to the 1st and 3rd Qrt. Quartes should be 1 1/2 times STD Error. P-values gives probability that the corresponding coefficient is not revelant. P-values in this case is very low**
+
+```{r message=FALSE, warning=FALSE}
+who <- read.csv('C:\\Users\\apagan\\Documents\\CUNYSPS\\IS605FundamentalsofcomputationalMath\\who.csv')
+who.lm <- lm(who$LifeExp ~ who$TotExp)
+summary(who.lm)
+
+
+``` 
+
+- **In the plots below you can see the residuals are not normally distributed**
+
+```{r message=FALSE, warning=FALSE}
+plot(who$TotExp, who$LifeExp)
+abline(who.lm)
+plot(fitted(who.lm), resid(who.lm))
+qqnorm(resid(who.lm))
+qqline(resid(who.lm))
+``` 
+
+##Exponential
+
+2. Raise life expectancy to the 4.6 power (i.e., LifeExp^4.6). Raise total expenditures to the 0.06 power (nearly a log transform, TotExp^.06). Plot LifeExp^4.6 as a function of TotExp^.06, and r re-run the simple regression model using the transformed variables. Provide and interpret the F statistics, R^2, standard error, and p-values. Which model is "better?"
+
+
+- **The F statistics of does is not useful here as we are using a one factor model and it is only useful for multiple regression. R^2 incrased alomst doubled to .552 it is low. Standard error is still high in comparison to the 1st and 3rd Qrt. Quarters should be 1 1/2 times STD Error. P-values gives probability that the corresponding coefficient is not revelant. P-values is again very low. **
+
+```{r message=FALSE, warning=FALSE}
+who.lm <- lm(log(who$LifeExp^4.6) ~ log(who$TotExp^.06))
+summary(who.lm)
+``` 
+
+
+- **QQ plots still is not normally distributed in the beginning of plot, but regress to a normal distribution when greater than -1**
+
+```{r}
+qqnorm(resid(who.lm))
+qqline(resid(who.lm))
+
+```
+
+##Forecast 1
+3. Using the results from 3, forecast life expectancy when TotExp^.06 =1.5. Then forecast life expectancy when TotExp^.06=2.5.
+
+
+```{r}
+print(who.lm)
+
+who.1<-round(who.lm$coefficients[1] + (who.lm$coefficients[2]*1.5),2)
+who.2<-round(who.lm$coefficients[1] + (who.lm$coefficients[2]*2.5),2)
+
+
+```
+
+- **Equations are Y= ax + b. The forecast for TotExp^.06 =1.5 is `r who.1`. The forecast for TotExp^.06 =2.5 is `r who.2`**
+
+##Multiple Regression
+4. Build the following multiple regression model and interpret the F Statistics, R^2, standard error, and p-values. How good is the model?
+LifeExp = b0+b1 x PropMd + b2 x TotExp +b3 x PropMD x TotExp
+
+- **The F statistics is large and indicates that the linear model is more compatible with the data than a constant average model. R^2 this percentage of how well the model describes measured data. In this case, at .2921 it is low. Standard error is the measure of total variation. Its seems lightly high in comparison to the 1st and 3rd Qrt. Quarters should be 1 1/2 times STD Error. P-values gives probability that the corresponding coefficient is not revelant. P-values in this case is lower than .05  so these values are revelant. The QQ plot shows these linear model is not normally distributed**
+
+```{r}
+who.lm <- lm(who$LifeExp ~ who$PropMD+who$TotExp+who$PropMD+who$TotExp)
+summary(who.lm)
+qqnorm(resid(who.lm))
+qqline(resid(who.lm))
+```
+
+
+##Forecast 2
+5. Forecast LifeExp when PropMD=.03 and TotExp = 14. Does this forecast seem realistic? Why or why not?
+
+
+```{r}
+who.3<-round(who.lm$coefficients[1] + (who.lm$coefficients[2]*.03) + (who.lm$coefficients[3]*14),2)
+
+```
+
+- **Equation is Y= ax + b1* .03 + b2* 14. The forecast for PropMD=.03 and TotExp = 14 is `r who.3`. **
+

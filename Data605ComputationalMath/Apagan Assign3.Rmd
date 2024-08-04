@@ -1,0 +1,147 @@
+---
+title: "Data 605 Assignment 3"
+author: "Anthony Pagan"
+date: "February 16, 2019"
+output: html_document
+---
+
+(1) What is the rank of the matrix A? `r matrix(c(1,-1,0,5,2,0,1,4,3,1,-2,-2,4,3,1,3),4,4,byrow=FALSE)`
+
+ 
+#### The Matix Rank is the number of non zero rows in the reduce row echelon of a Matrix
+
+```{r message=FALSE, warning=FALSE}
+library(matlib)
+A<- matrix(c(1,-1,0,5,2,0,1,4,3,1,-2,-2,4,3,1,3),4,4,byrow=FALSE)
+A
+echelon(A, reduce=FALSE,verbose=TRUE)
+A.rank<-R(A)
+
+```
+
+####In this example the rank of matrix A is `r A.rank`
+
+
+(2) Given an mxn matrix where m > n, what can be the maximum rank? The mini-
+mum rank, assuming that the matrix is non-zero?
+
+####The Maximum rank for an mxn matrix number of linearly independent non-zero m columns in the matrix = n when n < m or = m when n > m. The minimum rank will be the min(m, n). If m<n min rank is m, if n<m min rank is n.
+
+(3) What is the rank of matrix B?
+B = `r matrix(c(1,2,1,3,6,3,2,4,2),3,3,byrow=TRUE)`
+
+```{r}
+A<- matrix(c(1,2,1,3,6,3,2,4,2),3,3,byrow=TRUE)
+A
+echelon(A, reduce=FALSE)
+A.rank<-R(A)
+```
+
+####In this example the rank of matrix A is `r A.rank`
+
+Compute the eigenvalues and eigenvectors of the matrix A. You'll need to show your
+work. You'll need to write out the characteristic polynomial and show your solution.
+
+A = `r matrix(c(1,2,3,0,4,5,0,0,6),3,3,byrow=TRUE)`
+
+
+```{r}
+#The Matrix
+A<- matrix(c(1,2,3,0,4,5,0,0,6),3,3,byrow=TRUE)
+A
+```
+
+####The eigen values of A are:
+
+```{r}
+#Get eigen values and vectors
+
+e<-eigen(A)
+e.values<-e$value
+e.values
+```
+
+####The eigen vectors of A are:
+
+```{r}
+e.vectors<-e$vector
+e.vectors
+
+```
+
+
+####The polynomial equation derived from eigen values is:
+
+`r -e.values[1]`$\mathbf\lambda^3$\ - (`r -e.values[2]`) $\mathbf\lambda^2$\ + (`r -e.values[3]`) $\mathbf\lambda$\ - `r det(A)`
+
+
+####Testing Eigen values Null Space
+
+```{r}
+
+#Create identity matrix 
+B<-matrix(c(1,0,0,0,1,0,0,0,1),3,3,byrow=TRUE)
+B
+
+#get determinate of  Identity matrix minus A 
+(A[1,1]*(A[2,2]*A[3,3]))-(A[2,1]*(A[1,3]*A[3,3]))+(A[1,3]*(A[2,1]*A[3,2]))
+det(B-A)
+det(A)
+B-A
+#Test eigen values
+
+#Test first eigen value minus A
+C1<-A
+C1[1,1]<-e.values[1]-C1[1,1]
+C1[2,2]<-e.values[1]-C1[2,2]
+C1[3,3]<-e.values[1]-C1[3,3]
+C1
+
+#Reduced row echelon of eigen vector
+C1.e<-echelon(C1, reduced =FALSE)
+C1.e
+
+#Eigen value minus vector A to confirm determinant equals 0
+C1.v<-C1-A
+C1.v
+
+#Test vector multiplied by eigen vector values
+
+C1.v*C1.e - C1.v
+
+#Test second eigen value minus A
+C2<-A
+C2[1,1]<-e.values[2]-C2[1,1]
+C2[2,2]<-e.values[2]-C2[2,2]
+C2[3,3]<-e.values[2]-C2[3,3]
+C2
+
+#Reduced row echelon of eigen vector
+C2.e<-echelon(C1, reduced =FALSE)
+C2.e
+#Eigen value minus vector A to confirm determinant equals 0
+C2.v<-C2-A
+C2.v
+#Test vector multiplied by eigen vector values
+
+C2.v*C2.e - C2.v
+
+#Test third eigen value minus A
+C3<-A
+C3[1,1]<-e.values[3]-C3[1,1]
+C3[2,2]<-e.values[3]-C3[2,2]
+C3[3,3]<-e.values[3]-C3[3,3]
+C3
+
+#Reduced row echelon of eigen vector
+C3.e<-echelon(C1, reduced =FALSE)
+C3.e
+#Eigen value minus vector A to confirm determinant equals 0
+C3.v<-C3-A
+C3.v
+#Test vector multiplied by eigen vector values
+
+C3.v*C3.e - C3.v
+
+```
+

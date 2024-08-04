@@ -1,0 +1,91 @@
+---
+title: "Data 621 LMR Exercise 7.3"
+author: "Anthony Pagan"
+date: "10/6/2019"
+output: html_document
+css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## 
+LMR Exercise 7.3
+
+FemLab appears to have the lowest P value
+```{r}
+data(divusa, package="faraway")
+#Linear Regression with all values
+lmod<-lm(divorce ~ unemployed+femlab+marriage+birth+military,divusa)
+summary(lmod)
+```
+
+
+The Plot shows dash slope gets shallower in areas where the points are closer to the line.
+
+```{r}
+#Plot comparing femlab only
+plot(divorce ~ femlab,ylab=
+"divorce", divusa)
+lmod<-lm(divorce ~ femlab, divusa)
+abline(lmod)
+summary(lmod)
+lmod1<-lm(divorce ~ I(femlab+rnorm(50)), divusa)
+coef(lmod1)
+abline(lmod1,lty=2)
+lmod2<-lm(divorce ~ I(femlab+2*rnorm(50)), divusa)
+coef(lmod2)
+abline(lmod2,lty=3)
+lmod5<-lm(divorce ~ I(femlab+5*rnorm(50)), divusa)
+abline(lmod5,lty=4)
+```
+
+
+```{r}
+
+##Simex values
+require(simex)
+set.seed(123)
+lmod<- lm(divorce ~ femlab, divusa, x=TRUE)
+simout <-simex(lmod,"divorce", 0.5, B=1000)
+simout
+
+```
+$$\verb!The predicted value of ! \hat{\beta} \verb! is:  `r round(simout$coefficients[2],1)`!$$
+
+
+The eigen values are large in range and condition numbers are large. There is low variance inflation is low.
+
+```{r message=FALSE, warning=FALSE}
+#correlation matrix
+round(cor(divusa),2)
+x<- model.matrix(lmod)
+e<-eigen(t(x) %*% x)
+e$val
+sqrt(e$val[1]/e$val)
+
+require(faraway)
+vif(x)
+```
+
+Creating random perbutation with sqrt of max vif value gives us a good p value for marriage , birth and femlab. The correlation matrix confirms that these value have the highest correlation. This linear model has a RSquared value of 0.813.
+
+```{r}
+lmod<-lm(divorce+sqrt(max(vif(x)))*rnorm(38)~unemployed+femlab+marriage+birth+military, divusa)
+summary(lmod)
+
+round(cor(x),2)
+```
+
+The new linear model with just the high correlated values result in an higher RSquared value of 0.9106.
+
+```{r}
+lmod2<-lm(divorce ~ marriage+birth+femlab, divusa)
+summary(lmod2)
+```
+

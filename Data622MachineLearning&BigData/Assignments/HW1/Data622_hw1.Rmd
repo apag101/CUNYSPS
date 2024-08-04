@@ -1,0 +1,389 @@
+---
+title: "Data 622 Homework 1"
+author: "Anthony Pagan"
+date: "4/2/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 5
+        css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+#knitr::opts_chunk$set(echo = TRUE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(mlbench)
+library(e1071)
+library(fpp2)
+library(mlr)
+library(GGally)
+```
+
+# Probabilities
+
+You have been hired by a local electronics retailer and the above dataset has been given to you. Manager Bayes Jr.9th wants to create a spreadsheet to predict is a customer is likely prospect.
+
+```{r}
+#x<-read.clipboard()
+#summary(x)
+#write.csv((x),"x.csv")
+
+d<-read.csv("x.csv")
+
+# 1 )Prior Prob
+p.y<-nrow(subset(d,d$class.prospect=="yes"))/nrow(d) #YES
+p.n<-1-p.y #NO
+
+g.y<-nrow(subset(d,d$age.group=="youth"))/nrow(d) #YOUTH
+g.m<-nrow(subset(d,d$age.group=="middle"))/nrow(d) #MIDDLE
+g.s<-1-g.y-g.m #SENIOR
+
+s.e<-nrow(subset(d,d$status=="employed"))/nrow(d) #EMPLOYED
+s.u<-1-s.e #UNEMPLOYED
+
+n.h<-nrow(subset(d,d$networth=="high"))/nrow(d) #HIGH
+n.m<-nrow(subset(d,d$networth=="medium"))/nrow(d) #MEDIUM
+n.l<-1-n.h-n.m #LOW
+
+c.e<-nrow(subset(d,d$credit_rating=="excellent"))/nrow(d) #EXCELLENT
+c.f<-1-c.e #FAIR
+
+n<-addmargins(prop.table(xtabs(~class.prospect+networth, data=d) ,margin = NULL))
+g<-addmargins(prop.table(xtabs(~class.prospect+age.group, data=d) ,margin = NULL))
+s<-addmargins(prop.table(xtabs(~class.prospect+status, data=d) ,margin = NULL))
+c<-addmargins(prop.table(xtabs(~class.prospect+credit_rating, data=d) ,margin = NULL))
+
+```
+
+### Prior Probabilities
+
+1) Compute prior probabilities for the Prospect Yes/No
+
+* Prior YES probability: `r round(p.y,2)*100`% 
+
+* Prior NO probability: `r round(p.n,2)*100`%
+
+### Conditional Probabilities
+
+2) Compute the conditional probabilities where age-group is a predictor variable. P(age-group=youth|prospect=yes) and	P(age-group=youth|prospect=no)
+
+* P(age-group=youth|prospect=yes): `r round(g.y*p.y,2)*100`%
+
+* P(age-group=youth|prospect=no) : `r round(g.y*p.n,2)*100`%
+
+
+```{r}
+round(n,2)
+round(g,2)
+round(s,2)
+round(c,2)
+```
+
+
+```{r}
+
+gypn<-round((g.y*p.n)/((g.y*p.n)+((1-g.y)*p.y)),2)*100
+gypy<-round((g.y*p.y)/((g.y*p.y)+((1-g.y)*p.n)),2)*100
+
+gmpn<-round((g.m*p.n)/((g.m*p.n)+((1-g.m)*p.y)),2)*100
+gmpy<-round((g.m*p.y)/((g.m*p.y)+((1-g.m)*p.n)),2)*100
+
+gspn<-round((g.s*p.n)/((g.s*p.n)+((1-g.s)*p.y)),2)*100
+gspy<-round((g.s*p.y)/((g.s*p.y)+((1-g.s)*p.n)),2)*100
+```
+
+### Posterior Probabilities
+
+3) Assuming the assumptions of Naive Bayes are met compute the posterior probability	
+
+* P(prospect=no|age-group(youth): `r gypn`%
+* P(prospect=yes|age-group(youth): `r gypy`%
+
+* P(prospect=no|age-group(middle): `r gmpn`%
+* P(prospect=yes|age-group(middle) `r gmpy`%
+
+* P(prospect=no|age-group(senior): `r gspn`%
+*P(prospect=yes|age-group(senior): `r gspy`%
+
+# Dataset analysis
+
+You just recently joined a datascience team.
+
+There are two datasets junk1.txt and junk2.csv. They have two options:
+1. They can go back to the client and ask for more data to remedy problems with the data.
+2. They can accept the data and undertake a major analytics exercise.
+
+The team is relying on your dsc skills to determine how they
+should proceed. Can you explore the data and recommend actions for each file
+enumerating the reasons.
+
+### Summarize Data
+
+The summary of the data show that both datasets are on average similar. The stat description of the data show that they are both similar in mean and standard deviation, but median , skew, kurtosis and se are spread differently.
+
+```{r}
+j1<-read.table("junk1.txt", header=TRUE)
+j2<-read.csv("junk2.csv", header=TRUE)
+
+#summarize data
+summary(j1)
+summary(j2)
+glimpse(j1)
+glimpse(j2)
+describe(j1)
+describe(j2)
+```
+
+### Initial Plots
+
+The initial plots show junk1 data is more spread as of result of lower number of data points and junk2 has a much more clustered set of data points with its higher number of data points. Both datasets have binomial data. The boxplot show that junk1 is fairly symetrical no outliers, while junk2 has several outliers.
+
+```{r}
+#plot data
+plot(j1)
+plot(j2)
+boxplot(j1)
+boxplot(j2)
+
+```
+
+### Transform Data
+
+In transforming the data we change the class of both datasets to factors. Then rerun the summary and note that class now has 2 classifcation. Junk1 has 1 and 2 and is split evenly 50:50. Junk 2 has 0 and 1 and is split heavily in the 0 values using  `r round(3750/4000,2)*100`% of the datapoints. 
+
+```{r}
+
+#transform data
+j1$class <-as.factor(j1$class)
+j2$class <-as.factor(j2$class)
+summary(j1)
+summary(j2)
+
+```
+
+### Plot Transformed Data
+
+#### Junk1
+
+Junk1 transformed plots show that there is a negative and low correlation. The ggdensity and histogram plots confirm the 50:50 split of classes as they intersect at 0. In addition, ggpoint plot  shows that b and a have a negative trend when class =2 and a positive trend with class =1. 
+
+```{r}
+
+#Plot of Transformation
+ggpairs(j1)
+ggplot(j1, aes(x=a, y=b, color = class)) +geom_point() +stat_smooth(method="glm", se=TRUE)
+qplot(a, data = j1, geom = "histogram",
+      fill = class)+facet_wrap(~ class)
+qplot(b, data = j1, geom = "histogram",
+      fill = class)+facet_wrap(~ class)
+qplot(a, data = j1, geom = "density",
+      fill = class)
+qplot(b, data = j1, geom = "density",
+      fill = class)
+```
+
+#### Junk2
+
+Junk2 transformed plots show that there is a posittive and low correlation. The histogram plots confirm the high count of 0 class. The density plot shows the even spread of class 0 while class 1 has high 80% density for a at 0-2.5 and b at -2.5 - 0.   In addition, ggpoint plot  shows has a noticable a positive trend when class =0 and a slight positive trend when class=1. The ggpoint plot also shows  0 is clustered through the whole range of data while class =1 is clustered between 0-2.5. 
+
+```{r}
+ggpairs(j2)
+ggplot(j2, aes(x=a, y=b, color = class)) +geom_point() +stat_smooth(method="glm", se=TRUE)
+qplot(a, data = j2, geom = "histogram",
+      fill = class)+facet_wrap(~ class)
+qplot(b, data = j2, geom = "histogram",
+      fill = class)+facet_wrap(~ class)
+qplot(a, data = j2, geom = "density",
+      fill = class)
+qplot(b, data = j2, geom = "density",
+      fill = class)
+
+```
+
+### Linear Model
+
+I recommend we use GLM binomial modeling since we have class/factor data in both datasets. However, as the summary of the data shows, junk1 glm linear model shows it is not significant, while junk2 dataset is significant. In addition, junk1 has a limited amount of data while junk2 data is more robust in comparison. Therefore, I would recommend only using junk2 data for  modeling. Some additional work is needed to remove  outlier points or investigate if further transformations are needed before finalizing the model. 
+
+```{r}
+
+#Linear Model
+plot(j1$a,j1$b)
+abline(lm(a~b,data=j1))
+lj1<-glm(class~., data=j1, family = "binomial")
+summary(lj1)
+par(mfrow=(c(2,2)))
+plot(lj1)
+par(mfrow=(c(1,1)))
+
+plot(j2$a,j2$b)
+abline(lm(a~b,data=j2))
+lj2<-glm(class~., data=j2, family = "binomial")
+summary(lj2)
+par(mfrow=(c(2,2)))
+plot(lj2)
+
+
+```
+
+# ICU
+
+Use icu.csv 
+The formula to fit is "STA ~ TYP + COMA + AGE + INF"
+
+Read the icu.csv subset it with these 5 features in the formula and STA is the labelcol.
+
+### Split the icu 70/30 train/test
+
+```{r}
+i<-read.csv("icu.csv", header=TRUE)
+i$COMA<-if_else(i$LOC==2, 1,0)
+i<<-i
+i.lm<-glm(STA ~ TYP + COMA + AGE + INF, data=i, family="binomial")
+summary(i.lm)
+
+i <- subset(select(i, STA,TYP,COMA,AGE,INF ))
+
+i.train<- i[1:(nrow(i)*.7),]
+i.test<-i[(nrow(i)*.7+1):nrow(i),]
+
+
+```
+
+
+
+```{r}
+
+### KNN Function
+
+euclideanDist <- function(a, b){
+  d = 0
+  for(i in c(1:(length(a)) ))
+  {
+    d = d + (a[[i]]-b[[i]])^2
+  }
+  d = sqrt(d)
+  return(d)
+}
+
+knn_predict2 <- function(test_data, train_data, k_value, labelcol){
+  pred <- c()  #empty pred vector 
+  #LOOP-1
+  for(i in c(1:nrow(test_data))){   #looping over each record of test data
+    eu_dist =c()          #eu_dist & eu_char empty  vector
+    eu_char = c()
+    good = 0              #good & bad variable initialization with 0 value
+    bad = 0
+    
+    #LOOP-2-looping over train data 
+    for(j in c(1:nrow(train_data))){
+ 
+      #adding euclidean distance b/w test data point and train data to eu_dist vector
+      eu_dist <- c(eu_dist, euclideanDist(test_data[i,-c(labelcol)], train_data[j,-c(labelcol)]))
+ 
+      #adding class variable of training data in eu_char
+      eu_char <- c(eu_char, as.character(train_data[j,][[labelcol]]))
+    }
+    
+    eu <- data.frame(eu_char, eu_dist) #eu dataframe created with eu_char & eu_dist columns
+ 
+    eu <- eu[order(eu$eu_dist),]       #sorting eu dataframe to gettop K neighbors
+    eu <- eu[1:k_value,]               #eu dataframe with top K neighbors
+ 
+    tbl.sm.df<-table(eu$eu_char)
+    cl_label<-  names(tbl.sm.df)[[as.integer(which.max(tbl.sm.df))]]
+    
+    pred <- c(pred, cl_label)
+    }
+    return(pred) #return pred vector
+  }
+  
+
+accuracy <- function(test_data,labelcol,predcol){
+  correct = 0
+  for(i in c(1:nrow(test_data))){
+    if(test_data[i,labelcol] == test_data[i,predcol]){ 
+      correct = correct+1
+    }
+  }
+  accu = (correct/nrow(test_data)) * 100  
+  return(accu)
+}
+```
+
+### Run KNN
+
+Run kNN.R for K=(3,5,7,15,25,50). Submit the result confusionMatrix, Accuracy for each K
+
+```{r message=FALSE, warning=FALSE}
+K<-c(3,5,7,15,25,50)
+nb<<-data.frame()
+
+for (u in K)
+{
+    #load data
+    knn.df<-i
+    labelcol <- 3 # for iris it is the fifth col 
+    predictioncol<-labelcol+1
+    # create train/test partitions
+    set.seed(2)
+    n<-nrow(knn.df)
+    knn.df<- knn.df[sample(n),]
+    
+    train.df <- knn.df[1:as.integer(0.7*n),]
+    
+    K = u # number of neighbors to determine the class
+    table(train.df[,labelcol])
+    test.df <- knn.df[as.integer(0.7*n +1):n,]
+    table(test.df[,labelcol])
+    
+    predictions <- knn_predict2(test.df, train.df, K,labelcol) #calling knn_predict()
+    
+    test.df[,predictioncol] <- predictions #Adding predictions in test data as 7th column
+    print(c("Neighbors:", u))
+    print(accuracy(test.df,labelcol,predictioncol))
+    print(table(test.df[[predictioncol]],test.df[[labelcol]]))
+    
+    ac<-accuracy(test.df,labelcol,predictioncol)
+    nb<<- rbind(nb,data.frame(K,ac))
+}
+
+```
+
+
+### Plot Accuracy vs K
+
+Plot Accuracy vs K. Write a short summary of your findings.
+
+```{r}
+plot(nb$ac, nb$K)
+```
+
+
+# Appendix
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+

@@ -1,0 +1,10 @@
+HW#4 is a continuation of HW#3.
+Please change the dataset to any other "multi-class" dataset including titanic, iris and modify the R script to analyze
+the chosen dataset. Generate the two output files and submit them. You do not have write a report or
+explain anything.
+Choose a different "multi-class" dataset and
+modify the script to run the analysis.
+Generate the two output files
+Submit the output files and the modified R script on blackboard or on IBM.
+Please name the files with your name so I can download it automatically and not be concerned
+about over-writing the submissions. Thank you for being considerate.

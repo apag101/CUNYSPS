@@ -1,0 +1,83 @@
+---
+title: "Data 621 Exercise 3.6"
+author: "Anthony Pagan"
+date: "September 15, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 3.6
+
+**Love and money appear to be significant at a 1% level**
+```{r}
+data(happy, package="faraway")
+#str(happy)
+lmods <-lm(happy ~ money + sex + love + work, happy)
+anova(lmods)
+summary(lmods)
+confint(lmods, level = .98)
+
+```
+
+** The permutation t-statitics**
+
+```{r}
+nullmod<-lm(happy ~ 1, happy)
+anova(nullmod, lmods)
+lms <-summary(lmods)
+
+(rss0 <-deviance(nullmod))
+(rss <- deviance(lmods))
+(df0 <- df.residual((nullmod)))
+(df<- df.residual(lmods))
+(fstat<- ((rss0-rss)/(df0-df))/(rss/df))
+1-pf(fstat, df0-df, df)
+
+nreps<-4000
+tstats <- numeric(nreps)
+set.seed(123)
+for(i in 1:nreps)
+{
+    lmods <- lm(happy ~ money + sex + love + work, happy)
+    tstats[i] <- summary(lmods)$coef[3,3]
+}
+mean(fstat > lms$fstatistic[1])
+```
+
+**Histogram of test statistics**
+```{r}
+
+#d
+hist(fstat)
+```
+
+```{r}
+#e
+```
+
+**Boostrap with 90% and 95% confidence levels
+```{r}
+
+
+ set.seed(123)
+ nb<-4000
+ coefmat <-matrix(NA,nb,5)
+ resids <-residuals(lmods)
+ preds<-fitted(lmods)
+ for(i in 1:nb){
+     booty <- preds + sample(resids, rep=TRUE)
+     bmod <- update(lmods, booty ~ .)
+     coefmat[i,]<-coef(bmod)
+ }
+ 
+colnames(coefmat) <- c("Intercept", colnames(happy[1:4]))
+coefmat<-data.frame(coefmat)
+apply(coefmat,2,function(x) quantile(x,c(0.10,0.90)))
+apply(coefmat,2,function(x) quantile(x,c(0.05,0.95)))
+
+```

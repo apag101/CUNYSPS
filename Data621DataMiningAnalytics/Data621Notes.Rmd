@@ -1,0 +1,2295 @@
+---
+title: "Data621Notes"
+author: "Anthony Pagan"
+date: "August 31, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 621 Notes
+
+###LMR
+
+Chapter 1
+
+```{r Notes1}
+install.packages("faraway")
+
+
+data(pima, package="faraway")
+head(pima)
+summary(pima)
+sort(pima$diastolic)
+
+pima$diastolic[pima$diastolic == 0] <- NA
+pima$glucose[pima$glucose == 0] <- NA
+pima$triceps[pima$triceps == 0] <- NA
+pima$insulin[pima$insulin == 0] <- NA
+pima$bmi[pima$bmi == 0] <- NA
+
+pima$test <-factor(pima$test)
+summary(pima$test)
+levels(pima$test) <- c("negative", "positive")
+summary
+
+hist(pima$diastolic, xlab="Diastolic", main="")
+plot(density(pima$diastolic, na.rm=TRUE), main="")
+plot(sort(pima$diastolic), ylab="Sorted Diastolic")
+
+plot(diabetes ~ diastolic,pima)
+plot(diabetes ~ test,pima)
+
+require(ggplot2)
+ggplot(pima, aes(x=diastolic)) +geom_histogram()
+ggplot(pima, aes(x=diastolic)) +geom_density()
+ggplot(pima, aes(x=diastolic,y=diabetes))+geom_point()
+
+ggplot(pima, aes(x=diastolic,y=diabetes,shape=test)) +geom_point()+
+    theme(legend.position ="top", legend.direction = "horizontal")
+ggplot(pima, aes(x=diastolic,y=diabetes)) + geom_point(size=1) +
+    facet_grid(~ test)
+
+data(manilius, package="faraway")
+head(manilius)
+
+moon3 <-aggregate(manilius[,1:3],list(manilius$group), sum)
+solve(cbind(9, moon3$sinang, moon3$cosang), moon3$arc)
+lmod<- lm(arc ~ sinang + cosang, manilius)
+coef(lmod)
+library(HistData)
+data(GaltonFamilies, package="HistData")
+plot(childHeight ~ midparentHeight, GaltonFamilies)
+
+lmod <- lm(childHeight ~ midparentHeight, GaltonFamilies)
+coef(lmod)
+
+
+lmod <- lm(arc ~ sinang + cosang, manilius)
+coef(lmod)
+
+beta <- with(GaltonFamilies, cor(midparentHeight, childHeight) * sd(childHeight) / sd(midparentHeight))
+
+alpha<- with(GaltonFamilies, mean(childHeight) - beta * mean(midparentHeight))
+
+beta1 <- with(GaltonFamilies, sd(childHeight) /sd(midparentHeight))
+alpha1 <- with(GaltonFamilies, mean(childHeight) - beta1 *mean(midparentHeight))
+
+abline(a=alpha1, b=beta1, lty=2)
+
+
+```
+
+Chapter 2
+
+```{r Notes2}
+data(gala, package="faraway")
+head(gala[,-2])
+
+lmod<- lm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent, data=gala)
+summary(lmod)
+
+require(faraway)
+summary(lmod)
+
+x <-model.matrix(~ Area + Elevation + Nearest + Scruz + Adjacent, gala)
+y <- gala$species
+xtxi <-solve(t(x) %*%x)
+xtxi %*% (t(x) %*%x)
+solve(crossprod(x,x),crossprod(x,y))
+
+names(lmod)
+lmodsum <- summary(lmod)
+names(lmodsum)
+sqrt(deviance(lmod)/df.residual(lmod))
+lmodsum$sigma
+xtxi <- lmodsum$cov.unscaled
+sqrt(diag(xtxi))*60.975
+lmodsum$coef[,2]
+
+gala$Adiff<-gala$Area - gala$Adjacent
+lmod <- lm(Species ~ Area+Elevation+Nearest+Scruz+Adjacent+Adiff, gala)
+summary(lmod)
+
+set.seed(123)
+Adiffe <- gala$Adiff+0.001*(runif(30)-0.5)
+lmod <- lm(Species ~ Area+Elevation+Nearest+Scruz+Adjacent+Adiffe, gala)
+summary(lmod)
+
+data(odor, package="faraway")
+cov(odor[,-1])
+lmod<-lm(odor ~ temp + gas + pack, odor)
+summary(lmod, cor=T)
+
+lmod<- lm(odor ~ gas + pack, odor)
+summary(lmod)
+
+```
+
+Chapter 3
+```{r}
+data(gala, package="faraway")
+lmod<-lm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent, gala)
+nullmod<-lm(Species ~ 1, gala)
+anova(nullmod, lmod)
+
+(rss0 <-deviance(nullmod))
+(rss <- deviance(lmod))
+(df0 <- df.residual((nullmod)))
+(df<- df.residual(lmod))
+(fstat<- ((rss0-rss)/(df0-df))/(rss/df))
+1-pf(fstat, df0-df, df)
+
+lmods <-lm(Species ~ Elevation + Nearest + Scruz + Adjacent, gala)
+anova(lmods, lmod)
+summary(lmod)
+summary(lm(Species ~ Area, gala))
+
+lmods<-lm(Species ~ Elevation + Nearest + Scruz, gala)
+anova(lmods, lmod)
+
+lmods<-lm(Species ~ Area + offset(0.5*Elevation) + Nearest + Scruz + Adjacent, gala)
+anova(lmods, lmod)
+
+(tstat <- (0.31946-0.5)/0.05366)
+2*pt(tstat, 24)
+tstat^2
+
+lmod<-lm(Species ~ Nearest + Scruz, gala)
+lms <-summary(lmod)
+lms$fstatistic
+1-pf(lms$fstatistic[1],lms$fstatistic[2],lms$fstatistic[3])
+
+nreps<-4000
+set.seed(123)
+fstats <-numeric(nreps)
+for(i in 1:nreps){
+    lmods <- lm(sample(Species)  ~ Nearest+Scruz, gala)
+    fstats[i] <-summary(lmods)$fstat[1]
+}
+mean(fstats > lms$fstatistic[1])
+
+summary(lmod)$coef[3,]
+
+tstats <- numeric(nreps)
+set.seed(123)
+for(i in 1:nreps)
+{
+    lmods <- lm(Species ~ Nearest+sample(Scruz), gala)
+    tstats[i] <- summary(lmods)$coef[3,3]
+}
+mean(abs(tstats) > abs(lms$coef[3,3]))
+
+lmod<-lm(Species ~ Area + Elevation + Nearest + Scruz+ Adjacent, gala)
+summary(lmod)
+
+ qt(.975, 30-6)
+ -0.02394 + c(-1,1) * 2.0639 * 0.02242
+ -0.07480 + c(-1,1) * 2.0639 * 0.01770
+ confint(lmod)
+ 
+ require(ellipse)
+ plot(ellipse(lmod,c(2,6)), type="l", ylim=c(-0.13,0))
+ points(coef(lmod)[2], coef(lmod)[6], pch=19)
+ abline(v=confint(lmod)[2,],lty=2)
+ abline(h=confint(lmod)[6,],lty=2)
+ 
+ sample(10, rep=TRUE)
+ set.seed(123)
+ nb<-4000
+ coefmat <-matrix(NA,nb,6)
+ resids <-residuals(lmod)
+ preds<-fitted(lmod)
+ for(i in 1:nb){
+     booty <- preds + sample(resids, rep=TRUE)
+     bmod <- update(lmod, booty ~ .)
+     coefmat[i,]<-coef(bmod)
+ }
+ 
+colnames(coefmat) <- c("Intercept", colnames(gala[,3:7]))
+coefmat<-data.frame(coefmat)
+apply(coefmat,2,function(x) quantile(x,c(0.025,0.975)))
+
+require(ggplot2)
+ggplot(coefmat, aes(x=Area)) + geom_density() + geom_vline(xintercept=c(-0.0628, 0.0185), lty=2)
+ggplot(coefmat, aes(x=Adjacent)) + geom_density() + geom_vline(xintercept=c(-0.104, 0.0409), lty=2)
+```
+
+Chapter 4
+```{r}
+data(fat,package="faraway")
+lmod<-lm(brozek ~ age + weight + height + neck + chest + abdom + hip + thigh + knee + ankle + biceps + forearm + wrist, data = fat)
+
+x <-model.matrix(lmod)
+(x0 <- apply(x,2,median))
+(y0 <- sum(x0*coef(lmod)))
+
+predict(lmod,new=data.frame(t(x0)))
+
+predict(lmod,new=data.frame(t(x0)),interval="prediction")
+predict(lmod,new=data.frame(t(x0)),interval="confidence")
+
+(x1 <- apply(x,2,function(x) quantile(x,0.95)))
+predict(lmod, new=data.frame(t(x1)), interval ="prediction")
+predict(lmod, new=data.frame(t(x1)), interval ="confidence")
+
+data(airpass, package="faraway")
+plot(pass ~ year, airpass, type="l", ylab="Log(Passengers)")
+lmod<-lm(log(pass) ~ year, airpass)
+lines(exp(predict(lmod)) ~ year, airpass)
+
+lagdf<- embed(log(airpass$pass),14)
+colnames(lagdf) <- c("y",paste0("lag",1:13))
+lagdf<-data.frame(lagdf)
+armod<- lm(y ~ lag1 + lag12 + lag13, data.frame(lagdf))
+summary(armod)
+
+plot(pass ~ year, airpass, type="l")
+lines(airpass$year[14:144], exp(predict(armod)),lty=2)
+
+lagdf[nrow(lagdf),]
+
+predict(armod, data.frame(lag1=6.0684, lag12=6.0331, lag13=6.0039), interval="prediction")
+```
+
+Chapter 5
+```{r}
+data(gala, package = "faraway")
+lmod<-lm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent, gala)
+summary(lmod)
+summary(lm(Species ~ Elevation, gala))
+
+plot(Species ~ Elevation, gala)
+abline(11.3,0.201)
+colMeans(gala)
+p<-predict(lmod, data.frame(Area=261.7, Elevation=gala$Elevation, Nearest=10.06, Scruz = 56,98, Adjacent = 261.1))
+i<-order(gala$Elevation)
+lines(gala$Elevation[i],p[i], lty=2)
+
+data(newhamp, package="faraway")
+colSums(newhamp[newhamp$votesys == 'D', 2:3])
+colSums(newhamp[newhamp$votesys == 'H', 2:3])
+
+newhamp$trt<-ifelse(newhamp$votesys == 'H',1,0)
+lmodu<-lm(pObama ~ trt, newhamp)
+summary(lmodu)
+
+lmodz<-lm(pObama ~ trt + Dean, newhamp)
+summary(lmodz)
+summary(lm(Dean ~ trt, newhamp))
+
+require(Matching)
+set.seed(123)
+mm<-GenMatch(newhamp$trt, newhamp$Dean, ties=FALSE, caliper=0.05, pop.size=1000)
+head(mm$matches[,1:2])
+newhamp[c(4,218),c('Dean','pObama','trt')]
+
+plot(pObama ~ Dean, newhamp, pch=trt+1)
+with(newhamp, segments(Dean[mm$match[,1]],pObama[mm$match[,1]],Dean[mm$match[,2]],pObama[mm$match[,2]]))
+
+pdiff<- newhamp$pObama[mm$matches[,1]] - newhamp$pObama[mm$matches[,2]]
+t.test(pdiff)
+plot(pdiff ~ newhamp$Dean[mm$matches[,1]], xlab="Dean", ylab="Hand-Digital")
+abline(h=0)
+plot(pObama ~ Dean, newhamp, pch=trt+1)
+abline(h=c(.353, 0.353+0.042), lty=1:2)
+abline(0.221, 0.5229)
+abline(0.221-0.005, 0.5229, lty=2)
+with(newhamp,segments(Dean[mm$match[,1]],pObama[mm$match[,1]],Dean[mm$match[,2]],pObama[mm$match[,2]],col=gray(0.75)))
+```
+
+Chapter 6
+```{r}
+library(faraway)
+data(savings, package="faraway")
+lmod<- lm(sr ~ pop15+pop75+dpi+ddpi,savings)
+
+plot(fitted(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+abline(h=0)
+
+plot(fitted(lmod),sqrt(abs(residuals(lmod))), xlab="Fitted",ylab=expression(sqrt(hat(epsilon))))
+
+summary(lm(sqrt(abs(residuals(lmod))) ~ fitted(lmod)))
+
+par(mfrow=c(3,3))
+n<-50
+for(i in 1:9) {x <- runif(n) ; plot(x, rnorm(n))}
+for(i in 1:9) {x <- runif(n) ; plot(x, x*rnorm(n))}
+for(i in 1:9) {x <- runif(n) ; plot(x, sqrt((x))*rnorm(n))}
+for(i in 1:9) {x <- runif(n) ; plot(x, cos(x*pi/25)+rnorm(n,sd=1))}
+par(mfrow=c(1,1))
+
+plot(savings$pop15,residuals(lmod), xlab="Population under 15",ylab="Residuals")
+abline(h=0)
+plot(savings$pop75,residuals(lmod), xlab="Population over 75",ylab="Residuals")
+abline(h=0)
+
+var.test(residuals(lmod)[savings$pop15>35],residuals(lmod)[savings$pop15<35])
+
+data(gala, package="faraway")
+lmod<-lm(Species ~ Area+Elevation+Scruz+Nearest+Adjacent,gala)
+plot(fitted(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+abline(h=0)
+
+lmod<-lm(sqrt(Species)~ Area+Elevation+Scruz+Nearest+Adjacent,gala)
+plot(fitted(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+abline(h=0)
+
+lmod<-lm(sr ~ pop15+pop75+dpi+ddpi,savings)
+qqnorm(residuals(lmod),ylab="Residuals",main="")
+qqline(residuals(lmod))
+
+hist(residuals(lmod),xlab="Residuals",main="")
+
+par(mfrow=c(3,3))
+n<-50
+for(i in 1:9) {x <- rnorm(n); qqnorm(x); qqline(x)}
+for(i in 1:9) {x <- exp(rnorm(n)); qqnorm(x); qqline(x)}
+for(i in 1:9) {x <- rcauchy(n); qqnorm(x); qqline(x)}
+for(i in 1:9) {x <- runif(n) ; qqnorm(x); qqline(x)}
+par(mfrow=c(1,1))
+
+shapiro.test(residuals(lmod))
+
+data(globwarm, package="faraway")
+lmod<-lm(nhtemp ~ wusa + jasper + westgreen + chesapeake + tornetrask + urals + mongolia + tasman, globwarm)
+
+plot(residuals(lmod) ~ year, na.omit(globwarm), ylab ="Residuals")
+abline(h=0)
+
+n<-length(residuals(lmod))
+plot(tail(residuals(lmod),n-1) ~ head(residuals(lmod),n-1), xlab=expression(hat(epsilon)[i+1]))
+abline(h=0,v=0,col=grey(0.75))
+
+summary(lm(tail(residuals(lmod), n-1) ~ head(residuals(lmod),n-1)-1))
+
+require(lmtest)
+dwtest(nhtemp ~ wusa + jasper + westgreen + chesapeake + tornetrask + urals + mongolia + tasman, data=globwarm)
+
+lmod<- lm(sr ~ pop15+pop75+dpi+ddpi, savings)
+hatv<- hatvalues(lmod)
+head(hatv)
+sum(hatv)
+
+countries<-row.names(savings)
+halfnorm(hatv,labs=countries,ylabs="Leverages")
+
+qqnorm(rstandard(lmod))
+abline(0,1)
+
+set.seed(123)
+testdata <- data.frame(x=1:10, y=1:10+rnorm(10))
+lmod<-lm(y~x, testdata)
+
+p1<-c(5.5,12)
+lmod1 <- lm(y ~x, rbind(testdata, p1))
+plot(y ~ x, rbind(testdata, p1))
+points(5.5,12,pch=4,cex=2)
+abline(lmod)
+abline(lmod1,lty=2)
+
+p2<-c(15,15.1)
+lmod2 <- lm(y ~x, rbind(testdata, p1))
+plot(y ~ x, rbind(testdata, p2))
+points(15,15,pch=4,cex=2)
+abline(lmod)
+abline(lmod2,lty=2)
+
+p3<-c(15,5.1)
+lmod3 <- lm(y ~x, rbind(testdata, p3))
+plot(y ~ x, rbind(testdata, p3))
+points(15,5.1,pch=4,cex=2)
+abline(lmod)
+abline(lmod3,lty=2)
+
+stud<- rstudent(lmod)
+stud[which.max(abs(stud))]
+
+qt(.05/(50*2),44)
+
+data(star, package="faraway")
+plot(star$temp, star$light,xlab="log(Temperature)", ylab="log(Light Intensity)")
+lmod<-lm(light ~ temp, star)
+abline(lmod)
+range(rstudent(lmod))
+lmodi<-lm(light ~ temp, data=star, subset=(temp>3.6))
+abline(lmodi, lty=2)
+
+lmod<-lm(sr ~ pop15+pop75+dpi+ddpi, savings)
+cook <- cooks.distance(lmod)
+halfnorm(cook,3,labs=countries,ylab="Cook's distances")
+
+lmodi<-lm(sr ~ pop15+pop75+dpi+ddpi,savings,subset=(cook<max(cook)))
+summary(lmodi)
+summary(lmod)
+
+plot(dfbeta(lmod)[,2],ylab="Change in pop15 coef")
+abline(h=0)
+
+lmodj<- lm(sr ~ pop15+pop75+dpi+ddpi,savings,subset=(countries != "Japan"))
+summary(lmodj)
+
+plot(lmod)
+
+d<- residuals(lm(sr ~ pop75+dpi+ddpi,savings))
+m<- residuals(lm(pop15 ~ pop75 +dpi+ddpi,savings))
+plot(m,d,xlab="pop15 residuals",ylab="Savings residuals")
+
+coef(lm(d ~ m))
+lmod<-lm(sr~pop15+pop75+dpi+ddpi,savings)
+coef(lmod)
+abline(0,coef(lmod)['pop15'])
+
+termplot(lmod, partial.resid=TRUE, terms=1)
+mod1<- lm(sr ~ pop15 +pop75 +dpi+ddpi,savings,subset=(pop15 > 35))
+mod2<- lm(sr ~ pop15 +pop75 +dpi+ddpi,savings,subset=(pop15 < 35))
+summary(mod1)
+summary(mod2)
+
+savings$status <-ifelse(savings$pop15 > 35, "young", "old")
+require(ggplot2)
+ggplot(savings, aes(x=dpi,y=sr,shape=status))+geom_point()
+ggplot(savings, aes(x=dpi,y=sr))+geom_point()+facet_grid(~ status)+
+    stat_smooth(method="lm")
+```
+
+Chapter 7
+
+```{r}
+data(cars)
+plot(dist ~ speed, cars, ylab="distance")
+lmod<- lm(dist ~ speed, cars)
+abline(lmod)
+summary(lmod)
+lmod1<-lm(dist ~ I(speed+rnorm(50)), cars)
+coef(lmod1)
+abline(lmod1,lty=2)
+lmod2<-lm(dist ~ I(speed+2*rnorm(50)),cars)
+coef(lmod2)
+abline(lmod2,lty=3)
+lmod5<-lm(dist ~ I(speed+5*rnorm(50)), cars)
+abline(lmod5,lty=4)
+
+vv<-rep(1:5/10,each=1000)
+slopes<-numeric(5000)
+for(i in 1:5000) slopes[i] <- lm(dist ~ I(speed+sqrt(vv[i])*rnorm(50)),cars)$coef[2]
+betas<-c(coef(lmod)[2],colMeans(matrix(slopes,nrow=1000)))
+variances <-c(0,1:5/10)+0.5
+plot(variances,betas,xlim=c(0,1),ylim=c(3.86,4))
+gv<-lm(betas ~ variances)
+coef(gv)
+points(0,gv$coef[1],pch=3)
+
+require(simex)
+set.seed(123)
+lmod<- lm(dist ~ speed, cars, x=TRUE)
+simout <-simex(lmod,"speed", 0.5, B=1000)
+simout
+
+data(savings, package="faraway")
+lmod <- lm(sr ~ pop15+pop75+dpi+ddpi,savings)
+summary(lmod)
+lmod<-lm(sr ~ pop15+pop75+I(dpi/1000)+ddpi,savings)
+summary(lmod)
+scsav <- data.frame(scale(savings))
+lmod<-lm(sr ~ ., scsav)
+summary(lmod)
+
+edf<-data.frame(coef(lmod),confint(lmod))[-1,]
+names(edf)<-c('Estimate','lb','ub')
+require(ggplot2)
+p<-ggplot(aes(y=Estimate,ymin=lb,ymax=ub,x=row.names(edf)),data=edf)+geom_pointrange()
+p+coord_flip()+xlab("Predictor")+geom_line(xint=0,col=gray(0.75))
+
+savings$age <-ifelse(savings$pop15>35,0,1)
+savings$dpis<-(savings$dpi-mean(savings$dpi))/(2*sd(savings$dpi))
+savings$ddpis<-(savings$ddpi-mean(savings$ddpi))/(2*sd(savings$ddpi))
+summary(lm(sr~age+dpis+ddpis,savings))
+
+data(seatpos, package="faraway")
+lmod<-lm(hipcenter ~., seatpos)
+summary(lmod)
+round(cor(seatpos[,-9]),2)
+
+x<-model.matrix(lmod)[,-1]
+e<- eigen(t(x)%*%x)
+e$val
+sqrt(e$val[1]/e$val)
+summary(lm(x[,1]~x[,-1]))$r.squared
+1/(1-0.49948)
+
+require(faraway)
+vif(x)
+
+lmod<-lm(hipcenter+10*rnorm(38) ~., seatpos)
+summary(lmod)
+
+round(cor(x[,3:8]),2)
+lmod2<-lm(hipcenter ~ Age + Weight+Ht, seatpos)
+summary(lmod2)
+```
+
+Chapter 8
+
+```{r}
+data(globwarm, package="faraway")
+lmod<- lm(nhtemp ~ wusa + jasper + westgreen + chesapeake + tornetrask + urals + mongolia + tasman, globwarm)
+summary(lmod)
+cor(residuals(lmod)[-1],residuals(lmod)[-length(residuals(lmod))])
+
+require(nlme)
+glmod <- gls(nhtemp ~ wusa + jasper + westgreen + chesapeake + tornetrask + urals + mongolia + tasman, correlation = corAR1 (form= ~year), data=na.omit(globwarm))
+summary(glmod)
+intervals(glmod,which="var-cov")
+data(oatvar , package="faraway")
+glmod<-gls(yield ~ variety, oatvar, correlation = corCompSymm(form = ~1 | block))
+intervals(glmod)
+
+data(fpe,package="faraway")
+fpe
+lmod<-lm(A2 ~ A+B+C+D+E+F+G+H+J+K+N-1, fpe, weights=1/EI)
+coef(lmod)
+lm(A2 ~ A+B+C+D+E+F+G+H+J+K+N-1, fpe)$coef
+lm(A2 ~ offset(A+G+K)+C+D+E+F+N-1, fpe, weights = 1/EI)$coef
+
+require(mgcv)
+M<-list(w=1/fpe$EI, X=model.matrix(lmod), y=fpe$A2, Ain=rbind(diag(11),-diag(11)), C=matrix(0,0,0), array(0,0), S=list(), off=NULL, p=rep(0.5, 11), bin=c(rep(0,11), rep(-1,11)))
+a<-pcls(M)
+names(a)<-colnames(model.matrix(lmod))
+round(a,3)
+
+lmod<-lm(dist ~ speed, cars)
+plot(residuals(lmod) ~ speed, cars)
+wlmod<- gls(dist ~ speed, data=cars, weight = varConstPower(1, form = ~speed))
+summary(wlmod)
+
+data(corrosion, package="faraway")
+plot(loss ~ Fe, corrosion, xlab="Iron content", ylab="Weight loss")
+lmod<-lm(loss ~ Fe, corrosion)
+summary(lmod)
+abline(coef(lmod))
+lmoda<- lm(loss ~ factor(Fe), corrosion)
+points(corrosion$Fe, fitted(lmoda),pch=3)
+anova(lmod, lmoda)
+
+lmodp<-lm(loss ~ Fe+I(Fe^2)+I(Fe^3)+(Fe^4)+I(Fe^5)+I(Fe^6),corrosion)
+plot(loss ~ Fe, data=corrosion,ylim=c(60,130))
+points(corrosion$Fe,fitted(lmoda),pch=3)
+grid<-seq(0,2,len=50)
+lines(grid,predict(lmodp, data.frame(Fe=grid)))
+summary(lmodp)$r.squared
+
+data(gala, package="faraway")
+lsmod<-lm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent, gala)
+summary(lsmod)
+
+require(MASS)
+rlmod <- rlm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent, gala)
+summary(rlmod)
+wts<-rlmod$w
+names(wts) <- row.names(gala)
+head(sort(wts),10)
+
+require(quantreg)
+l1mod<-rq(Species ~ Area+Elevation+Nearest+Scruz+Adjacent, data=gala)
+summary(l1mod)
+
+set.seed(123)
+ltsmod<-ltsreg(Species ~ Area + Elevation + Nearest + Scruz + Adjacent,gala)
+coef(ltsmod)
+ltsmod<-ltsreg(Species ~ Area+ Elevation + Nearest + Scruz + Adjacent, gala,nsamp="exact")
+coef(ltsmod)
+bcoef <-matrix(0,1000,6)
+for(i in 1:1000){
+    newy <-predict(ltsmod)+residuals(ltsmod)[sample(30,rep=T)]
+    brg<-ltsreg(newy ~ Area + Elevation + Nearest + Scruz +Adjacent, gala, nsamp="best")
+    bcoef[i,]<-brg$coef
+}
+
+colnames(bcoef)<-names(coef(ltsmod))
+apply(bcoef,2,function(x) quantile(x,c(0.025, 0.975)))
+
+require(ggplot2)
+bcoef<- data.frame(bcoef)
+p1 <- ggplot(bcoef, aes(x =Area)) + geom_density() + xlim(1.45, 1.65)
+p1 + geom_vline(xintercept=c(1.4976, 1.6230), linetype="dashed")
+p2<- ggplot(bcoef, aes(x = Adjacent))+ geom_density()+xlim(-0.25, -0.13)
+p2 + geom_vline(xintercept=c(-0.23375, -0.15138), linetype="dashed")
+
+limod <- lm(Species ~ Area+Elevation+Nearest+Scruz+Adjacent, gala, subset=(row.names(gala) != "Isabela"))
+summary(limod)
+
+data(star, package="faraway")
+plot(light ~ temp, star)
+gs1<-lm(light ~ temp, star)
+abline(coef(gs1))
+gs2<-rlm(light ~ temp, star)
+abline(coef(gs2), lty=2)
+gs3<-ltsreg(light ~ temp, star, nsamp="exact")
+abline(coef(gs3), lty=5)
+
+```
+
+Chapter 9
+```{r}
+require(MASS)
+data(savings, package="faraway")
+lmod<-lm(sr ~ pop15+pop75+dpi+ddpi,savings)
+boxcox(lmod, plotit = T)
+boxcox(lmod, plotit = T, lambda = seq(0.5,1.5, by=0.1))
+
+data(gala, package="faraway")
+lmod<- lm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent, gala)
+boxcox(lmod, lambda= seq(-0.25, 0.75, by=0.05), plot=T)
+
+lmod1<- lm(sr ~ pop15, savings, subset =(pop15 <35))
+lmod2<- lm(sr ~ pop15, savings, subset =(pop15 <35))
+plot(sr ~ pop15,savings,xlab="Pop'n under 15", ylab ="Savings Rate")
+abline(v=35,lty=5)
+segments(20, lmod1$coef[1]+lmod1$coef[2]*20,35, lmod1$coef[1]+lmod1$coef[2]*35)
+segments(48, lmod1$coef[1]+lmod1$coef[2]*48,35, lmod1$coef[1]+lmod1$coef[2]*35)
+lhs<- function(x) ifelse(x<35,35-x,0)
+rhs<- function(x) ifelse(x<35,0,x-35)
+lmod<- lm(sr ~ lhs(pop15) + rhs(pop15), savings)
+x<- seq(20,48, by=1)
+py<-lmod$coef[1] + lmod$coef[2]*lhs(x) + lmod$coef[3]*rhs(x)
+lines(x,py,lty=2)
+
+summary(lm(sr ~ ddpi, savings))
+summary(lm(sr ~ ddpi+I(ddpi^2), savings))
+summary(lm(sr ~ ddpi+I(ddpi^2)+I(ddpi^3), savings))
+
+savings<-data.frame(savings,mddpi=savings$ddpi-10)
+summary(lm(sr ~ mddpi+I(mddpi^2),savings))
+
+lmod<-lm(sr ~ poly(ddpi,4),savings)
+summary(lmod)
+
+lmod<-lm(sr ~ polym(pop15,ddpi,degree=2),savings)
+pop15r <- seq(20, 50, len=10)
+ddplr<-seq(0, 20, len=10)
+pgrid <- expand.grid(pop15=pop15r, ddpi=ddplr)
+pv<- predict(lmod, pgrid)
+persp(pop15r, ddplr, matrix(pv, 10, 10), theta=45, xlab="Pop under 15", ylab = "Growth", zlab= "Savings Rate", ticktype = "detailed", shade = 0.25)
+
+funky <- function(x) sin(2*pi*x^3)^3
+x<-seq(0,1,by=0.01)
+y<- funky(x) + 0.1*rnorm(101)
+matplot(x,cbind(y,funky(x)),type="pl",ylab="y", pch=20, lty=1, col=1)
+
+g4<- lm(y ~ poly(x,4))
+g12<- lm(y ~ poly(x,12))
+matplot(x,cbind(y,g4$fit,g12$fit), type="pll", ylab ="y",lty = c(1,2))
+
+require(splines)
+knots <- c(0,0,0,0,0.2,0.4,0.5,0.6,0.7,0.8,0.85,0.9,1,1,1,1)
+bx<- splineDesign(knots,x)
+lmodb <- lm(y~bx-1)
+matplot(x, bx, type="l", col=1)
+matplot(x, cbind(y, lmodb$fit), type="pl", ylab="y", pch=20, lty=1, col=1)
+
+ssf<- smooth.spline(x,y)
+matplot(x,cbind(y,ssf$y),type="pl",ylab="y", lty=1, pch=20, col=1)
+
+require(mgcv)
+gmod <- gam(sr ~ s(pop15)+s(pop75)+s(dpi)+s(ddpi), data=savings)
+plot(gmod)
+```
+
+Chapter10
+```{r}
+data(state)
+statedata<-data.frame(state.x77,row.names=state.abb)
+lmod<-lm(Life.Exp ~.,statedata)
+summary(lmod)
+lmod<-update(lmod,.~.-Area)
+summary(lmod)
+lmod<-update(lmod,.~.-Illiteracy)
+summary(lmod)
+lmod<-update(lmod,.~.-Income)
+summary(lmod)
+lmod<-update(lmod,.~.-Population)
+summary(lmod)
+summary(lm(Life.Exp ~ Illiteracy+Murder+Frost, statedata))
+
+require(leaps)
+b <-regsubsets(Life.Exp~.,data=statedata)
+rs<-summary(b)
+rs$which
+AIC<-50*log(rs$rss/50)+ (2:8)*2
+plot(AIC - I(1:7), ylab="AIC", xlab="Number of Predictors")
+plot(2:8,rs$adjr2,xlab="No. of Parameters", ylab="Adjusted R-Square")
+which.max(rs$adjr2)
+plot(2:8,rs$cp,xlab="No. of Parameters",ylab="Cp Statistic")
+abline(0,1)
+lmod<-lm(Life.Exp ~ ., data=statedata)
+step(lmod)
+
+h<-lm.influence(lmod)$hat
+names(h)
+rev(sort(h))
+b<-regsubsets(Life.Exp~.,data=statedata, subset=(state.abb!='AK'))
+rs<-summary(b)
+rs$which[which.max(rs$adjr2),]
+stripchart(data.frame(scale(statedata)), method ="jitter", las=2, vertical=TRUE)
+b<-regsubsets(Life.Exp ~ log(Population)+Income+Illiteracy+Murder+HS.Grad+Frost+log(Area),statedata)
+rs<-summary(b)
+rs$which[which.max(rs$adjr2),]
+```
+
+Chapter11
+```{r}
+data(fat,package="faraway")
+plot(neck ~ knee, fat)
+plot(chest~ thigh, fat)
+plot(hip ~ wrist, fat)
+
+cfat<-fat[,9:18]
+prfat<-prcomp(cfat)
+dim(prfat$rot)
+dim(prfat$x)
+summary(prfat)
+round(prfat$rot[,1],2)
+prfatc <-prcomp(cfat, scale=TRUE)
+summary(prfatc)
+round(prfatc$rot[,1],2)
+round(prfatc$rot[,2],2)
+
+require(MASS)
+robfat<-cov.rob(cfat)
+md <- mahalanobis(cfat, center=robfat$center, cov=robfat$cov)
+n<- nrow(cfat);p<-ncol(cfat)
+plot(qchisq(1:n/(n+1),p), sort(md), xlab=expression(pasta(chi^2,"quantiles")), ylab="Sorted Mahalanobis distances")
+abline(0,1)
+
+lmoda<-lm(fat$brozek ~ ., data=cfat)
+summary(lmoda)
+lmodpcr<-lm(fat$brozek ~ prfat$x[,1:2])
+summary(lmodpcr)
+lmodr<-lm(fat$brozek ~ scale(abdom)+ I(scale(ankle)-scale(abdom)), data=cfat)
+summary(lmodr)
+
+data(meatspec, package="faraway")
+trainmeat <-meatspec[1:172,]
+testmeat<- meatspec[173:215,]
+modlm<- lm(fat ~., trainmeat)
+summary(modlm)$r.squared
+rmse<-function(x,y) sqrt(mean((x-y)^2))
+rmse(fitted(modlm), trainmeat$fat)
+rmse(predict(modlm,testmeat),testmeat$fat)
+modsteplm<- step(modlm)
+rmse(modsteplm$fit, trainmeat$fat)
+rmse(predict(modsteplm,testmeat), testmeat$fat)
+meatpca <-prcomp(trainmeat[,-101])
+round(meatpca$sdev,3)
+matplot(1:100, meatpca$rot[,1:3], type="l", xlab="Frequency", ylab="", col=1)
+
+require(pls)
+pcrmod<-pcr(fat ~ ., data=trainmeat, ncomp=50)
+rmse(predict(pcrmod, ncomp=4), trainmeat$fat)
+plot(modlm$coef[-1],xlab="Frequency", ylab="Coefficient", type="l")
+coefplot(pcrmod, ncomp=4,xlab="Frequency", main="")
+plot(meatpca$sdev[1:10],type="l",ylab="SD of PC", xlab="PC Number")
+rmse(predict(pcrmod, testmeat, ncomp=4), testmeat$fat)
+
+pcrmse<-RMSEP(pcrmod, newdata=testmeat)
+plot(pcrmse, main="")
+which.min(pcrmse$val)
+pcrmse$val[28]
+
+pcrmod<- pcr(fat ~., data=trainmeat, validation="CV", ncomp=50)
+pcrCV <- RMSEP(pcrmod, estimate="CV")
+plot(pcrCV, main="")
+which.min(pcrCV$val)
+ypred<-predict(pcrmod, testmeat, ncomp=18)
+rmse(ypred, testmeat$fat)
+
+set.seed(123)
+plsmod<-plsr(fat ~., data=meatspec[1:172,], ncomp=50, validation="CV")
+coefplot(plsmod, ncomp=4, xlab="Frequency")
+plsCV <- RMSEP(plsmod, estimate="CV")
+plot(plsCV,main="")
+ypred<-predict(plsmod, ncomp=15)
+rmse(ypred, trainmeat$fat)
+ytpred<-predict(plsmod, testmeat, ncomp=15)
+rmse(ytpred, testmeat$fat)
+
+require(MASS)
+rgmod<-lm.ridge(hipcenter ~ ., seatpos, lambda= seq(0,1, len=21))
+matplot(rgmod$lambda, coef(rgmod), type="l", xlab=expression(lambda), ylab=expression(hat(beta)),col=1)
+abline(v=which.min(rgmod$GCV))
+
+ypred<-cbind(1, as.matrix(trainmeat[,-101])) %*% coef(rgmod)[8,]
+rmse(ypred, trainmeat$fat)
+ypred<-cbind(1, as.matrix(testmeat[,-101])) %*% coef(rgmod)[8,]
+rmse(ypred, trainmeat$fat)
+c(ytpred[13], ypred[13], testmeat$fat[13])
+rmse(ypred[-13], testmeat$fat[-13])
+
+#Lasso
+require(lars)
+data(state)
+statedata<-data.frame(state.x77,row.names = state.abb)
+lmod<- lars(as.matrix(statedata[,-4]),statedata$Life)
+plot(lmod)
+
+set.seed(123)
+cvlmod<-cv.lars(as.matrix(statedata[,-4]),statedata$Life)
+cvlmod$index[which.min(cvlmod$cv)]
+predict(lmod,s=0.65657,type="coef",mode="fraction")$coef
+coef(lm(Life.Exp ~ Population+Murder+HS.Grad+Frost, statedata))
+trainy<- trainmeat$fat
+trainx<-as.matrix(trainmeat[,-101])
+lassomod<-lars(trainx,trainy)
+set.seed(123)
+cvout<-cv.lars(trainx,trainy)
+cvout$index[which.min(cvout$cv)]
+testx<-as.matrix(testmeat[,-101])
+predlars<-predict(lassomod,testx,s=0.0101,mode="fraction")
+rmse(testmeat$fat, predlars$fit)
+predlars<-predict(lassomod, s=0.0101, type="coef", mode="fraction")
+plot(predlars$coef,type="h",ylab="Coeffiecient")
+sum(predlars$coef != 0)
+```
+
+Chapter 12
+
+Chapter 13
+```{r}
+data(chmiss, package="faraway")
+chmiss
+summary(chmiss)
+rowSums(is.na(chmiss))
+
+image(is.na(chmiss),axes=FALSE,col=gray(1:0))
+axis(2, at=0:5/5, labels=colnames(chmiss))
+axis(1,at=0:46/46, labels=row.names(chmiss),las=2)
+
+data(chredlin, package="faraway")
+modfull <-lm(involact ~ ., chredlin)
+summary(modfull)
+
+modmiss<-lm(involact ~ ., chmiss)
+summary(modmiss)
+
+cmeans <-colMeans(chmiss,na.rm=TRUE)
+cmeans
+mchm <-chmiss
+for(i in c(1:4,6)) mchm[is.na(chmiss[,i]),i]<-cmeans[i]
+imod <-lm(involact ~ ., mchm)
+summary(imod)
+
+lmodr<-lm(race ~ fire+theft+age+income,chmiss)
+chmiss[is.na(chmiss$race),]
+predict(lmodr,chmiss[is.na(chmiss$race),])
+library(logitnorm)
+lmodr <- lm(plogitnorm(race/100) ~ fire+theft+age+income, chmiss)
+ilogit(predict(lmodr,chmiss[is.na(chmiss$race),]))*100
+chredlin$race[is.na(chmiss$race)]
+
+require(Amelia)
+set.seed(123)
+chimp <- amelia(chmiss, m=25)
+betas <- NULL
+ses <- NULL
+for(i in 1:chimp$m){
+    lmod<- lm(involact ~ race+fire+theft+age, chimp$imputations[[i]])
+    betas <-rbind(betas,coef(lmod))
+    ses <- rbind(ses, coef(summary(lmod))[,2])
+}
+cr<-mi.meld(q=betas,se=ses)
+cr
+cr$q.mi/cr$se.mi
+```
+
+Chapter 14
+
+```{r}
+data(sexab,package="faraway")
+sexab
+by(sexab,sexab$csa, summary)
+
+plot(ptsd~csa,sexab)
+plot(ptsd ~ cpa, pch=as.character(csa), sexab)
+
+t.test(ptsd ~csa, sexab, var.equal=TRUE)
+
+d1 <- ifelse(sexab$csa == "Abused",1,0)
+d2 <- ifelse(sexab$csa =="NotAbused",1,0)
+lmod <-lm(ptsd ~ d1 + d2, sexab)
+summary(lmod)
+
+model.matrix(lmod)
+
+lmod<-lm(ptsd ~ d1, sexab)
+summary(lmod)
+lmod<-lm(ptsd ~ csa, sexab)
+summary(lmod)
+
+class(sexab$csa)
+
+sexab$csa<- relevel(sexab$csa, ref="NotAbused")
+lmod<-lm(ptsd ~ csa, sexab)
+summary(lmod)
+
+lmod4<-lm(ptsd ~ cpa+csa+csa:csa,sexab)
+summary(lmod4)
+model.matrix(lmod4)
+
+plot(ptsd ~ cpa, sexab, pch=as.numeric(csa))
+abline(3.96, 0.764)
+abline(3.96+6.86, 0.764-0.314, lty=2)
+
+lmod3<- lm(ptsd ~ cpa+csa, sexab)
+summary(lmod3)
+
+plot(ptsd ~ cpa, sexab, pch=as.numeric(csa))
+abline(3.98, 0.551)
+abline(3.98+6.27, 0.551, lty=2)
+
+confint(lmod3)[3,]
+
+plot(fitted(lmod3),residuals(lmod3),pch=as.numeric(sexab$csa), xlab="Fitted",ylab="Residuals")
+
+lmod1 <- lm(ptsd ~ cpa, sexab)
+summary(lmod1)
+
+data(whiteside,package="MASS")
+require(ggplot2)
+ggplot(aes(x=Temp,y=Gas),data=whiteside)+geom_point()+facet_grid(~Insul)+geom_smooth(method=lm)
+
+lmod<-lm(Gas~Temp*Insul, whiteside)
+summary(lmod)
+
+mean(whiteside$Temp)
+whiteside$ctemp <-whiteside$Temp -mean(whiteside$Temp)
+lmodc <-lm(Gas~ctemp*Insul,whiteside)
+summary(lmodc)
+
+data(fruitfly,package="faraway")
+plot(longevity ~ thorax, fruitfly, pch=unclass(activity))
+legend(0.63,100,levels(fruitfly$activity),pch=1:5)
+
+require(ggplot2)
+ggplot(aes(x=thorax,y=longevity),data=fruitfly)+geom_point()+facet_wrap(~ activity)
+summary(lmod)
+model.matrix(lmod)
+plot(lmod)
+anova(lmod)
+
+lmodp<-lm(longevity ~ thorax*activity, fruitfly)
+drop1(lmodp,test="F")
+summary(lmodp)
+
+plot(residuals(lmodp)~fitted(lmodp),pch=unclass(fruitfly$activity),xlab="Fitted",ylab="Residuals")
+abline(h=0)
+
+lmod1<-lm(log(longevity) ~ thorax*activity, fruitfly)
+plot(residuals(lmod1)~fitted(lmod1),pch=unclass(fruitfly$activity),xlab="Fitted",ylab="Residuals")
+abline(h=0)
+
+summary(lmod1)
+
+exp(coef(lmod1)[3:6])
+
+lmodh<-lm(thorax ~ activity, fruitfly)
+anova(lmodh)
+lmodu<-lm(log(thorax) ~ activity, fruitfly)
+anova(lmodu)
+
+contr.treatment(4)
+contr.helmert(4)
+contr.sum(4)
+
+contrasts(sexab$csa) <-contr.sum(2)
+summary(lm(ptsd ~csa, sexab))
+```
+
+###ELMR
+
+Chapter 5
+
+```{r}
+data(nes96, package="faraway")
+sPID<-nes96$PID
+levels(sPID)<-c("Democrat","Democrat","Independent", "Independent","Independent","Republican","Republican")
+summary(sPID)
+inca<-c(1.5,4,6,8,9.5,10.5,11.5,12.5,13.5,14.5,16,18.5,21,23.5,27.5,32.5,37.5,42.5,47.5,55,67.5,82.5,97.5,115)
+nincome<-inca[unclass(nes96$income)]
+summary(nincome)
+table(nes96$educ)
+
+matplot(prop.table(table(nes96$educ,sPID),1),type="l",xlab="Education",ylab="Proportion",lty=c(1,2,5))
+cutinc<-cut(nincome,7)
+il<-c(8,26,42,58,74,90,107)
+matplot(il,prop.table(table(cutinc,sPID),1),lty=c(1,2,5),type="l",ylab="Proportion",xlab="Income")
+cutage<-cut(nes96$age,7)
+al<-c(24,34,44,54,65,75,85)
+matplot(al,prop.table(table(cutage,sPID),1),lty=c(1,2,5),type="l",ylab="Proportion",xlab="Age")
+
+library(nnet)
+mmod<-multinom(sPID ~ age + educ + nincome, nes96)
+mmodi<-step(mmod)
+mmode<-multinom(sPID ~ age + nincome, nes96)
+deviance(mmode)-deviance(mmod)
+pchisq(deviance(mmode)-deviance(mmod),mmod$edf-mmode$edf,lower=F)
+
+predict(mmodi,data.frame(nincome=il),type="probs")
+predict(mmodi,data.frame(nincome=il))
+summary(mmodi)
+cc<- c(0,-1.17493,-0.95036)
+exp(cc)/sum(exp(cc))
+predict(mmodi,data.frame(nincome=0),type="probs")
+
+(pp<-predict(mmodi,data.frame(nincome=c(0,1)),type="probs"))
+log(pp[1,1]*pp[2,2]/(pp[1,2]*pp[2,1]))
+log(pp[1,1]*pp[2,3]/(pp[1,3]*pp[2,1]))
+sPID[1:4]
+cm<-diag(3)[unclass(sPID),]
+cm[1:4,]
+y<- as.numeric(t(cm))
+resp.factor<-gl(944,3)
+cat.factor<-gl(3,1,3*944,labels=c("D","I","R"))
+rnincome<-rep(nincome,each=3)
+head(data.frame(y,resp.factor,cat.factor,rnincome))
+nullmod<-glm(y ~ resp.factor + cat.factor, family = poisson)
+glmod<-glm(y~resp.factor + cat.factor + cat.factor:rnincome,family=poisson)
+deviance(glmod)
+deviance(mmodi)
+coef(glmod)[c(1,945:949)]
+coef(mmodi)
+
+data(cns, package = "faraway")
+cns$CNS<-cns$An+cns$Sp+cns$Other
+plot(log(CNS/NoCNS)~Water,cns,pch=as.character(Work))
+
+binmodw <-glm(cbind(CNS,NoCNS)~Water + Work, cns, family=binomial)
+binmoda <-glm(cbind(CNS,NoCNS)~Area +Work, cns, family=binomial)
+anova(binmodw,binmoda,test="Chi")
+faraway::halfnorm(residuals(binmodw))
+summary(binmodw)
+exp(-0.339058)
+cmmod<-multinom(cbind(An,Sp,Other)~Water +Work,cns)
+nmod<-step(cmmod)
+nmod
+cc<- c(0, 0.28963,-0.98083)
+names(cc)<-c("An","Sp","Other")
+exp(cc)/cm(exp(cc))
+multinom(cbind(NoCNS,An,Sp,Other)~Water + Work, cns)
+
+library(MASS)
+pomod<-polr(sPID ~ age+educ+nincome,nes96)
+c(deviance(pomod),pomod$edf)
+c(deviance(mmod),mmod$edf)
+pomodi <-step(pomod)
+deviance(pomodi)-deviance(pomod)
+pchisq(11.151,pomod$edf-pomodi$edf,lower=F)
+
+library(faraway)
+pim<-prop.table(table(nincome,sPID),1)
+logit(pim[,1])-logit(pim[,1]+pim[,2])
+summary(pomodi)
+ilogit(0.209)
+ilogit(1.292)-ilogit(0.209)
+predict(pomodi,data.frame(nincome=il,row.names=il),type="probs")
+x<-seq(-4,4,by=0.05)
+plot(x,dlogis(x),type="l")
+abline(v=c(0.209,1.292))
+abline(v=c(0.209,1.292)-50*0.013120,lty=2)
+abline(v=c(0.209,1.292)-100*0.013120,lty=5)
+opmod<-polr(sPID ~ nincome, method="probit")
+summary(opmod)
+dems<-pnorm(0.128-il*0.008182)
+demind<-pnorm(0.798-il*0.008181)
+cbind(dems,demind-dems,1-demind)
+```
+
+Chapter 6
+
+```{r}
+data(bliss)
+modl<- glm(cbind(dead,alive) ~ conc, family = binomial, bliss)
+summary(modl)$coef
+
+y<- bliss$dead/30; mu <-y
+eta<- logit(mu)
+z<-eta + (y-mu)/(mu*(1-mu))
+w<-30*mu*(1-mu)
+lmod<-lm(z~conc, weights=w, bliss)
+coef(lmod)
+
+for(i in 1:5){
+    eta<-lmod$fit
+    mu <- ilogit(eta)
+    z<-eta + (y-mu)/(mu*(1-mu))
+    w<- 30*mu*(1-mu)
+    lmod<-lm(z~bliss$conc, weights=w)
+    cat(i,coef(lmod),"\n")
+}
+
+summary(lmod)
+
+xm<- model.matrix(lmod)
+wm<-diag(w)
+sqrt(diag(solve(t(xm)%*% wm %*% xm)))
+summary(lmod)$coef[,2]/summary(lmod)$sigma
+summary(modl)
+1-pchisq(deviance(modl),df.residual(modl))
+
+anova(modl, test="Chi")
+modl2<-glm(cbind(dead, alive)~conc+I(conc^2), family=binomial, bliss)
+anova(modl,modl2,test="Chi")
+
+residuals(modl)
+residuals(modl,"pearson")
+residuals(modl,"response")
+bliss$dead/30 - fitted(modl)
+residuals(modl,"working")
+residuals(lmod)
+influence(modl)$hat
+rstudent(modl)
+influence(modl)$coef
+cooks.distance(modl)
+
+data(gala)
+gala<- gala[,-2]
+modp<-glm(Species ~ .,family=poisson, gala)
+
+par(mfrow=(c(1,3)))
+plot(residuals(modp)~predict(modp, type="response"), xlab=expression(hat(mu)),ylab="Deviance residauls")
+plot(residuals(modp)~predict(modp, type="link"), xlab=expression(hat(eta)),ylab="Deviance residauls")
+plot(residuals(modp, type="response")~predict(modp, type="link"), xlab=expression(hat(eta)),ylab="Deviance residauls")
+
+par(mfrow=(c(1,3)))
+plot(Species ~ Area, gala)
+plot(Species ~log(Area),gala)
+mu<-predict(modp, type="response")
+z<-predict(modp)+(gala$Species-mu)/mu
+plot(z~log(Area),gala,ylab="Linearized Response")
+
+modpl<-glm(Species ~ log(Area)+log(Elevation)+log(Nearest)+log(Scruz+0.1)+log(Adjacent),family = poisson,gala)
+c(deviance(modp),deviance(modpl))
+par(mfrow=(c(1,2)))
+mu<-predict(modpl,type="response")
+u<-(gala$Species-mu)/mu +coef(modpl)[2]*log(gala$Area)
+plot(u~log(Area),gala,ylab="Partial Residual")
+abline(0,coef(modpl)[2])
+z<-predict(modpl)+(gala$Species-mu)/mu
+plot(z~predict(modpl), xlab="Linear predictor",ylab="Linearized Response")
+
+par(mfrow=(c(1,3)))
+gail <- influence(modpl)
+halfnorm(gail$hat)
+halfnorm(cooks.distance(modpl))
+plot(gail$coef[,5],ylab="Change in Scruz coef",xlab="Case no.")
+
+modplr<-glm(Species ~ log(Area)+log(Elevation)+log(Nearest)+log(Scruz+0.1)+log(Adjacent),family=poisson,gala,subset=-25)
+cbind(coef(modpl),coef(modplr))
+
+modpla<-glm(Species ~ log(Area)+log(Adjacent),family=poisson,gala)
+dp<-sum(residuals(modpla,type="pearson")^2/modpla$df.res)
+summary(modpla,dispersion = dp)
+```
+
+Chapter 7
+
+```{r}
+x<-seq(0,8,by=0.1)
+par(mfrow=(c(1,3)))
+plot(x,dgamma(x,0.75),type="l",ylab="",xlab = "",ylim=c(0,1.25),xaxs="i",yaxs="i")
+plot(x,dgamma(x,1.0),type="l",ylab="",xlab = "",ylim=c(0,1.25),xaxs="i",yaxs="i")
+plot(x,dgamma(x,2.0),type="l",ylab="",xlab = "",ylim=c(0,1.25),xaxs="i",yaxs="i")
+
+data(wafer)
+summary(wafer)
+llmdl<-lm(log(resist)~.^2,wafer)
+rmldl<-step(llmdl)
+summary(rmldl)
+
+gmdl<-glm(resist ~.^2, family=Gamma(link=log),wafer)
+rgmdl<-step(gmdl)
+summary(rgmdl)
+
+library(MASS)
+gamma.dispersion(rgmdl)
+data(motorins)
+motori<-motorins[motorins$Zone == 1,]
+gl<- glm(Payment ~ offset(log(Insured))+as.numeric(Kilometres)+Make+Bonus, family=Gamma(link=log),motori)
+summary(gl)
+
+llg<-glm(log(Payment)~offset(log(Insured))+as.numeric(Kilometres)+Make+Bonus,family=gaussian,motori)
+summary(llg)   
+
+par(mfrow=(c(1,2)))
+x<-seq(0,5,by=0.05)
+plot(x,dgamma(x,1/0.55597,scale = 0.55597),type="l",ylab="",xlab="",yaxs="i",ylim=c(0,1))
+plot(x,dlnorm(x,meanlog=-0.30551,sdlog=sqrt(0.55597)),type="l",ylab="",xlab="",yaxs="i",ylim=c(0,1))
+
+x0<-data.frame(Make="1",Kilometres=1,Bonus=1,Insured=100)
+predict(gl,new=x0,se=T,type="response")$fit
+c(exp(10.998),exp(10.998)*0.16145)
+
+library(invGauss)
+par(mfrow=(c(1,3)))
+plot(x,dinvgauss(x,1,0.5),type="l",ylab="",xlab="",ylim=c(0,1.5),xaxs="i",yaxs="i")
+plot(x,dinvgauss(x,1,1),type="l",ylab="",xlab="",ylim=c(0,1.5),xaxs="i",yaxs="i")
+plot(x,dinvgauss(x,1,5),type="l",ylab="",xlab="",ylim=c(0,1.5),xaxs="i",yaxs="i")
+
+data(cpd)
+lmod<-lm(actual~ projected-1,cpd)
+summary(lmod)
+
+plot(actual ~ projected, cpd)
+abline(lmod)
+igmod<-glm(actual ~ projected-1,family=inverse.gaussian(link="identity"),cpd)
+#abline(lgmod,lty=2)
+summary(lmod)
+plot(residuals(igmod)~log(fitted(igmod),ylab="Deviance residuals",xlab-expression(log(hat(mu)))))
+abline(h=0)
+
+data("weldstrength")
+lmod<-lm(Strength ~ Drying + Material + Preheating,weldstrength)
+summary(lmod)
+h<-influence(lmod)$hat
+d<-residuals(lmod)^2/(1-h)
+gmod<-glm(d ~ Method+Preheating,family=Gamma(link=log),weldstrength,weights=1-h)   
+
+data("mammalsleep")
+mammalsleep$pdr<-with(mammalsleep,dream/sleep)
+summary(mammalsleep$pdr)
+modl<-glm(pdr~log(body)+log(brain)+log(lifespan)+log(gestation)+predation+exposure+danger,family = quasibinomial,mammalsleep)
+drop1(modl,test="F")
+modl<-glm(pdr ~ log(body)+log(lifespan)+danger,family = quasibinomial,mammalsleep)
+summary(modl)
+
+```
+
+Chapter 9
+```{r}
+data(psid)
+attach(psid)
+head(psid)
+library(lattice)
+xyplot(income ~year | person, psid, type="l",subset=(person<21),strip=FALSE)
+xyplot(log(income+100) ~year | sex, psid, type="l")
+
+lmod<-lm(log(income)~I(year-78),subset = (person==1),psid)
+coef(lmod)
+slopes<-numeric(85);intercepts<-numeric(85)
+for(i in 1:85){
+    lmod<-lm(log(income)~I(year-78),subset=(person==i),psid)
+    intercepts[i]<-coef(lmod)[1]
+    slopes[i]<-coef(lmod)[2]
+}
+plot(intercepts,slopes,xlab="Intercept",ylab="Slope")
+psex<-psid$sex[match(1:85,psid$person)]
+boxplot(split(slopes,psex))
+t.test(slopes[psex=="M"],slopes[psex=="F"])
+t.test(intercepts[psex=="M"],intercepts[psex=="F"])
+
+library(lme4)
+psid$cyear<-psid$year-78
+mmod<-lmer(log(income)~cyear*sex+age+educ+(cyear|person),psid)
+summary(mmod)
+qqmath(~resid(mmod)|sex, psid)
+xyplot(resid(mmod)~fitted(mmod)|cut(educ,c(0,8.5,12.5,20)),psid, layout=c(3,1),xlab="Fitted",ylab="Residuals")
+
+data(vision)
+attach(vision)
+vision$npower<- rep(1:4,14)
+xyplot(acuity~npower|subject,vision,type="l",group=eye,lty=1:2,layout=c(4,2))
+mmod<-lmer(acuity~power+(1|subject)+(1|subject:eye),vision)
+summary(mmod)
+anova(mmod)
+
+mmodr<-lmer(acuity~power+(1|subject)+(1|subject:eye),vision,subset=-43)
+summary(mmodr)
+anova(mmodr)
+
+op<-options(contrasts = c("contr.helmert","contr.poly"))
+mmodr<-lmer(acuity~power+(1|subject)+(1|subject:eye),vision,subset=-43)
+summary(mmodr)
+anova(mmodr)
+contr.helmert(4)
+plot(resid(mmodr)~fitted(mmodr),xlab="Fitted",ylab="Residuals")
+abline(h=0)
+qqnorm(ranef(mmodr)$"subject:eye"[[1]],main="")
+
+data(jsp)
+attach(jsp)
+jspr<-jsp[jsp$year==2,]
+mjspr<-data.frame(rbind(jspr[,1:6],jspr[,1:6]),subject=factor(rep(c("english","math"),c(953,953))),score=c(jspr$english/100,jspr$math/40))
+xyplot(score~raven|subject*gender,mjspr)
+
+mjspr$craven<-mjspr$raven-mean(mjspr$raven)
+mmod<-lmer(score ~ subject*gender+craven*subject+social+(1|school)+(1|school:class:id),mjspr)
+anova(mmod)
+summary(mmod)
+xyplot(residuals(mmod)~fitted(mmod)|subject,mjspr,pch=".",xlab="Fitted",ylab="Residuals")
+```
+
+Chapter 11
+
+```{r}
+data(exa)
+plot(y~x, exa,main="Example A",pch=".")
+lines(m ~ x, exa)
+data(exb)
+plot(y~x, exb,main="Exmple B",pch=".")
+lines(m ~x , exb)
+
+data(faithful)
+plot(waiting ~ eruptions, faithful,main="bandwidth=0.1",pch=".")
+lines(ksmooth(faithful$eruptions,faithful$waiting,"normal",0.1))
+plot(waiting ~ eruptions, faithful,main="bandwidth=0.5",pch=".")
+lines(ksmooth(faithful$eruptions,faithful$waiting,"normal",0.5))
+plot(waiting ~ eruptions, faithful,main="bandwidth=2",pch=".")
+lines(ksmooth(faithful$eruptions,faithful$waiting,"normal",2))
+
+library(sm)
+hm<-hcv(faithful$eruptions,faithful$waiting,display="lines")
+sm.regression(faithful$eruptions,faithful$waiting,h=hm,xlab="eruptions",ylab="eruptions")
+hm<-hcv(exa$x,exa$y,display="lines")
+sm.regression(exa$x,exa$y,h=hm,xlab="X",ylab="y")
+hm<-hcv(exb$x,exb$y,display="lines",hstart=0.005)
+sm.regression(exb$x,exb$y,h=0,005)
+
+plot(waiting ~ eruptions, faithful,pch=".")
+lines(smooth.spline(faithful$eruptions,faithful$waiting))
+plot(y~x, exa, pch=".")
+lines(exa$x,exa$m)
+lines(smooth.spline(exa$x,exa$y),lty=2)
+plot(y~x, exb, pch=".")
+lines(exb$x,exb$m)
+lines(smooth.spline(exb$x,exb$y),lty=2)
+
+rhs<-function (x,c) ifelse (x>c,x-c, 0)
+curve(rhs(x,0.5),0,1)
+knots<-0:9/10
+knots
+dm<-outer(exa$x, knots,rhs)
+matplot(exa$x,dm,type="l",col=1)
+
+g<-lm(exa$y ~dm)
+plot(y~x,exa, pch=".",xlab="x",ylab="y")
+lines(exa$x,predict(g))
+newknots<-c(.0,.5,.6,.65,.7,.75,.8,.85,.9,.95)
+dmn<-outer(exa$x,newknots,rhs)
+gn<-lm(exa$y ~ dmn)
+plot(y~x,exa,pch=".",xlab="x",ylab="y")
+lines(exa$x,predict(gn))
+
+library(splines)
+matplot(bs(seq(0,1,length=1000),df=12),type="l",ylab="",col=1)
+sml<-lm(y~bs(x,12),exa)
+plot(y~x, exa, pch=".")
+lines(m~x,exa)
+lines(predict(sml)~x,exa,lty=2)
+
+plot(waiting~eruptions,faithful,pch=".")
+f<-loess(waiting~eruptions,faithful)
+i<-order(faithful$eruptions)
+lines(f$x[i],f$fitted[i])
+plot(y~x,exa, pch=".")
+lines(exa$x,exa$m,lty=1)
+f<-loess(y~x,exa)
+lines(f$x,f$fitted,lty=2)
+f<-loess(y~x,exa,span=0.22)
+lines(f$x,f$fitted,lty=5)
+plot(y~x,exa, pch=".")
+lines(exa$x,exa$m,lty=1)
+f<-loess(y~x,exb)
+lines(f$x,f$fitted,lty=2)
+f<-loess(y~x,exb,span=1)
+lines(f$x,f$fitted,lty=5)
+lines(exb$x,exb$m)
+
+library(wavethresh)
+wds<-wd(exa$y,filter.number=4)
+draw(wds,main="")
+plot(wds,main="")
+wtd<-threshold(wds,policy="manual",value=9999)
+fd<-wr(wtd)
+plot(y~x,exa,pch=".")
+lines(m~x,exa)
+lines(fd~x,exa,lty=5,lwd=2)
+wtd2<-threshold(wds)
+fd2<-wr(wtd2)
+plot(y~x,exa,pch=".")
+lines(m~x,exa)
+lines(fd2~x,exa,lty=5,lwd=2)
+wds<-wd(exa$y)
+draw(wds,main="")
+plot(wds,main="")
+wtd<-threshold(wds)
+fd<-wr(wtd)
+plot(y~x,exa,pch=".")
+lines(m~x,exa)
+lines(fd~x,exa,lty=2)
+
+data(savings)
+y<-savings$sr  
+x<-cbind(savings$pop15,savings$ddpi)
+sm.regression(x,y,h=c(1,1),xlab="pop15",ylab="growth",zlab="savings rate")
+sm.regression(x,y,h=c(5,5),xlab="pop15",ylab="growth",zlab="savings rate")
+```
+
+###ISLR 
+
+Chapter 2
+
+```{r}
+ls() # list all current datasets
+rm(d) # remove specific dataset
+rm(list=ls()) # remove all datasets
+x<-matrix(data=c(1,2,3,4), nrow=2, ncol=2)
+x<-rnorm(50)
+y<-x+rnorm(50,mean=50,sd=.1)
+cor(x,y)
+set.seed(1303)
+rnorm(50)
+pdf("figure.pdf") #create pdf image
+plot(x,y, col="green")
+dev.off() # turn off pdf image
+jpeg("figure.jpg")#create jpeg image
+plot(x,y, col="green")
+dev.off() # turn off jpeg image
+x<-seq(1,10)
+y=x
+f=outer(x,y,function(x,y)cos(y)/(1+x^2))
+fa=(f-t(f))/2
+contour(x,y,f)
+image(x,y,fa)
+persp(x,y,fa)
+persp(x,y,fa, theta=30)
+persp(x,y,fa, theta=30, phi=20)
+persp(x,y,fa, theta=30, phi=70)
+persp(x,y,fa, theta=30, phi=40)
+```
+
+Chapter 3
+```{r}
+library(MASS)
+library(ISLR)
+fix(Boston) #Table of dataset
+names(Boston)
+attach(Boston)
+lm.fit<-lm(medv~lstat)
+lm.fit
+summary(lm.fit)
+names(lm.fit)
+confint(lm.fit)
+predict(lm.fit,data.frame(lstat=(c(5,10,15))),interval="confidence")
+predict(lm.fit,data.frame(lstat=(c(5,10,15))),interval="prediction")
+plot(lstat,medv)
+abline(lm.fit)
+abline(lm.fit,lwd=3, col="red")
+par(mfrow=c(2,2))
+plot(lm.fit)
+plot(predict(lm.fit),residuals(lm.fit))
+plot(hatvalues(lm.fit))
+which.max(hatvalues(lm.fit))
+lm.fit<-lm(medv~.,data=Boston)
+library(car)
+vif(lm.fit)
+summary(lm(medv~lstat*age,data=Boston))#interaction terms
+lm.fit2<-lm(medv~lstat+I(lstat^2))#Transformation of predictors
+summary(lm.fit2)
+anova(lm.fit,lm.fit2)
+summary(lm(medv~log(rm),data=Boston))
+fix(Carseats)
+attach(Carseats)
+contrasts(ShelveLoc)#returns coding R uses for dummy variables
+
+```
+
+Chapter 4
+```{r}
+
+```
+
+
+###Videos
+
+```{r}
+#Video fiting Regression models
+#https://www.youtube.com/watch?v=5ONFqIk3RFg
+
+library(MASS)
+library(ISLR)
+names(Boston)
+?Boston
+plot(medv~lstat,Boston)
+fit1=lm(medv~lstat, data=Boston)
+summary(fit1)
+plot(medv~lstat,Boston)
+abline(fit1,col="red")
+confint(fit1)
+predict(fit1, data.frame(lstat=c(5,10,15)), interval="confidence")
+
+fit2<-lm(medv~lstat+age,data=Boston)
+summary(fit2)
+
+fit3<-lm(medv ~., Boston)
+summary(fit3)
+par(mfrow=(c(2,2)))
+plot(fit3)
+
+fit4=update(fit3,~.-age-indus)
+summary(fit4)
+
+fit5=lm(medv~lstat*age,Boston) #nonlinearity * interaction
+summary(fit5)
+
+fit6=lm(medv~lstat +I(lstat^2),Boston); summary(fit6) #Quadratic, 2 commands in 1 line
+attach(Boston)
+par(mfrow=c(1,1))
+plot(medv~lstat)
+points(lstat,fitted(fit6),col="red",pch=20) # plot quadratic line which because line is not longer straight.
+
+fit7=lm(medv~poly(lstat,4))
+plot(1:20, 1:20, pch=1:20,cex=2)
+points(lstat,fitted(fit7),col="blue",pch=20)
+
+fix(Carseats)
+names(Carseats)
+summary(Carseats)
+fit1=lm(Sales ~. +Income:Advertising+Age:Price,Carseats)#Colon is for interaciton
+summary(fit1)
+contrasts(Carseats$ShelveLoc)
+
+#functions
+regplot=function(x,y,...)
+#... means unnamed arguement, passed as supplied
+{
+    fit=lm(y~x)
+    plot(x,y,...)
+    abline(fit,col="red")
+}
+
+attach(Carseats)
+regplot(Price,Sales)
+
+regplot(Price, Sales, xlab="Price", ylab="Sales", col="blue", pch=20)
+```
+
+```{r}
+#Video on Generalized Linear Models
+#https://www.youtube.com/watch?v=xEwM1nzQckY
+
+require(ISLR)
+names(Smarket)
+summary(Smarket)
+?Smarket
+pairs(Smarket,col=Smarket$Direction)
+glm.fit=glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume,data=Smarket,family=binomial)
+summary(glm.fit)
+glm.probs=predict(glm.fit,type="response")
+glm.probs[1:5]
+glm.pred=ifelse(glm.probs>0.5,"Up","Down")
+attach(Smarket)
+table(glm.pred,Direction)
+mean(glm.pred==Direction)
+#Make train Set
+train=Year<2005
+glm.fit=glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume, data=Smarket, family=binomial, subset=train)
+glm.probs=predict(glm.fit,newdata=Smarket[!train,],type="response")
+glm.pred=ifelse(glm.probs>0.5,"Up","Down")
+Direction.2005=Smarket$Direction[!train]
+table(glm.pred,Direction.2005)
+mean(glm.pred==Direction.2005)
+
+#Fit maller  Model
+glm.fit =glm(Direction~Lag1+Lag2, data=Smarket, family=binomial, subset=train)
+glm.probs=predict(glm.fit,newdata = Smarket[!train,],type="response")
+glm.pred=ifelse(glm.probs>0.5,"Up","Down")
+table(glm.pred,Direction.2005)
+mean(glm.pred==Direction.2005)
+summary(glm.fit)
+```
+
+```{r}
+#Video Probit and Logit Model Examples
+#https://www.youtube.com/watch?v=yPCQZeGWJjw
+mydata <-read.csv("probit_insurance.csv")
+attach(mydata)
+Y<-cbind(ins)
+X<-cbind(retire, age, hstatusg, hhincome, educyear, married, hisp)
+summary(X)
+summary(Y)
+table(Y)
+table(Y)/sum(table(Y))
+#Regression Coefficients
+olsreg <- lm(Y~X)
+summary(olsreg)
+
+#Logit model coeffiients
+logit<- glm(Y~X, family = binomial (link = "logit"))
+summary(logit)
+
+# Logit Model odds ratios
+exp(logit$coefficients)
+
+# Probit model coefficents
+probit <-glm(Y~X,family=binomial(link = "probit"))
+summary(probit)
+
+# Regression marginal effects
+coef(olsreg)
+
+# Logit model average marginal effects
+LogitScalar <-mean(dlogis(predict(logit, type = "link")))
+LogitScalar<-coef(logit)
+
+# Probit model average marginal effcts
+ProbitScalar<-mean(dnorm(predict(probit, type = "link")))
+ProbitScalar<-coef(probit)
+
+# Regression predicted probabilities
+polsreg<-predict(olsreg)
+summary(polsreg)
+
+# Logit model predicted probabilities
+plogit<-predict(logit, type="response")
+summary(plogit)
+
+# Probit model predicted probabilities
+pprobit<-predict(probit, type="response")
+summary(pprobit)
+
+# Percent correctly predicted values
+table(true = Y, pred = round(fitted(probit)))
+table(true = Y, pred = round(fitted(logit)))
+
+# Mcfadden's Pseudo R-squared
+probit0<-update(probit, formula= Y~1)
+McFadden <- 1-as.vector(logLik(probit)/logLik(probit0))
+McFadden
+```
+
+```{r}
+#Video Multinomial Probit and Logit Models Example
+##https://www.youtube.com/watch?v=-Cp_KP9mq94
+# Multinomial Probit and Logit Models in R
+# Copyright 2013 by Ani Katchova
+
+# install.packages("mlogit")
+library(mlogit)
+library(tibble)
+mydata<-read.csv("multinomial_fishing1.csv")
+attach(mydata)
+
+# Descriptive statistics
+table(mode)
+
+# Reshaping the data from wide to long format
+#mydata$mode<-as.factor(mydata$mode)
+mldata<-mlogit.data(mydata, varying=4:15, choice="mode", shape="wide")
+mldata[1:20,]
+
+# Multinomial logit model coefficients 
+mlogit.model1 <- mlogit(mode ~ 1 | income, data=mldata, reflevel="charter")
+summary(mlogit.model1)
+
+# Multinomial logit model coefficients (with different base outcome)
+mlogit.model2 <- mlogit(mode ~ 1 | income, data = mldata, reflevel="pier")
+summary(mlogit.model2)
+
+# Multinomial logit model odds ratios 
+exp(coef(mlogit.model1))
+
+
+# Conditional logit model
+clogit.model1 <- mlogit(mode ~ price+catch |income, data = mldata, reflevel="charter")
+summary(clogit.model1)
+
+clogit.model2 <- mlogit(mode ~ price+catch | income, data = mldata, reflevel="pier")
+summary(clogit.model2)
+
+
+# Setting mean values for variables to use for marginal effects 
+m <- mlogit(mode ~ price+catch |income, data = mldata, reflevel="charter")
+z <- with(mldata, data.frame(price = tapply(price, index(m)$alt, mean), 
+                             catch = tapply(catch, index(m)$alt, mean), income = mean(income)))
+
+# Multinomial logit model marginal effects
+effects(mlogit.model1, covariate = "income", data = z)
+
+# Conditional logit model marginal effects
+effects(clogit.model1, covariate = "income", data = z)
+effects(clogit.model1, covariate = "price", data = z)
+effects(clogit.model1, covariate = "catch", data = z)
+
+# Multinomial probit model coefficients 
+#mprobit.model1 <- mlogit(mode ~ 1 | income, data = mldata, reflevel="charter", probit=TRUE)
+#summary(mprobit.model1)
+
+
+# Hauseman-McFadden test of independence of irrelevant alternatives
+m1<- mlogit(mode ~ 1 | income, data = mldata, reflevel="beach")
+m2<- mlogit(mode ~ 1 | income, data = mldata, reflevel="beach", alt.subset=c("beach", "pier", "private"))
+hmftest(m1, m2)
+
+
+```
+
+
+
+
+##Exercises
+
+```{r exercises}
+#LMR1.1
+data(teengamb, package="faraway")
+head(teengamb)
+summary(teengamb)
+hist(teengamb$income)
+
+#LMR1.3
+data(prostate, package="faraway")
+head(prostate)
+summary(prostate)
+lm(prostate$lweight~prostate$age)
+
+#LMR1.4
+data(sat, package="faraway")
+head(sat)
+summary(sat)
+hist(sat$salary)
+
+qqplot(sat$salary, sat$total)
+qqplot(sat$expend, sat$total)
+lm1<-lm(sat$total ~sat$expend+sat$salary)
+summary(lm1)
+ggplot(data= sat) +
+    geom_point(mapping = aes(x = lm1$residuals, y = total, size= total), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(size=9))
+
+#LMR1.5data(divusa, package="faraway")
+data(divusa, package="faraway")
+head(divusa)
+summary(divusa)
+lm(divusa$marriage ~divusa$military)
+
+
+#LMR 2.4
+data(prostate, package="faraway")
+lmod<- summary(lm(lcavol~lpsa, data=prostate))
+sstat<- data.frame(res=lmod$sigma,rsq=lmod$r.squared)
+lmod<- summary(lm(lcavol~lpsa+lweight, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph+age, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph+age+lcp, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph+age+lcp+pgg45, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph+age+lcp+pgg45+gleason, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+
+
+#A high R-square tells us that data is closer ot the fitted value while a lowe redidual gives the messure of how close the data falls from the regression line.in our plot Stats we can see that  as we add more variables the residuals decrease and the R.squred increase. This tells us the data is getting closer to the regression line as we add more variables.
+sstat
+plot(sstat)
+
+#LMR 2.5
+data(prostate, package="faraway")
+fit1<-lm(lpsa~lcavol, data=prostate)
+summary(fit1)
+fit2<-lm(lcavol~lpsa, data=prostate)
+summary(fit2)
+plot(lcavol~lpsa,prostate)
+abline(fit1,col="red")
+abline(fit2,col="blue")
+
+#LMR 3.6
+#a
+data(happy, package="faraway")
+str(happy)
+lmods <-lm(happy ~ money + sex + love + work, happy)
+anova(lmods)
+summary(lmods)
+
+#b
+confint(lmods, level = .98)
+
+#c
+tstats <- numeric(nreps)
+set.seed(123)
+for(i in 1:nreps)
+{
+    lmods <- lm(happy ~ money + sex + love + work, happy)
+    tstats[i] <- summary(lmods)$coef[3,3]
+}
+mean(fstats > lms$fstatistic[1])
+
+#d
+hist(fstats)
+
+#f
+ set.seed(123)
+ nb<-4000
+ coefmat <-matrix(NA,nb,5)
+ resids <-residuals(lmods)
+ preds<-fitted(lmods)
+ for(i in 1:nb){
+     booty <- preds + sample(resids, rep=TRUE)
+     bmod <- update(lmods, booty ~ .)
+     coefmat[i,]<-coef(bmod)
+ }
+ 
+colnames(coefmat) <- c("Intercept", colnames(happy[1:4]))
+coefmat<-data.frame(coefmat)
+apply(coefmat,2,function(x) quantile(x,c(0.10,0.90)))
+apply(coefmat,2,function(x) quantile(x,c(0.05,0.95)))
+
+#LMR 6.1
+
+#Constant Variance assumption for errors
+data(sat, package='faraway')
+lmod<- lm(total~expend+salary+ratio+takers,sat)
+plot(fitted(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+abline(h=0)
+plot(sat$takers,residuals(lmod), xlab="takers",ylab="Residuals")
+abline(h=0)
+var.test(residuals(lmod),residuals(lmod)[sat$takers])
+
+#Normality Assumption
+qqnorm(residuals(lmod),ylab="Residuals",main="")
+qqline(residuals(lmod))
+hist(residuals(lmod),xlab="Residuals",main="")
+#Leverage Points
+hatv<- hatvalues(lmod)
+head(hatv)
+sum(hatv)
+
+#Outliers
+set.seed(123)
+testdata <- data.frame(x=1:10, y=1:10+rnorm(10))
+
+
+p1<-c(5.5,12)
+lmod1 <- lm(y ~x, rbind(testdata, p1))
+plot(y ~ x, rbind(testdata, p1))
+points(5.5,12,pch=4,cex=2)
+abline(lmod)
+abline(lmod1,lty=2)
+
+#Influential Points
+plot(dfbeta(lmod)[,2],ylab="Change in takers coef")
+abline(h=0)
+#Structure of relationship between predictors and response
+summary(lmod)
+d<-residuals(lm(total~expend+salary+ratio+takers,sat))
+m<-residuals(lm(takers~expend+salary+ratio,sat))
+plot(m,d,xlab="takers residuals",ylab="Sat Totals residuals")
+abline(0,coef(lmod)['takers'])
+
+#LMR Excercise 7.3
+
+data(divusa, package="faraway")
+#Linear Regression with all values
+lmod<-lm(divorce ~ unemployed+femlab+marriage+birth+military,divusa)
+summary(lmod)
+
+#Plot comparing femlab only
+plot(divorce ~ femlab,ylab=
+"divorce", divusa)
+lmod<-lm(divorce ~ femlab, divusa)
+abline(lmod)
+summary(lmod)
+lmod1<-lm(divorce ~ I(femlab+rnorm(50)), divusa)
+coef(lmod1)
+abline(lmod1,lty=2)
+lmod2<-lm(divorce ~ I(femlab+2*rnorm(50)), divusa)
+coef(lmod2)
+abline(lmod2,lty=3)
+lmod5<-lm(divorce ~ I(femlab+5*rnorm(50)), divusa)
+abline(lmod5,lty=4)
+
+
+##Simex values
+require(simex)
+set.seed(123)
+lmod<- lm(divorce ~ femlab, divusa, x=TRUE)
+simout <-simex(lmod,"divorce", 0.5, B=1000)
+simout
+
+#$$\verb!The predicted value of ! \hat{\beta} \verb! is:  `r round(simout$coefficients[2],1)`!$$
+
+#Scaling X values
+
+scdiv<-data.frame(scale(divusa))
+lmod<-lm(divorce ~unemployed+femlab+marriage+birth+military, scdiv)
+summary(lmod)
+
+#plot new values
+edf<-data.frame(coef(lmod),confint(lmod))[-1,]
+names(edf)<-c('Estimate','lb','ub')
+require(ggplot2)
+p<-ggplot(aes(y=Estimate,ymin=lb,ymax=ub,x=row.names(edf)),data=edf)+geom_pointrange()
+p+coord_flip()+xlab("Predictor")
+
+#correlation matrix
+round(cor(divusa),2)
+x<- model.matrix(lmod)[,-1]
+e<-eigen(t(x) %*% x)
+e$val
+sqrt(e$val[1]/e$val)
+summary(lm(x[,1]~x[,-1]))$r.squared
+1/(1-summary(lm(x[,1]~x[,-1]))$r.squared)
+require(faraway)
+vif(x)
+
+lmod<-lm(divorce+10*rnorm(38)~unemployed+femlab+marriage+birth+military, divusa)
+summary(lmod)
+
+round(cor(x),2)
+
+lmod2<-lm(divorce ~ marriage+birth+femlab, divusa)
+summary(lmod2)
+
+#LMR 13.1
+data(kanga, package="faraway")
+summary(kanga)
+
+image(is.na(kanga),axes=FALSE,col=gray(1:0))
+axis(2, at=0:19/5, labels=colnames(kanga))
+axis(1,at=0:147/46, labels=row.names(kanga),las=2)
+
+
+
+#LMR 10.6
+#Leg shows to have the lowest P value of all variables.
+
+data(seatpos, package="faraway")
+lmod<-lm(hipcenter ~ ., data=seatpos)
+summary(lmod)
+x <-model.matrix(lmod)
+(x1 <- apply(x,2,function(x,mean) quantile(x,0.95)))
+predict(lmod, new=data.frame(t(x1)), interval ="prediction")
+predict(lmod, new=data.frame(t(x1)), interval ="confidence")
+
+#Run PRedicdtion on Leg Data
+data(seatpos, package="faraway")
+lmod<-lm(hipcenter ~ Leg, data=seatpos)
+summary(lmod)
+x <-model.matrix(lmod)
+(x1 <- apply(x,2,function(x,mean) quantile(x,0.95)))
+predict(lmod, new=data.frame(t(x1)), interval ="prediction")
+predict(lmod, new=data.frame(t(x1)), interval ="confidence")
+
+#The regsubset confirms that Leg has highest Pvalue
+
+require(leaps)
+r<-regsubsets(hipcenter~.,data=seatpos)
+rs<-summary(r)
+rs$which
+
+#Find the minimum 
+require(leaps)
+b <-regsubsets(hipcenter~.,data=seatpos)
+rs<-summary(b)
+rs$which
+
+#AIC Plots
+
+AIC<-50*log(rs$rss/50)+ (2:9)*2
+plot(AIC - I(1:8), ylab="AIC", xlab="Number of Predictors")
+plot(2:9,rs$adjr2,xlab="No. of Parameters", ylab="Adjusted R-Square")
+which.max(rs$adjr2)
+plot(2:9,rs$cp,xlab="No. of Parameters",ylab="Cp Statistic")
+abline(0,1)
+
+
+#AIC Step
+
+lmod<-lm(hipcenter ~ ., data=seatpos)
+step(lmod)
+
+
+#USE AIC Model For Predition
+
+lmod<-lm( hipcenter ~ Age + HtShoes + Leg, data = seatpos)
+x <-model.matrix(lmod)
+(x1 <- apply(x,2,function(x,mean) quantile(x,0.95)))
+predict(lmod, new=data.frame(t(x1)), interval ="prediction")
+predict(lmod, new=data.frame(t(x1)), interval ="confidence")
+
+#MARR 8.6
+data(turtle, package="faraway")
+t<-turtle
+T.t<-t$male + t$female
+Temp<-t$temp
+P.male<-t$male/T.t
+dat = data.frame(Temp,T.t, P.male)
+log = glm(P.male ~ Temp, family =binomial, weights = T.t, data= dat)
+summary(log)
+
+plot(P.male ~ Temp, pch=16)
+curve(predict(log, data.frame(Temp=x), type="resp"), add=T)
+points(t$temp, fitted(log), pch=20)
+
+#ELMR 3.4
+data(africa, package="faraway")
+names(africa)
+head(africa)
+
+#LM shows oligarch, pollib and parties as being significant. Plot shows a trend and not spread of data.
+lmod<-lm(miltcoup ~., africa)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+summary(lmod)
+
+# stripchart shows some outliers on the size variable
+stripchart(africa)
+
+# set linear model with sqrt of response variable while adding log to predictor variable size. Parties is not longer signficant
+lmod<-lm(sqrt(miltcoup) ~.-size+log(size), family=poisson, africa)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+summary(lmod)
+
+#Persons F-test shows pollit and parties with higher AIC values 
+lmod<-lm(miltcoup ~., africa)
+halfnorm(residuals(lmod))
+(dp<- sum(residuals(lmod,type="pearson")^2)/lmod$df.res)
+summary(lmod, dispersion=dp)
+drop1(lmod,test="F")
+
+# With Parties , oligarch and polib
+lmod<-glm(miltcoup ~oligarchy+pollib+parties, family=poisson,  africa)
+summary(lmod)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+halfnorm(residuals(lmod))
+
+# With oligarch and polib
+lmod<-glm(miltcoup ~oligarchy+pollib, family=poisson,  africa)
+summary(lmod)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+halfnorm(residuals(lmod))
+
+# With Parties and polib
+lmod<-glm(miltcoup ~pollib+parties, family=poisson,  africa)
+summary(lmod)
+plot(predict(lmod),residuals(lmod),xlab="Fitted",ylab="Residuals")
+halfnorm(residuals(lmod))
+
+#ELMR 5.5
+library(faraway)
+data<-faraway::debt
+ccID<-data$ccarduse
+levels(ccID)<-c("Never","Occassional","Regularly")
+summary(ccID)
+table(ccID)
+
+par(mfrow = c(1,3))
+matplot(prop.table(table(data$prodebt,ccID),1),type="l",xlab="ProDebt",ylab="Proportion",lty=c(1,2,3))
+matplot(prop.table(table(data$incomegp,ccID),1),type="l",xlab="Income Gapt",ylab="Proportion",lty=c(1,2,3))
+matplot(prop.table(table(data$bankacc,ccID),1),type="l",xlab="Bank Act",ylab="Proportion",lty=c(1,2,3))
+
+library(nnet)
+mmod<-multinom(ccID ~ incomegp + bankacc + prodebt, debt)
+
+#ELMR 7.2
+data(rats)
+summary(rats)
+gtrats<-glm(poisson~.,data=rats,family="binomial"(link="logit"))
+summary(gtrats)
+
+llmd<-lm(log(time)~.^2,rats)
+rlmdl<-step(llmd)
+summary(rlmdl)
+
+gmdl<-glm(time~.^2,family=Gamma(link=log),rats)
+rgmdl<-step(gmdl)
+summary(rgmdl)
+library(MASS)
+gamma.dispersion(rgmdl)
+
+igmdl<-glm(time~.^2,family=inverse.gaussian(link="identity"),rats)
+summary(igmdl)
+gamma.dispersion(igmdl)
+
+
+plot(time~.^2,rats)
+plot(time~poison,rats)
+
+par(mfrow=(c(1,2)))
+plot(residuals(gmdl)~log(fitted(gmdl)),ylab="Deviance residuals",xlab=expression(log(hat(mu))))
+abline(h=0)
+
+plot(residuals(igmdl)~log(fitted(igmdl)),ylab="Deviance residuals inverse",xlab=expression(log(hat(mu))))
+abline(h=0)
+
+#ELMR 9.3
+library('lmerTest')
+library('dplyr')
+library('faraway')
+library('lattice')
+
+data("nepali")
+attach(nepali)
+
+#Review Data
+glimpse(nepali)
+summary(nepali)
+#Set factors
+nepali$lit<-as.factor(nepali$lit)
+nepali$sex<-as.factor(nepali$sex)
+#Modeling
+lmod<-lm(wt~.-ht-id,data=nepali)
+summary(lmod)
+summary(step(lmod))
+lmod2<-lmer(wt ~ (1|id:sex) + mage + (1|id:lit) + age,data = nepali)
+summary(lmod2)
+anova(lmod2)
+#Visualizaitons
+plot(resid(lmod2)~fitted(lmod2))
+abline(h=0)
+xyplot(wt ~ mage+age|sex*lit , nepali)
+
+#ELMR 11.5
+library(sm)
+data(aatemp)
+attach(aatemp)
+par(mfrow=(c(2,3)))
+plot(temp ~ year, aatemp,main="bandwidth=0.1",pch=".")
+lines(ksmooth(year,temp,"normal",0.1))
+plot(temp ~ year, aatemp,main="bandwidth=0.5",pch=".")
+lines(ksmooth(year,temp,"normal",0.5))
+plot(temp ~ year, aatemp,main="bandwidth=2",pch=".")
+lines(ksmooth(year,temp,"normal",2))
+plot(temp ~ year, aatemp,pch=".")
+lines(smooth.spline(year,temp))
+plot(temp ~ year, aatemp, pch=".")
+lines(smooth.spline(year,temp),lty=2)
+plot(temp ~ year, aatemp, pch=".")
+lines(temp,year)
+lines(smooth.spline(year,temp),lty=2)
+
+```
+
+Homework 2 Applied Predictive Modeling
+
+```{r}
+library(AppliedPredictiveModeling)
+set.seed(123)
+simulatedTrain<-quadBoundaryFunc(500)
+simulatedTest<-quadBoundaryFunc(1000)
+head(simulatedTrain)
+
+library(randomForest)
+rfModel<-randomForest(class ~ X1 + X2,
+                      data = simulatedTrain,
+                      ntree = 2000)
+library(MASS)
+qdaModel<-qda(class ~ X1 + X2, data= simulatedTrain)
+qdaTrainPred <- predict(qdaModel, simulatedTrain)
+names(qdaTrainPred)
+head(qdaTrainPred$class)
+head(qdaTrainPred$posterior)
+qdaTestPred<-predict(qdaModel, simulatedTest)
+simulatedTrain$QDAprob<-qdaTrainPred$posterior[,"Class1"]
+simulatedTest$QDAprob<-qdaTestPred$posterior[,"Class1"]
+rfTestPred<-predict(rfModel, simulatedTest, type = "prob")
+head(rfTestPred)
+simulatedTest$RFprob <-rfTestPred[,"Class1"]
+simulatedTest$RFclass<-predict(rfModel, simulatedTest)
+
+library(ggplot2)
+library(caret)
+
+#install.packages("caret",
+                # repos = "http://cran.r-project.org", 
+                 #dependencies = c("Depends", "Imports", "Suggests"))
+
+sensitivity(data = simulatedTest$RFclass,
+            reference = simulatedTest$class,
+            positive= "Class1")
+
+specificity(data = simulatedTest$RFclass,
+            reference = simulatedTest$class,
+            negative = "Class2")
+
+posPredValue(data = simulatedTest$RFclass,
+             reference = simulatedTest$class,
+             positive = "Class1")
+
+negPredValue(data = simulatedTest$RFclass,
+             reference = simulatedTest$class,
+             positive  = "Class2")
+
+posPredValue(data = simulatedTest$RFclass,
+             reference = simulatedTest$class,
+             positive  = "Class1",
+             prevalence = .9)
+
+confusionMatrix(data = simulatedTest$RFclass,
+                reference = simulatedTest$class,
+                positive = "Class1")
+
+library(pROC)
+rocCurve <-roc(response = simulatedTest$class,
+               predictor = simulatedTest$RFprob,
+               levels = rev(levels(simulatedTest$class)))
+auc(rocCurve)
+ci(rocCurve)
+plot(rocCurve, legacy.axis = TRUE)
+
+labs<-c(RFprob = "Random Forest",
+        QDAprob = "Quadratic Discriminant Analysis")
+liftCurve <-lift(class ~ RFprob + QDAprob, data = simulatedTest,
+                 labels = labs)
+liftCurve
+
+xyplot(liftCurve,
+       auto.key = list(column =2,
+                       lines = TRUE,
+                       points = FALSE))
+
+calCurve <-calibration(class ~ RFprob + QDAprob,
+                      data = simulatedTest)
+calCurve
+xyplot(calCurve, auto.key = list(column = 2))
+
+sigmoidalCal <-glm(relevel(class, ref="Class2")~QDAprob,
+                   data = simulatedTrain,
+                   family = binomial)
+coef(summary(sigmoidalCal))
+
+sigmoidProbs<-predict(sigmoidalCal,
+                        newdata = simulatedTest[,"QDAprob", drop=FALSE],type="response")
+simulatedTest$QDAsigmoid<-sigmoidProbs
+
+library(klaR)
+BayesCal<-NaiveBayes(class ~ QDAprob, data = simulatedTrain,
+                     useKernel = TRUE)
+BayesProbs<-predict(BayesCal,
+                    newdata = simulatedTest[,"QDAprob", drop = FALSE])
+simulatedTest$QDABayes<-BayesProbs$posterior[,"Class1"]
+head(simulatedTest[,c(5:6, 8, 9)])
+
+calCurve2<- calibration(class ~ QDAprob + QDABayes + QDAsigmoid,
+                        data = simulatedTest)
+
+xyplot(calCurve2)
+```
+
+```{r}
+library("ggmap")
+if(!requireNamespace("devtools")) install.packages("devtools")
+devtools::install_github("dkahle/ggmap", ref = "tidyup", force=TRUE)
+ggmap::register_google(key = "AIzaSyAJzMR94sktq3CedBoKrZAOWYrApnkbsSQ") 
+p <- ggmap(get_googlemap(center = as.array(c(lon = abs(mean(train$pickup_longitude)), lat = abs(mean(train$pickup_latitude))),
+                    zoom = 11, scale = 2,
+                    maptype ='terrain',
+                    color = 'color')))
+p+geom_point(aes(x = pickup_longitude, y = pickup_latitude,  colour = Initial.Type.Group), data = sub_train, size = 0.5) + 
+  theme(legend.position="bottom")
+```
+

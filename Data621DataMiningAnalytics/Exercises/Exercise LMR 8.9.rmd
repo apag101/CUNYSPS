@@ -1,0 +1,76 @@
+---
+title: "Data 621 LMR Exercise 8.2"
+author: "Anthony Pagan"
+date: "11/10/2019"
+output: 
+    html_document:
+        css: style.css   
+        toc: yes
+        toc_depth: 2
+        toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+# Original model
+
+Residuals seem to be spread evenly.
+
+```{r}
+#LMR 8.9
+library("faraway")
+data(fat, package="faraway")
+
+lmod<-lm(brozek ~ age + weight + height + neck + chest + abdom + hip + thigh + knee + ankle + biceps + forearm + wrist, data = fat)
+lmod$coefficients
+plot(lmod$residuals)
+``` 
+
+
+# New Model weight No offset
+
+```{r}
+lmod1<-lm(brozek ~ age + weight + height + neck + chest + abdom + hip + thigh + knee + ankle + biceps + forearm + wrist, data = fat, weights = 1/log(brozek))
+lmod1$coefficients
+plot(lmod1$residuals)
+```
+
+
+# New Model weight with Offset
+
+```{r}
+lmod1<-lm(brozek ~ age + weight + height + neck + chest + abdom + hip + thigh + knee + ankle + biceps + forearm + offset(wrist), data = fat,weights = var(brozek)/log(brozek))
+lmod1$coefficients
+plot(lmod1$residuals)
+```
+
+
+# Model Matrix test 
+
+All x values and confidence levels  remain the same, but sum of  y coefficients change.
+
+```{r}
+x <-model.matrix(lmod)
+x_ <-model.matrix(lmod1)
+(x0 <- apply(x,2,median))
+(x_0 <- apply(x_,2,median))
+
+(x1 <- apply(x,2,function(x) quantile(x,0.95)))
+(x_1 <- apply(x_,2,function(x_) quantile(x_,0.95)))
+
+(y0 <- sum(x0*coef(lmod)))
+(y_0 <- sum(x_0*coef(lmod1)))
+```
+
+# Anova stat
+
+```{r}
+ anova(lmod,lmod1)
+```
+

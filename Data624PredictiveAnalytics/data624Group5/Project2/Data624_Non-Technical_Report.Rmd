@@ -1,0 +1,318 @@
+---
+title: Analysis of the Beverage Production Factors that Impact Product pH at ABC Beverage
+  Company
+author: "Zach Herold, Anthony Pagan, Betsy Rosalen"
+date: "5/10/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    df_print: kable
+    fig_caption: yes
+    fig_height: 4
+    fig_width: 4
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(scipen=999, digits = 2)
+
+library(AppliedPredictiveModeling)
+library(caret)
+library(corrplot)
+library(e1071)
+library(earth)
+library(faraway)
+library(fpp2)
+library(ggplot2)
+library(gridExtra)
+library(kableExtra)
+require(knitr)
+library(leaps)
+library(lubridate)
+library(MASS)
+library(mlbench)
+library(naniar)
+library(pander)
+library(pROC)
+library(pscl)
+library(psych)
+library(randomForest)
+library(readxl)
+library(reshape)
+library(reshape2)
+library(rpart.plot)
+library(tidyverse)
+library(tseries)
+library(urca)
+library(ZIM)
+
+# Table formatting functions
+# kab_tab <- function(df, cap){
+#   df %>% kable(caption=cap) %>%
+#   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), 
+#                 full_width = T)
+# }
+# kab_tab2 <- function(df, cap){
+#   df %>% kable(caption=cap) %>%
+#   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), 
+#                 full_width = F)
+# }
+# For pdf output
+kab_tab <- function(df, cap){
+    kable(df, caption=cap, "latex", booktabs = T) %>%
+        kable_styling(latex_options = c("striped", "HOLD_position", "scale_down"))
+}
+kab_tab2 <- function(df, cap){
+    kable(df, caption=cap, "latex", booktabs = T) %>%
+        kable_styling(latex_options = c("striped", "HOLD_position"))
+}
+```
+
+# Project Description 
+
+## Data Analysis of the impact of ABC Beverage Manufacturing Process on pH
+
+This report contains the findings of the data analysis undertaken by the data science team, lead by Zach Herold, Anthony Pagan, and Betsy Rosalen at ABC Beverage Company in order to better understand the impact of manufacturing processes on the pH level in our products and to comply with new federal regulations.  The report has the following aims:
+
+* to further senior management's general understanding of the ABC Beverage manufacturing process that impact pH;
+* to internally prepare for inquiries and procedures pursuant to recent changes in the regulatory environment;
+* specifically, to explicate the effect manufacturing processes have on beverage pH and a present a generalized model for predicting pH levels from input and process calibrations. 
+
+This report details the results and conclusions reached from the analysis and excludes technical details.  For technical details about steps taken in our analysis, including the assumptions made, the methodology used, the models tested, and the model selection process please see the technical report, "Analysis of the Beverage Production Factors that Impact Product pH at ABC Beverage Company - Technical Report".
+
+# Data Description
+
+## Variable Summary Statistics and Distributions
+
+We were given a dataset that consisted of 31 numerical predictor variables detailing a wide range of production processes, 1 categorical variable `Brand.Code`, and our numerical target variable, `PH`.  Summary statistics for these variables are provided in Tables 1 and 2 on the next page and histograms of their distributions follow the tables.
+
+### Summary Statistics
+
+```{r}
+load("Data624_Project2.Rdata")
+```
+
+```{r}
+kab_tab2(cat_sum, cap="Summary of categorical variable, Brand.Code")
+kab_tab(num_sum[,c(2,3,4,8,5,9,10:13)], cap="Summary statistics for numerical variables")
+```
+
+### Distributions
+
+Our predictors have a wide range of distributions with some normal, some skewed, some multi-modal, and some with high zero inflation.  Our target, `PH`, has a mostly normal distribution.
+
+```{r fig.height=7, fig.width=9}
+
+stData[,-2] %>%
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram(fill = '#4575b4') +
+  theme(panel.background = element_blank(), legend.position="top")
+```
+
+### Missing Values
+
+There was some missing data in our predictors most noticeably in `MFR`, which had 8.25% missing values as can be seen in the plot below.  There didn't immediately seem to be any pattern in the missingness however, after our analysis we discovered some patterns which will be detailed in the section on "Understanding `Mnf.Flow`".  Missing values were handled automatically in our final model algorithm, so they were not imputed or removed from the dataset.
+
+```{r fig.height=8, fig.width=10}
+
+# Missing Data
+vis_miss(stData[-2])
+```
+
+
+## Relationships Between Variables
+
+### Correlations
+
+The correlation plot on the next page shows some strong correlations between predictors.  Correlated predictors share the same predictive value and so can often be used interchangeably in a model.  As a result, one from each pair is often removed from the model formula in order to increase model stability.  
+
+```{r fig.height=7, fig.width=8}
+corrplot(cor.plt, method="color", col=col(200),  
+         type="upper", order="hclust",
+         tl.col="black", tl.srt=45, tl.cex=0.5,
+         diag=FALSE 
+         )
+```
+
+Our analysis of the highly correlated variables found 13 pairs of variables that had a correlation of 0.85 or more.  These pairs are shown in Table 3 on the next page.
+
+What we found is that there were exactly 5 variables that were most frequently associated with highly correlated pairs.  Removing these variables, `Alch.Rel`, `Balling`, `Balling.Lvl`, `Carb.Rel`, and `Density` as well as `Filler.Speed`, `Hyd.Pressure2` and `Filler.Level` would eliminate all 13 highly correlated pairs in or data, however, after tuning models we discovered that we got better performance from a model type that is not as influenced by correlated predictors, called Random Forest, and by using the full set of predictors.  So no variables were removed from our final model formula. 
+
+```{r}
+kab_tab2(cor.plt2, cap="Highly Correlated Variable Pairs")
+```
+
+
+# Models
+
+We trained and tuned a full range of model types including: Linear Regression, Ridge Regression, Lasso, Random Forest, Tree Bag, CTree, Classification and Regression Tree (CART), Multivariate Adaptive Regression Splines (MARS), K-Nearest Neighbors (KNN) and Support Vector Machine (SVM).  
+
+We chose a model that minimized error (measured as root mean squared error or RMSE) and maximized predictive value (measured as $R^2$ R-squared).  The Random Forest model achieved this. The Random Forest regression model is a machine learning technique that randomly leaves out candidate features from each decision tree split, run on multiple iterations. In doing so, it "decorrelates" the trees, such that the averaging process can reduce the variance of the resulting models. 
+
+The accuracy measures, RMSE, $R^2$, and MAE, for all of the models tested are presented in the Table 4.  It is ordered by the lowest (best) RMSE to highest and thus from best predictive performance to worst.
+
+```{r cache=TRUE}
+df<-data.frame(rbind(m1[,1],m2[,1],m3[,1],m4[,1],m5[,1],m6[,1],m7[,1],
+                     m8[,1],m9[,1],m10[,1]))
+rownames(df)<-c("Linear Regression","Ridge Regression","Lasso","Random Forest",
+                "Tree Bag","CTree","CART","MARS","KNN","SVM")
+colnames(df)<-c("RMSE","Rsquared","MAE")
+df <- df[order(df$RMSE),]
+options(digits = 3)
+kab_tab2(df, cap="MODELS")
+```
+
+## Random Forest Model
+
+#### Top 10 Variables in the Random Forest Model by Importance Score
+
+We ranked the top-ten most important variables in determining pH according to the Random Forest Model.  They are shown in the Table 5.
+
+```{r}
+rfImp2 <- as.data.frame(importance(rf.model2, scale = FALSE))
+options(digits = 5)
+kab_tab2(head(rfImp2[order(-rfImp2[,2]),], 10), cap="Variable Importance Scores")
+```
+
+## Sample Decision Tree
+
+For comparison we also plotted a decision tree diagram which gave us similar results with the top three predictors also taking the top 3 nodes in the tree.  The decision tree below is one snapshot of what a random forest model might look like. Here, we can observe that the most critical factor `Mnf.Flow` is at the top and largely negative values are associated with higher pH. To achieve lower pH we have `Usage.cont` >= 23, `Carb.Rel` < 5.6, `Bowl.Setpoint` < 95 and `Oxygen.Filler` < 0.027 resulting in a pH of approximately 8.2.
+
+```{r fig.height=5, fig.width=7}
+prp(tree)
+```
+
+It's notable, however, that the tree only predicts pH levels in the middle of it's range.  `PH` in our dataset ranges from 7.88 to 9.36 however our tree only predicts from 8.2 to 8.7.  
+
+## Comparison of Random Forest to Standard OLS Linear Regression
+
+When we compare the Adjusted-$R^2$ 'goodness of fit' measure of a conventional linear regression model that uses the ten most important variables from our random forest model as predictors to one which uses all the variables as inputs, we note a very minor loss in goodness-of-fit. By removing two more statistically insignificant variables, `Pressure.Vacuum` and `Hyd.Pressure1`, we arrive at the model below:
+
+```{r}
+summary(linreg4) # Adjusted R-squared:  0.329
+```
+
+One interesting finding from this experiment was that we were able to determine that the impact of `Mnf.Flow`, `Usage.conf`, `Temperature`, `Oxygen.Filler`, and `Pressure.Setpoint` are negative due to the negative coefficients (in the "Estimate" column above) and the impact of `Carb.Rel`, `Bowl.Setpoint`, and `Hyd.Pressure3` are positive due to positive coefficients.  So there is a balancing act between these most influential variables with some pulling in one direction on the pH and some in the other.  Thus a change in one may necessitate a change in the others.  
+
+## Understanding `Mnf.Flow` 
+
+Since we found that several models, considered `Mnf.Flow` to be the most critical input, we visualized the distribution of the `Mnf.Flow` data in a histogram and in a scatterplot against `PH`:
+
+```{r fig.height=3, fig.width=6}
+par(mfrow=c(1,2))
+#Visualing the Mnf.Flow column
+plot(stData$Mnf.Flow, stData$PH, main='pH/Mnf.Flow Scatterplot', xlab='Mnf.Flow values',ylab='pH')
+hist(stData$Mnf.Flow, main='Histogram for Mnf.Flow', xlab='Mnf.Flow values')
+```
+
+We made the following observations about `Mnf.Flow`:
+
+1. Of the 2567 observations in our training set, 1183 (46%) have a value of -100 or less which can be clearly seen in the histogram.
+
+2. We note that the mean value of all non-negative `Mnf.Flow` data is 140. 
+
+3. A disproportional number of our missing values come from observations in which the `Mnf.Flow` is between 0 and 1. Although only 3% of all observations have this range of `Mnf.Flow`, 18% of the observations with missing values come from this subset. 
+
+The negative influence of `Mnf.Flow` is subtle but apparent in the violinplot below, separated by buckets of Mnf.FLow in the following ranges {1: [-1000, -1), 2: [-1, 1), 3: [1, 140), 4: [140, 1000]}
+
+```{r fig.height=4, fig.width=7}
+
+#Violin plot of Mnf.Flow by bins
+g <-ggplot(stData2, aes(x=factor(stData2$Mnf.Flow_ord), y=stData2$PH))
+g+geom_violin(alpha=0.5, color='grey') +
+  geom_jitter(alpha=0.5, size=4, aes(), position = position_jitter(width = 0.1), color='darkblue', show.legend=FALSE) +
+  ggtitle("PH by Mnf.Flow classification") +
+  coord_flip() +
+  xlab("Mnf.Flow") +
+  ylab("pH") +
+  theme(panel.background = element_blank(), legend.position="top")
+```
+
+## Modeling by Brand
+
+In another experiment we divided the dataset into subsets according to `Brand.Code` in order to assess what production processes are most relevant for each brand type.  We imputed missing values by replacing them with the trimmed mean and then applied a random forest model to each of the four subsets.  Our aim was to determine if the variables found to be most important for the whole dataset carry through to the subsets. 
+
+Interestingly the random forest model performed most poorly on the brand with the highest frequency in our dataset as can be seen in the table below.
+
+```{r}
+
+freq <- as.data.frame(table(stDatao$Brand.Code))
+rownames(freq)<-c("", "A","B","C","D")
+freq <- freq[2:5,2]
+
+df <-data.frame(rbind(l1[,1],l2[,1],l3[,1],l4[,1]))
+rownames(df)<-c("A","B","C","D")
+colnames(df)<-c("RMSE","Rsquared","MAE")
+df <- cbind(df, freq)
+df <- df[order(df$RMSE),]
+kab_tab2(df, cap="BRANDS")
+```
+
+The mean pH for our dataset is 8.55, however, from the violin plot below, we observe that the distribution of pH values for Brand D tends to be above mean, while that of Brand C is markedly below mean. We further investigated what factors determine the acidic signature of Brand C, with the conclusion that lower balling method levels (which promote solution alkalinity) may at least partially contribute.
+
+```{r fig.height=4, fig.width=7}
+
+#pH by Brand
+ggplot(stData, aes(Brand.Code, PH)) +
+  geom_violin(color = 'grey') +
+  geom_jitter(aes(color = Brand.Code), size = 0.8) +
+  ggtitle('pH by Brand') +
+  geom_hline(yintercept =8.55) +
+  coord_flip() +
+  theme(panel.background = element_blank(), legend.position="top")
+```
+
+We discovered that `Mnf.Flow` is no longer the most important variable at the brand level; rather, `Temperature` is, ranking in the top five for each of the four brands.  By contrast `Mnf.Flow` only shows up in the top 5 list for two brands and in the 3rd and 5th spots. These results suggest that `Mnf.Flow` may not be as robust a predictor as our other models indicated.
+
+```{r fig.height=3.5, fig.width=3.5}
+plot(rfImpA, top=5, scales = list(y = list(cex = 0.8)))
+plot(rfImpB, top=5, scales = list(y = list(cex = 0.8)))
+plot(rfImpC, top=5, scales = list(y = list(cex = 0.8)))
+plot(rfImpD, top=5, scales = list(y = list(cex = 0.8)))
+```
+
+
+# Predictions
+
+The goodness of fit plot below shows that our predictors fall close to the fit line. See the accompanying csv file, "predicted_eval_values_PH.csv" for predictions of pH made by applying our Random Forest model to new data. 
+
+```{r}
+eval_p2 <- predict(rf.model2, newdata = stEval[-2]) # -2 to remove Brand.Code categorical variable
+
+PHMut <- mutate(stEval, predProb = predict(rf.model2 ,stEval,type = "response"))
+grpPH <- group_by(PHMut, cut(eval_p2, breaks = unique(quantile(eval_p2, (0:25)/26, na.rm=TRUE))))
+
+#hosmer-lemeshow stat
+hlDf <- summarise(grpPH, y= sum(PH), pPred=mean(predProb), count = n())
+hlDf <- mutate(hlDf, se.fit=sqrt(pPred * (1-(pPred)/count)))
+ggplot(hlDf,aes(x=pPred,y=y/count,ymin=y/count-2*se.fit,ymax=y/count+2*se.fit)) +
+    geom_point()+geom_linerange(color=grey(0.75))+geom_abline(intercept=0,slope=1) +
+    xlab("Predicted Probability") +
+    ylab("Observed Proportion")
+```
+
+
+# Conclusions
+
+* The main processes putting downward (acetic) pressure on pH are `Mnf.Flow`, `Usage.conf`, `Temperature`, `Oxygen.Filler`, and `Pressure.Setpoint` when increased;  Positive adjustment may be attained through increase in `Carb.Rel`, `Bowl.Setpoint`, and `Hyd.Pressure3`;
+
+* There is strong correlation between several of the manufacturing processes, in particular: `MFR`, `Hyd.Pressure2`, `Carb.Rel`, `Air.Pressurer`, `Carb.Flow`, `Hyd.Pressure4`, and `Filler.Level`;
+
+* Some of the observations have missing data in our predictors, most noticeably in `MFR`, which had 8.25% missing values, as well as `Mnf.Flow` when in the range of 0 to 1. 
+
+* The metric most highly-correlated with `PH`, `Mnf.Flow`, has an irregular tri-modal distribution, with approx. 46% of values -100 or less, indicative of a distinct qualitative process of itself. Barring the negative and near-zero values, the positive values, which are approximately normal in distribution, have little correlation to `PH`. `Mnf.Flow`'s statistically significant predictive value can be wholly distilled from its transformation into a three-class categorical variable.
+
+* When the entire dataset is subsetted according to `Brand.Code`, a different series of critical variables emerges for each class from those of the general model. `Mnf.Flow` loses its force as a predictor, while `Temperature` and `Air.Pressurer` become key, ranking in the top five most important variables for each of the four brands under a random forest model.
+
+* pH varies with brand profile, especially in the case of Brand D (tending to be above-mean) and Brand C (markedly below mean). We further investigate what factors determine the acidic signature of Brand C, with the conclusion that lower `balling` method levels (which promote solution alkalinity) may at least partially contribute.
+
+
+# Recommendations for Further Analysis
+
+Since we had success in strengthening `Mnf.Flow`'s predictive value by transforming it into a categorical variable, we may want to investigate using the same transformation on some of the other variables with multi-modal distributions.  Some of the variables with multi-modal distributions include: `Alch.Rel`, `Balling`, `Balling.Lvl`, `Carb.Flow`, `Carb.Rel`, `Density` and all three `Hyd.Pressure` variables.  In addition, rather than transforming these variables, we may want to investigate using piecewise linear or MARS models with finer tuning in order to preserve the distributions in each bin.
+
+

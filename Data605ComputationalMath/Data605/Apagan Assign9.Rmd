@@ -1,0 +1,101 @@
+---
+title: "Data 605 Assignment 8"
+author: "Anthony Pagan"
+date: "March 30, 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW9
+
+#Stocks
+
+The price of one share of stock in the Pilsdorff Beer Company (see Exercise
+8.2.12) is given by Yn on the nth day of the year. Finn observes that
+the differences Xn = Yn+1 - Yn appear to be independent random variables
+with a common distribution having ${\mu}$ = 0 and variance ${\sigma^2}$ = 1/4. If
+Y1 = 100, estimate the probability that Y365 is
+
+```{r message=FALSE, warning=FALSE}
+
+f<-function(y2)
+{
+m <- 0
+s <- .25
+y<-100
+x <- 365
+s2 = x*sqrt(s)
+z<- (y-y2)/s2
+pnorm(z)
+}
+
+``` 
+
+##A) >=100
+
+```{r message=FALSE, warning=FALSE}
+a<-f(100)
+```     
+
+
+**The probablilty of Y365 >= 100 is `r round(a, 2)`**
+
+##B)  >=110
+
+```{r message=FALSE, warning=FALSE}
+b<-f(110)
+```     
+
+**The probablilty of Y365 >= 110 is `r round(b, 2)`**
+
+##C) >=120
+
+```{r message=FALSE, warning=FALSE}
+c<-f(120)
+```     
+
+**The probablilty of Y365 >= 120 is `r round(c, 2)`**
+
+#Binomial Distribution
+
+Calculate the expected value and variance of the binomial distribution using the moment generating function.
+
+Binomial MGF = ${[pe^t+ (1-p)]^n}$
+
+```{r message=FALSE, warning=FALSE}
+amgf <- (a*(log(exp(365))+ (1-a)))^1
+bmgf <- (b*(log(exp(365))+ (1-b)))^1
+cmgf <- (c*(log(exp(365))+ (1-c)))^1
+mmgf <- mean(c(amgf,bmgf,cmgf))
+smgf <- var(c(amgf,bmgf,cmgf))
+```     
+
+**The expected value of the binomial distirbution is `r round(mmgf,2)` and the variance is `r round(smgf, 2)`**
+
+#Exponential Distribution
+
+Calculate the expected value and variance of the exponential distribution using the moment generating function.
+
+* Exponential MGF = ${\frac{\lambda}{\lambda-t}}$
+* E[X]= ${\frac{1}{\lambda}}$
+* Var[X]= ${\frac{1}{\lambda^2}}$
+
+```{r message=FALSE, warning=FALSE}
+eamgf<-1/a*100
+ebmgf<-1/b*110
+ecmgf<-1/c*120
+emmgf<-mean(c(eamgf,ebmgf,ecmgf))
+
+samgf<-((100-eamgf)^2)/100
+sbmgf<-((110-ebmgf)^2)/110
+scmgf<-((120-ecmgf)^2)/120
+smmgf<-mean(c(samgf,sbmgf,scmgf))
+```     
+
+**The expected value of the exponential distribution is `r round(emmgf,2)` and the variance is `r round(smmgf, 2)`**

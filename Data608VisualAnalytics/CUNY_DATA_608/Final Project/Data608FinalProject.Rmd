@@ -1,0 +1,372 @@
+---
+title: "Impact of School Program on children"
+author: "Anthony Pagan"
+date: "December 9, 2019"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(plotly)
+library(effects)
+library(leaflet)
+library(tidyr)
+library(tibble)
+library(broom)
+library(grid)
+library(gridExtra)
+library(shiny)
+```
+
+# Overview
+
+The societal impact of income inequality is well known. Can school clubs, sports and other after school programs shape a childs future who otherwise would not be exposed to the positive influences additional school activities can bring?
+
+#### Objective 
+
+In this data anaylsis we try to answer the question What is the impact of children who are exposed to extra school programs vs children are not exposed to additional programs. This markup will be used to analyze the data and a shiny app will be built to display additional details at this link:
+
+https://apag101.shinyapps.io/final_project/
+
+#### Approach
+
+We will use data from City of New York government site from 2011-2012. One dataset will list schools in NYC with their sports programs and the second dataset will show school grades
+
+https://data.cityofnewyork.us/Education/DOE-High-School-Directory-2013-2014/u553-m549/data
+
+Education is one of biggest keys for a child's success in life. In this project we will try to measure additional school programs impact on a childs life by camparing it with schools graduation and college enrollment rates. The theory is if  schools that have  more programs have a higher rate of grads and college enrollment then schools that do not, schools with more programs give a child  better chance to succeed as an adult.
+
+# Data Exploration
+
+#### Import Data
+
+During the import we replace  missing values with N/A by setting  na.strings=c("","N/A").
+
+```{r include=FALSE}
+schlsprts <- read.csv("DOE_High_School_Directory_2013-2014.csv",na.strings=c("","N/A"),header=TRUE)
+schlgrds <- read.csv("2013_-_2014_DOE_High_School_Performance-Directory.csv",na.strings=c("","N/A"),header=TRUE)
+
+```
+
+The below visualizaitons show the columns that are missing data.
+
+```{r echo=FALSE}
+vis_miss(schlsprts)
+gg_miss_upset(schlsprts)
+
+vis_miss(schlgrds)
+gg_miss_upset(schlgrds)
+```
+
+
+# Data Prepartion
+
+In data prepartion we are renaming DBN columns that were changed during the import. We get a subset of data of interest, rename some columns to shorter names then merge the sports dataset with the grade dataset. Below is a glimpse of the 2 datasets
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Set N/A rows for school sports column to NA
+#nrow(subset(schlsprts,is.na(schlsprts$School.Sports)))
+#is.na(schlsprts$School.Sports)<-schlsprts$School.Sports == "N/A"
+#nrow(subset(schlsprts,is.na(schlsprts$School.Sports)))
+
+#Rename DBA Columns
+names(schlsprts)[names(schlsprts) == "ï..DBN"] <- "DBN"
+names(schlgrds)[names(schlgrds) == "ï..DBN"] <- "DBN"
+
+#Select subset columns and rename
+sub_schlsprts<-subset(schlsprts, select = c('DBN','BN','Printed_Name','Total.Student.10.26','School_Type','Language.Classes','Advanced.Placement.Courses','Extra_Leadership.Support','School.Sports','Online.AP.Courses','Online.Language.Courses','School_Type2','neighborhood','postalCode','precinct','school_district','latitude','longitude','Location.1','Borough','Council.District','Census.Tract'))
+
+names(sub_schlsprts)<-c('DBN','BN','Printed_Name','TotStudnts','School_Type','LangClass','APCourses','LeaderSupport','Sports','OnlineAP','OnlineLang','School_Type2','neighborhood','postalCode','precinct','school_district','lat','lon','Location','Boro','CouncilDistrict','CensusTract')
+
+sub_schlgrds<-subset(schlgrds, select = c('DBN','graduation.2010.11','college.enroll.2010.11','graduation.2011.12','college.enroll.2011.12'))
+
+names(sub_schlgrds)<-c('DBN','grad2011','collenroll2011','grad2012','collenroll2012')
+
+glimpse(sub_schlgrds)
+glimpse(sub_schlsprts)
+```
+
+
+To prepare our model we remove % columns from grad and college columns and merge the 2 datasets. We then create  sprtscode,apcode,langcode,onlinelangcode and onlineapcode columns to show a 1 for schools with the programs and 0 with schools wihtout the programs. Lastly, we write the new dataframe to a csv for later use in our shiny app dashboard. We end with a glimpse of the newly combined dataset.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#get subset of rows with School sports NA or N/A values
+#subset(schlsprts,is.na(schlsprts$School.Sports)|schlsprts$School.Sports == "N/A")
+#set sumarry columns from characters to numeric
+sub_schlgrds[,-1]<-lapply(sub_schlgrds[,-1], function(x) as.numeric(sub("%","",x)))
+
+#Merge School and sports details with summary data from performance details
+mdata<-merge(sub_schlsprts, sub_schlgrds, by="DBN")
+
+#Add column to show if a school as sports programs
+mdata$sprtcode<- as.factor(ifelse(is.na(mdata$Sports), 0, 1))
+mdata$apcode<- as.factor(ifelse(is.na(mdata$APCourses), 0, 1))
+mdata$langcode<- as.factor(ifelse(is.na(mdata$LangClass), 0, 1))
+mdata$leadcode<- as.factor(ifelse(is.na(mdata$LeaderSupport), 0, 1))
+mdata$onlineapcode<- as.factor(ifelse(is.na(mdata$OnlineAP), 0, 1))
+mdata$onlinelangcode<- as.factor(ifelse(is.na(mdata$OnlineLang), 0, 1))
+
+write.csv(mdata,"schooldataupdated.csv")
+
+glimpse(mdata)
+
+```
+
+
+# Data Summary 
+
+The summary below gives summary statistics of each column of the merged dataset as well as a subset summary that splits the sports code of 1 and 0
+
+```{r echo=FALSE}
+describe(mdata)
+by(subset(mdata, select =colnames(sub_schlgrds[-1])),mdata$sprtcode,summary)
+```
+
+The plot summaries displays a boxplot of graduation and college enrollment split by sports code. The linear plot compares graduation vs college enrollments and plots the sports codes of 1 and 0. The plot shows the grad and college enrollment have a positive correlation.
+
+```{r echo=FALSE}
+
+par(mfrow = c(2,2))
+plot(grad2011~sprtcode,mdata)
+plot(collenroll2011~grad2011, pch=as.character(sprtcode), mdata)
+abline(lm(collenroll2011~grad2011, data = mdata))
+plot(grad2012~sprtcode,mdata)
+plot(collenroll2011~grad2011, pch=as.character(sprtcode), mdata)
+abline(lm(collenroll2011~grad2011, data = mdata))
+```
+
+# Modeling
+We begin with a GLM model of sports code vs all of the college grad columns. The linearl model shows that only college enroll 2012 is significant when sports is the response variable.
+
+```{r echo=FALSE}
+glmod<-glm(sprtcode~grad2011+collenroll2011+grad2012+collenroll2012,data=mdata,family="binomial"(link="logit"))
+tidy(glmod)
+glance(glmod)
+#augment(glmod)
+par(mfrow = c(2,2))
+plot(glmod)
+```
+
+We now use a GLM model with a combination of grad and college enrollment with sports code. In this model sports code is slightly significant.
+
+```{r echo=FALSE}
+glmod<-lm(grad2011+collenroll2011+grad2012+collenroll2012~sprtcode,data=mdata,family="binomial"(link="logit"))
+tidy(glmod)
+glance(glmod)
+par(mfrow = c(2,2))
+plot(glmod)
+```
+
+In this next section we switch to a linear model and try to correlate college 2012 enrollment with language, leader, onlineAP, onlineLanguage and sports code. This model says leader code is significant and language code is slightly significant.
+
+```{r echo=FALSE}
+lmod1<-lm(collenroll2012~sprtcode+apcode+langcode+leadcode+onlineapcode+onlinelangcode,data=mdata)
+tidy(lmod1)
+glance(lmod1)
+par(mfrow = c(2,2))
+plot(lmod1)
+```
+
+This last model removes all other insignificant predictors and compare college 2012 enroll to leader and language code. This model shows that  both leader and language are significant.
+
+```{r echo=FALSE}
+lmod2<-lm(collenroll2012~langcode+leadcode,data=mdata)
+tidy(lmod2)
+glance(lmod2)
+par(mfrow = c(2,2))
+plot(lmod2)
+```
+
+# Visualizations
+
+
+The comparison of graduate to college enroll for 2011 and 2012 shows there is an positive correlation.  Both the xyplot and ggplots separte sports , language and leader code. From the visualizaiton you can see sports show a similar trend whether there is sports or no sports. In the language plot, the trend is clear in schools with language class than schools with no language classes. The leader plot show the majority of schools with a positive trend has some type of leader program.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+xyplot(grad2011 ~ collenroll2011 | sprtcode,mdata, type="l")
+xyplot(grad2011 ~ collenroll2011 | langcode,mdata, type="l")
+xyplot(grad2011 ~ collenroll2011 | leadcode,mdata, type="l")
+```
+
+The ggplot confirms the analysis in the xyplot. The sports code plot has a mix of sports and no sports, the language plots show low number of schools with no language classes and leader plot have nearly all schools with a leader program.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+g1<-ggplot(mdata, aes(x=grad2011, y=collenroll2011, color = sprtcode)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+g2<-ggplot(mdata, aes(x=grad2012, y=collenroll2012, color = sprtcode)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+
+g3<-ggplot(mdata, aes(x=grad2011, y=collenroll2011, color = langcode)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+g4<-ggplot(mdata, aes(x=grad2012, y=collenroll2012, color = langcode)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+
+g5<-ggplot(mdata, aes(x=grad2011, y=collenroll2011, color = leadcode)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+g6<-ggplot(mdata, aes(x=grad2012, y=collenroll2012, color = leadcode)) +geom_point() +stat_smooth(method="lm", se=TRUE)
+
+grid.arrange(g1, g2, g3, g4, g5, g6, ncol = 2)
+
+```
+
+These qq density plots hint that in schools where >80%  graduate and enroll in college, there is a sports or language or leader program. 
+
+```{r}
+
+q1<-qplot(grad2011, data = mdata, geom = "density",
+      fill = sprtcode)
+q2<-qplot(grad2012, data = mdata, geom = "density",
+      fill = sprtcode)
+q3<-qplot(collenroll2011, data = mdata, geom = "density",
+      fill = sprtcode)
+q4<-qplot(collenroll2012, data = mdata, geom = "density",
+      fill = sprtcode)
+grid.arrange(q1, q2, q3, q4, ncol = 2)
+
+q1<-qplot(grad2011, data = mdata, geom = "density",
+      fill = langcode)
+q2<-qplot(grad2012, data = mdata, geom = "density",
+      fill = langcode)
+q3<-qplot(collenroll2011, data = mdata, geom = "density",
+      fill = langcode)
+q4<-qplot(collenroll2012, data = mdata, geom = "density",
+      fill = langcode)
+grid.arrange(q1, q2, q3, q4, ncol = 2)
+
+q1<-qplot(grad2011, data = mdata, geom = "density",
+      fill = leadcode)
+q2<-qplot(grad2012, data = mdata, geom = "density",
+      fill = leadcode)
+q3<-qplot(collenroll2011, data = mdata, geom = "density",
+      fill = leadcode)
+q4<-qplot(collenroll2012, data = mdata, geom = "density",
+      fill = leadcode)
+grid.arrange(q1, q2, q3, q4, ncol = 2)
+```
+
+With the disovery of the density plot we narrow the histogram plot to schools with  >80% students graduates and enroll in college, and split 3 programs. This is one more look at the split of the 3 codes where language and lead code has a higher significance.
+
+```{r}
+
+q1<-qplot(grad2011, data = subset(mdata,grad2011 > 80), geom = "histogram",fill = sprtcode)+facet_wrap(~ sprtcode) 
+q2<-qplot(grad2012, data = subset(mdata,grad2012 > 80), geom = "histogram",
+      fill = sprtcode)+facet_wrap(~ sprtcode) 
+q3<-qplot(collenroll2011, data = subset(mdata,collenroll2011 > 80), geom = "histogram",
+      fill = sprtcode)+facet_wrap(~ sprtcode) 
+q4<-qplot(collenroll2012, data = subset(mdata,collenroll2012 > 80), geom = "histogram",
+      fill = sprtcode)+facet_wrap(~ sprtcode) 
+grid.arrange(q1, q2, q3, q4, ncol = 2)
+
+q1<-qplot(grad2011, data = subset(mdata,grad2011 > 80), geom = "histogram",fill =  langcode)+facet_wrap(~ langcode) 
+q2<-qplot(grad2012, data = subset(mdata,grad2012 > 80), geom = "histogram",
+      fill = langcode)+facet_wrap(~ langcode) 
+q3<-qplot(collenroll2011, data = subset(mdata,collenroll2011 > 80), geom = "histogram",
+      fill = langcode)+facet_wrap(~ langcode) 
+q4<-qplot(collenroll2012, data = subset(mdata,collenroll2012 > 80), geom = "histogram",
+      fill = langcode)+facet_wrap(~ langcode) 
+grid.arrange(q1, q2, q3, q4, ncol = 2)
+
+
+q1<-qplot(grad2011, data = subset(mdata,grad2011 > 80), geom = "histogram",fill = leadcode)+facet_wrap(~ leadcode) 
+q2<-qplot(grad2012, data = subset(mdata,grad2012 > 80), geom = "histogram",
+      fill = leadcode)+facet_wrap(~ leadcode) 
+q3<-qplot(collenroll2011, data = subset(mdata,collenroll2011 > 80), geom = "histogram",
+      fill = leadcode)+facet_wrap(~ leadcode) 
+q4<-qplot(collenroll2012, data = subset(mdata,collenroll2012 > 80), geom = "histogram",
+      fill = leadcode)+facet_wrap(~ leadcode) 
+grid.arrange(q1, q2, q3, q4, ncol = 2)
+
+``` 
+
+# Map
+
+Below we setup a subset of schools that have > 80% graduation or college enroll rate and include the location, number of students  and  program information on the  drill down of the map.
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("leaflet")
+mdata80<-subset(mdata,grad2011 > 80|grad2012>80|collenroll2012>80|collenroll2011>80)
+
+#Set Details of data
+content <- paste(sep = "<br/>",
+ "------------------------------",
+ '<b>School Information:</>', 
+ mdata80$Printed_Name,
+ mdata80$Boro,
+ mdata80$Location,
+  "------------------------------",
+ '<b>Total Students:</>',
+ mdata80$TotStudnts,
+ "------------------------------",
+ '<b>Sports:</>',
+ mdata80$Sports,
+ "------------------------------",
+ '<b>Language Classes</>',
+ mdata80$LangClass,
+ "------------------------------",
+ '<b>AP Courses</>',
+ mdata80$APCourses,
+ "------------------------------",
+ '<b>Leader Support</>',
+ mdata80$LeaderSupport)
+ 
+df = data.frame(Lat = mdata80$lat, Long = mdata80$lon)
+
+m <- leaflet(df, width = 900, height = 900) %>% 
+    setView(lng = mdata80$lon[nrow(mdata80)], lat = mdata80$lat[nrow(mdata80)], zoom = 12)
+m %>% 
+    addTiles() %>% 
+    #addCircles()%>%
+    addMarkers(clusterOptions = markerClusterOptions(),mdata80$lon, mdata80$lat, popup = paste(sep = "<br/>", content))
+```
+
+# Conclusion
+
+This basic modelling showed in NYC in 2011 and 2012 leadership and language courses may have had a significant impact on a child sucess in graduation and applying to college. 
+
+As an additional part of this project I created a shiny app to anaylyze more variables in the dataset. 
+
+https://apag101.shinyapps.io/final_project/
+
+The shiny app does the following;
+
+* Drop down to select predictors and response variables
+* Display linear, density and histogram plots
+* Display basic statistical data
+* Give table of schools where 80% or more students graduated and enrolled in college
+* Give map of all schools with details of AP, Language, Leadership and sports programs
+
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+shinyAppDir(
+  system.file('..//Final Project/', package="shiny"),
+  options = list(width = "100%", height = 700)
+)
+```
+
+# Appendix
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```

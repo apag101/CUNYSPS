@@ -1,0 +1,41 @@
+---
+title: "IS607Week9Assignment"
+author: "Anthony Pagan"
+date: "October 25, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+####Load Libraries
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(jsonlite)
+library(XML)
+library(RCurl)
+```
+
+####Get Url and Get JSOn file with API Key
+```{r}
+times_url <-"https://api.nytimes.com/svc/topstories/v2/world.json"
+df.times_url<-fromJSON(getForm(times_url, .params = c("api-key" ="3590677d16aa428aaf413d36dc0c1213")))
+class(df.times_url)
+```
+
+####Covert List to data frame
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+df.times<-as.data.frame(df.times_url$results)
+class(df.times)
+names(df.times)
+```
+
+####Extract a subset of data
+```{r}
+t(head(subset(df.times, select = c(title,byline,abstract,url))))
+```
+

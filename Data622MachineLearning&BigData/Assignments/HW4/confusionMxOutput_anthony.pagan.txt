@@ -1,0 +1,261 @@
+[[1]]
+Confusion Matrix and Statistics
+
+                       
+bag_class_probabilities negative positive
+               negative      152        0
+               positive        0       27
+                                     
+               Accuracy : 1          
+                 95% CI : (0.9796, 1)
+    No Information Rate : 0.8492     
+    P-Value [Acc > NIR] : 1.947e-13  
+                                     
+                  Kappa : 1          
+                                     
+ Mcnemar's Test P-Value : NA         
+                                     
+            Sensitivity : 1.0000     
+            Specificity : 1.0000     
+         Pos Pred Value : 1.0000     
+         Neg Pred Value : 1.0000     
+             Prevalence : 0.8492     
+         Detection Rate : 0.8492     
+   Detection Prevalence : 0.8492     
+      Balanced Accuracy : 1.0000     
+                                     
+       'Positive' Class : negative   
+                                     
+
+[[2]]
+Confusion Matrix and Statistics
+
+          
+           negative positive
+  negative      152       12
+  positive        0       15
+                                          
+               Accuracy : 0.933           
+                 95% CI : (0.8858, 0.9649)
+    No Information Rate : 0.8492          
+    P-Value [Acc > NIR] : 0.0004815       
+                                          
+                  Kappa : 0.6798          
+                                          
+ Mcnemar's Test P-Value : 0.0014962       
+                                          
+            Sensitivity : 1.0000          
+            Specificity : 0.5556          
+         Pos Pred Value : 0.9268          
+         Neg Pred Value : 1.0000          
+             Prevalence : 0.8492          
+         Detection Rate : 0.8492          
+   Detection Prevalence : 0.9162          
+      Balanced Accuracy : 0.7778          
+                                          
+       'Positive' Class : negative        
+                                          
+
+[[3]]
+Confusion Matrix and Statistics
+
+          
+           negative positive
+  negative      152        8
+  positive        0       19
+                                          
+               Accuracy : 0.9553          
+                 95% CI : (0.9138, 0.9805)
+    No Information Rate : 0.8492          
+    P-Value [Acc > NIR] : 5.747e-06       
+                                          
+                  Kappa : 0.8013          
+                                          
+ Mcnemar's Test P-Value : 0.01333         
+                                          
+            Sensitivity : 1.0000          
+            Specificity : 0.7037          
+         Pos Pred Value : 0.9500          
+         Neg Pred Value : 1.0000          
+             Prevalence : 0.8492          
+         Detection Rate : 0.8492          
+   Detection Prevalence : 0.8939          
+      Balanced Accuracy : 0.8519          
+                                          
+       'Positive' Class : negative        
+                                          
+
+[[4]]
+Confusion Matrix and Statistics
+
+          
+           negative positive
+  negative      148       11
+  positive        4       16
+                                          
+               Accuracy : 0.9162          
+                 95% CI : (0.8656, 0.9523)
+    No Information Rate : 0.8492          
+    P-Value [Acc > NIR] : 0.005387        
+                                          
+                  Kappa : 0.6338          
+                                          
+ Mcnemar's Test P-Value : 0.121335        
+                                          
+            Sensitivity : 0.9737          
+            Specificity : 0.5926          
+         Pos Pred Value : 0.9308          
+         Neg Pred Value : 0.8000          
+             Prevalence : 0.8492          
+         Detection Rate : 0.8268          
+   Detection Prevalence : 0.8883          
+      Balanced Accuracy : 0.7831          
+                                          
+       'Positive' Class : negative        
+                                          
+
+[[5]]
+Confusion Matrix and Statistics
+
+          
+rf_pred    negative positive
+  negative      152        0
+  positive        0       27
+                                     
+               Accuracy : 1          
+                 95% CI : (0.9796, 1)
+    No Information Rate : 0.8492     
+    P-Value [Acc > NIR] : 1.947e-13  
+                                     
+                  Kappa : 1          
+                                     
+ Mcnemar's Test P-Value : NA         
+                                     
+            Sensitivity : 1.0000     
+            Specificity : 1.0000     
+         Pos Pred Value : 1.0000     
+         Neg Pred Value : 1.0000     
+             Prevalence : 0.8492     
+         Detection Rate : 0.8492     
+   Detection Prevalence : 0.8492     
+      Balanced Accuracy : 1.0000     
+                                     
+       'Positive' Class : negative   
+                                     
+
+[[6]]
+Confusion Matrix and Statistics
+
+                         
+rpart_class_probabilities negative positive
+                 negative      147       12
+                 positive        5       15
+                                          
+               Accuracy : 0.905           
+                 95% CI : (0.8523, 0.9437)
+    No Information Rate : 0.8492          
+    P-Value [Acc > NIR] : 0.01915         
+                                          
+                  Kappa : 0.585           
+                                          
+ Mcnemar's Test P-Value : 0.14561         
+                                          
+            Sensitivity : 0.9671          
+            Specificity : 0.5556          
+         Pos Pred Value : 0.9245          
+         Neg Pred Value : 0.7500          
+             Prevalence : 0.8492          
+         Detection Rate : 0.8212          
+   Detection Prevalence : 0.8883          
+      Balanced Accuracy : 0.7613          
+                                          
+       'Positive' Class : negative        
+                                          
+
+[[7]]
+Confusion Matrix and Statistics
+
+          
+vglm_pred  negative positive
+  negative      150       10
+  positive        2       17
+                                          
+               Accuracy : 0.933           
+                 95% CI : (0.8858, 0.9649)
+    No Information Rate : 0.8492          
+    P-Value [Acc > NIR] : 0.0004815       
+                                          
+                  Kappa : 0.702           
+                                          
+ Mcnemar's Test P-Value : 0.0433081       
+                                          
+            Sensitivity : 0.9868          
+            Specificity : 0.6296          
+         Pos Pred Value : 0.9375          
+         Neg Pred Value : 0.8947          
+             Prevalence : 0.8492          
+         Detection Rate : 0.8380          
+   Detection Prevalence : 0.8939          
+      Balanced Accuracy : 0.8082          
+                                          
+       'Positive' Class : negative        
+                                          
+
+[[8]]
+Confusion Matrix and Statistics
+
+          
+xgb_pred4  negative positive
+  negative      150        4
+  positive        2       23
+                                          
+               Accuracy : 0.9665          
+                 95% CI : (0.9285, 0.9876)
+    No Information Rate : 0.8492          
+    P-Value [Acc > NIR] : 3.157e-07       
+                                          
+                  Kappa : 0.865           
+                                          
+ Mcnemar's Test P-Value : 0.6831          
+                                          
+            Sensitivity : 0.9868          
+            Specificity : 0.8519          
+         Pos Pred Value : 0.9740          
+         Neg Pred Value : 0.9200          
+             Prevalence : 0.8492          
+         Detection Rate : 0.8380          
+   Detection Prevalence : 0.8603          
+      Balanced Accuracy : 0.9193          
+                                          
+       'Positive' Class : negative        
+                                          
+
+[[9]]
+Confusion Matrix and Statistics
+
+          
+xgb_pred5  negative positive
+  negative      152        2
+  positive        0       25
+                                          
+               Accuracy : 0.9888          
+                 95% CI : (0.9602, 0.9986)
+    No Information Rate : 0.8492          
+    P-Value [Acc > NIR] : 1.042e-10       
+                                          
+                  Kappa : 0.955           
+                                          
+ Mcnemar's Test P-Value : 0.4795          
+                                          
+            Sensitivity : 1.0000          
+            Specificity : 0.9259          
+         Pos Pred Value : 0.9870          
+         Neg Pred Value : 1.0000          
+             Prevalence : 0.8492          
+         Detection Rate : 0.8492          
+   Detection Prevalence : 0.8603          
+      Balanced Accuracy : 0.9630          
+                                          
+       'Positive' Class : negative        
+                                          
+

@@ -1,0 +1,28 @@
+---
+title: "Data 605 Week 9 Discussion"
+author: "Anthony Pagan"
+date: "March 27, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+Page 339
+13 A noodle machine in Spumoni's spaghetti factory makes about 5 percent defective
+noodles even when properly adjusted. The noodles are then packed
+in crates containing 1900 noodles each. A crate is examined and found to
+contain 115 defective noodles. What is the approximate probability of finding
+at least this many defective noodles if the machine is properly adjusted?
+
+
+```{r}
+n<- 1900
+p<- .05
+q<- .95
+x<- 115
+np <- n * p
+npq <- sqrt(n*p*q)
+xx<- (x - np)/npq/npq
+```
+
+**The approximate probability of finding at least 115 defective noodles is `r round(xx, 2)`**

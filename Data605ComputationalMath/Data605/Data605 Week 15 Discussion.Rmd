@@ -1,0 +1,23 @@
+---
+title: "Data 605 Week 15 Discussion"
+author: "Anthony Pagan"
+date: "May 09 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: false
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW15
+Give the domain and range of the multivariable function.
+
+${f(x,y)= \sqrt{9-x^2-y^2}}$ 
+
+ * Domain = ${0 \leq{9-x^2-y^2}}$ 
+ * D = {$(x,y):{{x^2-y^2}\leq9}$}
+ * Range  = [0, 9]
+ 

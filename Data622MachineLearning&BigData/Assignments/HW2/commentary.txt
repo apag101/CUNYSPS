@@ -1,0 +1,41 @@
+Commentary
+Summarize and provide a explanatory commentary on the observed performance of these classifiers. What aspects of the data and or aspects of the algorithms, explain these performance differences.
+
+TPR - True positive rate (sensitivity) tries to find the percentage of true positives where predictions were correctly identified
+
+FPR - False positives rate (1 - specificity(True Negative)) tries to find percentage of true positive where prediction is incorrectly identified (Type 1 Errors)
+
+(Specificity and sensitivity are inversely proportional, while TPR and FPR are not.)
+
+Accuracy - Finds the percentage of true positive and true negatives where predictions were correctly identified.
+
+AUC - Area under the curve is the area under the ROC curve when comparing TPR to FPR for several models. The closer the curve is to the upper left corner the better the model classification.
+
+References:
+
+https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5 
+https://towardsdatascience.com/understanding-confusion-matrix-a9ad42dcfd62 
+https://towardsdatascience.com/understanding-the-roc-and-auc-curves-a05b68550b69
+
+ALGO	AUC	ACC	TPR	FPR
+LR	0.79	0.81	0.6	0.1
+LDA	0.75	0.3	0.25	1
+NB	0.71	0.3	0.25	1
+SVM	0.98	0.58	0.81	0.8
+kNN	0.5	0.72	0.38	0
+TREE	0.5	0.6	0	0
+
+LR - The GLM linear regression model shows that the accuracy of TP and TN is the highest at 0.81 while the AUC is the 2nd highest of all models. This tells us the model did an above average job at classfication.
+
+LDA - The LDA model accuracy is 0.3 with an AUC of 0.75. These performance stats are average.
+
+NB - The NB model has the exact performance stats as LDA which also catergorizes it as an average model.
+
+SVM - The SVM model accuracy is the 3rd highest at 0.58, It also has the highest AUC value of 0.98 and above average TPR and FPR values at 0.81 and 0.8 respectively.
+
+KNN - The KNN model accuracy is the 2nd highest at 0.72, but the AUC is average and TPR is below average.
+
+TREE - The Tree model accuracy is above average , but AUC is average and TPR is 0.
+
+Conclusion
+The performance data tells us LR and SVM are the best models for this data. While SVM has the higher AUC, LR has the higher accuracy. While SVM has a higher TPR it also has a higher FPR. I would lean toward using the LR model since it has a lower FPR while SVM has a higher FPR, since the above average FPR on SVM can have a higher impact on the performance of the model.

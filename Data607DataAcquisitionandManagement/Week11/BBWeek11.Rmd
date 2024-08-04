@@ -1,0 +1,46 @@
+---
+title: "Recommender Systems (Fake News)"
+output: 
+  html_document:
+      toc: TRUE
+      css: style.css
+---
+
+###Introduction
+
+https://blog.dataiku.com/fake-news-and-filter-bubbles
+
+The dataiku link discusses how recommender systems for sites such as Google and Facebook, which are supposed to give users recommendations on news and products based on their behavior, are also creating filter bubbles.  
+
+Filter bubbles have a tendency to warp user views and perspectives. It isolates users from other points of view outside of their bubble. This create silos of like-minded people who are fed biased information. Although the site intention is to cater to user preferences, it has been exploited by fake news sources. 
+
+Facebooks is a recent good example. Below are a few links on how Facebook recommender systems work at the low level
+
+https://code.fb.com/core-data/recommending-items-to-more-than-a-billion-people/
+
+https://pdfs.semanticscholar.org/eb95/7789f53814a290bc0f8bb01dd01cbd0746cc.pdf
+
+At a high level, Facebook recommendation system can be described with the performance analysis
+
+###Who are the users?
+
+Facebooks user base is anyone on the planet that has a computer and can connect to the internet  
+
+###What are their goals?
+
+A Facebook user is looking to stay connected with friends and families and to make new friends. They want to share their experiences and let their friends and families know they are connected. Facebooks official mission is "to give people the power to build community and bring the world closer together."
+
+###How can you help them accomplish their goals?
+
+This brings us back to the dataiku article.  Facebook has been in the headlines the past few years. It's inability to filter content of unverifiable news and allow false news sources to reach its users base has caused confusion. This miss information has divided online communities into silos of warped thinkers. This is damaging company's image of a bringing the world together to one the build silos of clustered ideologies.
+
+As a results, Facebook has been attempted to correct its shortfalls by using user surveys to were built so users can tell  Facebook which news is good or and which news is bad. 
+
+https://www.wired.com/story/facebooks-latest-fix-for-fake-news-ask-users-what-they-trust/
+
+This approach may fall short of expectation, as this explicit user survey may be misleading and fail to capture honest, truthful information.  I would recommend two-pronged verification approach.  They can stick to the surveys as one source, but should add a trusted third-party source as a combined verification. The trusted source would be similar to what SSL certs do for trusted internet sites. 
+
+The key here is to use multiple sources for verification and then use algorithms as an additional check to identify any anomalies. Sources should not be posted until the trifecta of checks have been completed. 
+
+
+

@@ -1,0 +1,46 @@
+---
+title: "Data 605 Assignment 11"
+author: "Anthony Pagan"
+date: "April 13, 2019"
+output: 
+      html_document:
+        toc: false
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW11
+
+#Cars
+
+Using the "cars" dataset in R, build a linear model for stopping distance as a function of speed and replicate the analysis of your textbook chapter 3 (visualization, quality evaluation of the model, and residual analysis.)
+
+
+**Summary**
+
+$\color{red}{\text{The residual lines appear to be normally distributed. The standard errors are at least 10 time smaller than the coefficient values. $\\$ This means there is little variability in the slope estimate. The very small Pr(>|t|) value shows the probability $\\$ that the values are NOT revelant. Result is they are revelant.}}$
+
+```{r message=FALSE, warning=FALSE}
+data("cars")
+
+c.lm<-lm(cars$speed~cars$dist)
+
+plot(cars$dist,cars$speed)
+abline(c.lm)
+summary(c.lm)
+
+``` 
+
+
+$\color{red}{\text{The fitted chart below shows the residuals uniformally scattered spread closely evenly throughout. $\\$ However, QQPlot shows that residuals are not normally distributed}}$
+
+```{r}
+plot(fitted(c.lm),resid(c.lm))
+qqplot(fitted(c.lm),resid(c.lm))
+qqline(fitted(c.lm),resid(c.lm))
+```
+
+

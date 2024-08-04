@@ -1,0 +1,82 @@
+---
+title: "Data 621 LMR Exercise 10.6"
+author: "Anthony Pagan"
+date: "10/13/2019"
+output: html_document
+css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+
+Leg shows to have the lowest P value of all variables.
+```{r}
+data(seatpos, package="faraway")
+lmod<-lm(hipcenter ~ ., data=seatpos)
+summary(lmod)
+```
+
+The regsubset confirms that Leg can be a strong predictor
+
+```{r}
+require(leaps)
+r<-regsubsets(hipcenter~.,data=seatpos)
+rs<-summary(r)
+rs$which
+```
+
+Run Prediction with all predictors.
+
+```{r}
+x <-model.matrix(lmod)
+(x1 <- apply(x,2,function(x,mean) quantile(x,0.95)))
+predict(lmod, new=data.frame(t(x1)), interval ="prediction")
+predict(lmod, new=data.frame(t(x1)), interval ="confidence")
+```
+
+
+Find the minimum with all predictors
+
+```{r}
+require(leaps)
+b <-regsubsets(hipcenter~.,data=seatpos)
+rs<-summary(b)
+rs$which
+```
+
+AIC Plots
+
+```{r}
+AIC<-50*log(rs$rss/50)+ (2:9)*2
+plot(AIC - I(1:8), ylab="AIC", xlab="Number of Predictors")
+plot(2:9,rs$adjr2,xlab="No. of Parameters", ylab="Adjusted R-Square")
+which.max(rs$adjr2)
+plot(2:9,rs$cp,xlab="No. of Parameters",ylab="Cp Statistic")
+abline(0,1)
+```
+
+AIC Step
+
+```{r}
+lmod<-lm(hipcenter ~ ., data=seatpos)
+step(lmod)
+```
+
+Use AIC results as new model for Predition
+
+```{r}
+lmod<-lm( hipcenter ~ Age + HtShoes + Leg, data = seatpos)
+x <-model.matrix(lmod)
+(x1 <- apply(x,2,function(x) quantile(x,0.95)))
+predict(lmod, new=data.frame(t(x1)), interval ="prediction")
+predict(lmod, new=data.frame(t(x1)), interval ="confidence")
+```
+
+

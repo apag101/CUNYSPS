@@ -1,0 +1,101 @@
+---
+title: "R Final Project"
+author: "Anthony Pagan"
+date: "July 28, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## R Final Project
+
+#### The state data provided in this project gives information on public school spending per student and teachers, as well as graduation rates and reading and math scores. The analysis trys to answer the following question:         
+
+####*Does an increase in State spending in education increase student graduation rates and/or scores on standardize tests?*
+
+### Loading local State Data
+```{r}
+setwd("C://users//apagan//Documents//MSDSBridge//R//datasets")
+stdt <- read.csv("States.csv", sep=",")
+```
+
+### BONUS: LOAD DATA FROM GITHUB
+```{r}
+theurl <-"https://raw.githubusercontent.com/apag101/MSDSBridge/master/States.csv"
+stdtgh <- read.table(file = theurl, header = TRUE, sep = ",")
+head(stdtgh)
+```
+
+### Update Column Names
+
+```{r}
+names(stdt)
+names(stdt) <-c("State","Region","Population","Verbal","Math", "%Grad", "EduSpend1000s", "AvgPay1000s")
+names(stdt)
+
+```
+### Added a caculated column Per Student Education Spending as a percentage of Teacher Salary
+
+```{r}
+stdtt<-cbind(stdt$EduSpend1000s/stdt$AvgPay1000s)
+colnames(stdtt)<- c("StdInvPerTeachPay")
+stdt <-cbind(stdt,stdtt)
+head(stdt)
+```
+
+### Summary of Data, Min/Max/Median/Quartile per column
+```{r}
+summary(stdt)
+```
+
+###Plotted Data
+#####Plotting an aggregated mean of Teacher pay and the Education Spending to the Percent graduation rate shows a positive correlation. This could hint that investment in schools and teachers can result in higher graduation rates. 
+
+
+```{r}
+plot(aggregate (stdt$AvgPay1000s~ stdt$`%Grad`, stdt, mean))
+plot(aggregate (stdt$EduSpend1000s~ stdt$`%Grad`, stdt, mean))
+```
+
+##### However, the Verbal and Math scores vs the Education/Teacher investments are negatively correlated. 
+
+
+```{r}
+plot(aggregate (stdt$AvgPay1000s~ stdt$Verbal, stdt, mean))
+plot(aggregate (stdt$EduSpend1000s~ stdt$Math, stdt, mean))
+plot(aggregate (stdt$AvgPay1000s~ stdt$Verbal, stdt, mean))
+plot(aggregate (stdt$EduSpend1000s~ stdt$Math, stdt, mean))
+```
+
+##### A histogram chart of Average Teacher Pay and Education Spending are positively skewed although Graduation rates are bimodal
+
+```{r}
+hist(stdt$EduSpend1000s)
+hist(stdt$AvgPay1000s)
+hist(stdt$`%Grad`)
+```
+
+#### Below are the State/Regions who have above average in Education Spending, Teacher Pay and Graduation rate. The bulk of the above average Grad rates as compared to increase in budgets are in the NE and SA Regions.
+
+```{r}
+subset(stdt, `%Grad`>mean(`%Grad`) & EduSpend1000s > mean(EduSpend1000s) & AvgPay1000s > mean(AvgPay1000s), select = c(State, Region, `%Grad`, EduSpend1000s, AvgPay1000s, Math, Verbal))
+
+stdt.stats <- rbind(min(stdt$EduSpend1000s), min(stdt$AvgPay1000s),min(stdt$Math),min(stdt$Verbal), min(stdt$`%Grad`),mean(stdt$EduSpend1000s), mean(stdt$AvgPay1000s),mean(stdt$Math),mean(stdt$Verbal), mean(stdt$`%Grad`),max(stdt$EduSpend1000s), max(stdt$AvgPay1000s),max(stdt$Math),max(stdt$Verbal), max(stdt$`%Grad`))
+rownames(stdt.stats)<-c("MinEduSpend","MinAvgPay","MinMath","MinVerbal","MinGrads","MeanEduSpend","MeanAvgPay","MeanMath","MeanVerbal","MeanGrads","MaxEduSpend","MaxAvgPay","MaxMath","MaxVerbal","MaxGrads")
+stdt.stats
+
+```
+### Summary
+#### In summary, this analysis tells us  students in this sample data do well enough in school to graduate, but additional investment in schools/teachers do not increase scores in standardize SAT tests. Are schools revamping their curriculum enough to cover SAT material when State spending in public education is increased? This data hints that the answer to that question is negative.
+
+###Data Reference Links
+[DOC] <http://vincentarelbundock.github.io/Rdatasets/doc/carData/States.html>
+
+[DataSet] <http://vincentarelbundock.github.io/Rdatasets/csv/carData/States.csv>
+```{r}
+
+
+```

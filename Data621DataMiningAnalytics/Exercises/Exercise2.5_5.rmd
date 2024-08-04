@@ -1,0 +1,59 @@
+---
+title: "Exercise2.4_5"
+author: "Anthony Pagan"
+date: "September 8, 2019"
+output:
+  word_document: default
+  html_document: default
+---
+#Exercise LMR2.4
+
+```{r include=FALSE}
+
+## R Markdown
+#LMR 2.4
+data(prostate, package="faraway")
+lmod<- summary(lm(lcavol~lpsa, data=prostate))
+sstat<- data.frame(res=lmod$sigma,rsq=lmod$r.squared)
+lmod<- summary(lm(lcavol~lpsa+lweight, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph+age, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph+age+lcp, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph+age+lcp+pgg45, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+lmod<- summary(lm(lcavol~lpsa+lweight+svi+lbph+age+lcp+pgg45+gleason, data=prostate))
+sstat<- rbind(sstat,data.frame(res=lmod$sigma,rsq=lmod$r.squared))
+```
+
+
+A high R-square tells us that data is closer ot the fitted value while a lowe redidual gives the messure of how close the data falls from the regression line.in our plot Stats we can see that  as we add more variables the residuals decrease and the R.squred increase. This tells us the data is getting closer to the regression line as we add more variables.
+
+```{r}
+sstat
+plot(sstat)
+```
+
+
+#Exercise LMR2.5
+
+This exercise seems that the regression lines would never intersect could this be correct?
+
+```{r}
+#LMR 2.5
+
+data(prostate, package="faraway")
+fit1<-lm(lpsa~lcavol, data=prostate)
+summary(fit1)
+fit2<-lm(lcavol~lpsa, data=prostate)
+summary(fit2)
+plot(lcavol~lpsa,prostate)
+abline(fit1,col="red")
+abline(fit2,col="blue")
+```
+

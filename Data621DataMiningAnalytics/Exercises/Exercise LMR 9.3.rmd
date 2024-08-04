@@ -1,0 +1,51 @@
+---
+title: "Data 621 ELMR Exercise 11.5"
+author: "Anthony Pagan"
+date: "12/08/2019"
+output: 
+    html_document:
+        css: style.css   
+        toc: yes
+        toc_depth: 1
+        toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+# Smooth Plots
+
+```{r echo=FALSE}
+#ELMR 11.5
+library(sm)
+library(faraway)
+data('aatemp')
+attach(aatemp)
+par(mfrow=(c(2,3)))
+plot(temp ~ year, aatemp,main="bandwidth=0.1",pch=".")
+lines(ksmooth(year,temp,"normal",0.1))
+plot(temp ~ year, aatemp,main="bandwidth=0.5",pch=".")
+lines(ksmooth(year,temp,"normal",0.5))
+plot(temp ~ year, aatemp,main="bandwidth=2",pch=".")
+lines(ksmooth(year,temp,"normal",2))
+plot(temp ~ year, aatemp,pch=".")
+lines(smooth.spline(year,temp))
+plot(temp ~ year, aatemp, pch=".")
+lines(smooth.spline(year,temp),lty=2)
+plot(temp ~ year, aatemp, pch=".")
+lines(temp,year)
+lines(smooth.spline(year,temp),lty=2)
+```
+
+
+**Code**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+
+

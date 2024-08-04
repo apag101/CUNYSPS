@@ -1,0 +1,59 @@
+---
+title: "IS607Week7Assignment"
+author: "Anthony Pagan"
+date: "October 13, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## IS607 Week 7 Assignment
+
+####Load Libraries
+```{r message=FALSE, warning=FALSE}
+library(XML)
+library(RJSONIO)
+library(dplyr)
+library(jsonlite)
+```
+
+####HTML Parse
+```{r message=FALSE, warning=FALSE}
+require(RCurl)
+options(stringsAsFactors = FALSE)
+phtml<-htmlParse(getURL("https://raw.githubusercontent.com/apag101/CUNYSPS/master/IS607/Week7/book.html"))
+phtml
+t.phtml<-readHTMLTable(phtml)
+glimpse(t.phtml)
+t.phtml
+```
+
+####XML Parse
+```{r}
+pxml<-xmlParse(getURL("https://raw.githubusercontent.com/apag101/CUNYSPS/master/IS607/Week7/book.xml"))
+pxml
+rpxml <-xmlRoot(pxml)
+rpxml
+df.pxml<-xmlToDataFrame(rpxml, stringsAsFactors = FALSE)
+glimpse(df.pxml)
+df.pxml
+
+#xmlName(rpxml)
+#xmlSApply(rpxml, xmlValue)
+```
+
+####Json Parse
+```{r message=FALSE, warning=FALSE}
+
+options(stringsAsFactors = FALSE)
+df.pjson<-data.frame()
+df.pjson<-fromJSON(getURL("https://raw.githubusercontent.com/apag101/CUNYSPS/master/IS607/Week7/book.json"))
+glimpse(df.pjson)
+df.pjson
+```
+
+####Are the 3 Files similar?
+
+##### All are similar except XML adds quotes to the attribute with 2 authors.

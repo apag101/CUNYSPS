@@ -1,0 +1,22 @@
+Loading required package: bitops
+Error in file(file, ifelse(append, "a", "w")) : 
+  cannot open the connection
+Calls: write.csv -> eval.parent -> eval -> eval -> write.table -> file
+In addition: Warning message:
+In file(file, ifelse(append, "a", "w")) :
+  cannot open file '2018-12-06 Dec-12-1544153904.csv': Permission denied
+Execution halted
+Loading required package: bitops
+Error in file(file, ifelse(append, "a", "w")) : 
+  cannot open the connection
+Calls: write.csv -> eval.parent -> eval -> eval -> write.table -> file
+In addition: Warning message:
+In file(file, ifelse(append, "a", "w")) :
+  cannot open file '2018-12-06 Dec-12-1544155044.csv': Permission denied
+Execution halted
+Loading required package: bitops
+Loading required package: bitops
+Loading required package: bitops
+Loading required package: DBI
+[1] TRUE
+[1] TRUE

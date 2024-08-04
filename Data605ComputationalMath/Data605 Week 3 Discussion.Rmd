@@ -1,0 +1,30 @@
+---
+title: "Data 605 Week 3 Discussion"
+author: "Anthony Pagan"
+date: "February 13, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+Excercise C10 Page 310
+
+Find the characteristic polynomial of the matrix A =
+
+det(	1	2
+        3	4
+	-	 
+	    ?? 	0
+        0	??
+
+    ) 
+
+=  (1- ?? )* (4 - ??) - 3 * 2 = 0
+=  (1- ?? )* (4 - ??) - 6= 0
+= ??^2 +4+4 ??- ??-6 = 0
+= ??^2 -3 ??-2 = 0
+
+
+Polynomial equation = ??^2 -3 ??-2 = 0
+

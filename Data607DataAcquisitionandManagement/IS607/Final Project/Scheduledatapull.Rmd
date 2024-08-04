@@ -1,0 +1,32 @@
+---
+title: "DataScheduler"
+author: "Anthony Pagan"
+date: "December 5, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Scheudler
+
+http://www.bnosac.be/index.php/blog/50-taskscheduler-r-package-to-schedule-r-scripts-with-the-windows-task-manager-2
+
+http://www.bnosac.be/index.php/blog/51-new-rstudio-add-in-to-schedule-r-scripts
+
+
+```{r schedule}
+library(taskscheduleR)
+myscript <- file.path("C:", "\\Users\\apagan\\Documents\\CUNYSPS\\data", "getdata.R")
+
+## run script once within 62 seconds
+taskscheduler_create(taskname = "myschedscript", rscript = myscript, rscript_args = "--default-packages = RCurl,jsonlite,RMySQL",
+  schedule = "HOURLY", starttime = format(Sys.time() + 62, "%H:%M"))
+
+## delete the tasks
+#taskscheduler_delete(taskname = "myschedscript")
+
+```
+
+

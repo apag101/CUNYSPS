@@ -1,0 +1,10 @@
+name: test2
+title:
+username:
+account: apag101
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 599265
+bundleId: 2485954
+url: https://apag101.shinyapps.io/test2/
+when: 1570671041.56723

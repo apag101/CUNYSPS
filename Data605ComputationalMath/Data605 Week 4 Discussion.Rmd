@@ -1,0 +1,27 @@
+---
+title: "Data 605 Week 3 Discussion"
+author: "Anthony Pagan"
+date: "February 20, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+C16 Page 349
+Find the matrix representation of:
+
+T ([X, y Z]) =
+
+[3x + 2y + z
+x + y + z
+x ???? 3y
+2x + 3y + z]
+
+3x^2 + 2y^2 + z^2
+x^2 + y^2 + z^2 
+x^2 + 2x^2 + z^2
+
+
+
+

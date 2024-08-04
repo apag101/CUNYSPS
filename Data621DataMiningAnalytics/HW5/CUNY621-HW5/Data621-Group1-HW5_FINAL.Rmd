@@ -1,0 +1,368 @@
+---
+title: "Data 621 Homework 5: Wine"
+author: "Tommy Jenkins, Violeta Stoyanova, Todd Weigel, Peter Kowalchuk, Eleanor R-Secoquian,
+  Anthony Pagan"
+date: "12/05/2019"
+output:
+  html_document:
+    number_sections: yes
+    theme: paper
+  word_document: default
+  pdf_document: default
+always_allow_html: yes
+---
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.align='center') 
+require(knitr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(tidyverse)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(corrplot)
+library(jtools)
+library(mice)
+#devtools::install_github("thomasp85/patchwork")
+library(patchwork)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE} 
+WineTrain <- read.csv("https://raw.githubusercontent.com/pkowalchuk/CUNY621-HW5/master/wine-training-data.csv",na.strings="",header=TRUE)
+WineTrain1 <- WineTrain
+WineEval <- read.csv("wine-evaluation-data.csv",na.strings="",header=TRUE)
+```
+
+## OVERVIEW
+
+In this homework assignment, we will explore, analyze and model a data set containing information on approximately 12,000 commercially available wines. The variables are mostly related to the chemical properties of the wine being sold. The response variable is the number of sample cases of wine that were purchased by wine distribution companies after sampling a wine. These cases would be used to provide tasting samples to restaurants and wine stores around the United States. The more sample cases purchased, the more likely is a wine to be sold at a high end restaurant. A large wine manufacturer is studying the data in order to predict the number of wine cases ordered based upon the wine characteristics. If the wine manufacturer can predict the number of cases, then that manufacturer will be able to adjust their wine offering to maximize sales.
+
+## Objective: 
+
+Our objective is to build a count regression model to predict the number of cases of wine that will be sold given certain properties of the wine. HINT: Sometimes, the fact that a variable is missing is actually predictive of the target. You can only use the variables given to you (or variables that you derive from the variables provided). 
+
+Below is a short description of the variables of interest in the data set:
+ 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE} 
+kable_styling(kable(textbook<-data.frame(VARIABLE.NAME=c("INDEX","TARGET","","","AcidIndex","Alcohol","Chlorides","CitricAcid","Density"," FixedAcidity","FreeSulfurDioxide","LabelAppeal","ResidualSugar","STARS","Sulphates","TotalSulfurDioxide","VolatileAcidity","pH"),DEFINITION=c("Identification Variable (do not use)","Number of Cases Purchased","","","Proprietary method of testing total acidity of wine by using a weighted average,","Alcohol Content","Chloride content of wine","Citric Acid Content","Density of Wine ","Fixed Acidity of Wine","Sulfur Dioxide content of wine","Marketing Score indicating the appeal of label design for consumers. High numbers suggest customers like the label design. Negative numbers suggest customers don't like the design","Residual Sugar of wine","Wine rating by a team of experts. 4 Stars = Excellent, 1 Star = Poor","Sulfate content of wine","Total Sulfur Dioxide of Wine","Volatile Acid content of wine","pH of wine"),THEORETICAL.EFFECT=c("None","None","","","","","","","","","","Many consumers purchase based on the visual appeal of the wine label design. Higher numbers suggest better sales.","","A high number of stars suggests high sales","","","",""))), bootstrap_options = c("striped"))
+```
+
+# DATA EXPLORATION
+
+## Data Summary 
+With over 12,000 observations in our sample, we must look into the data and explore key summary statistics. 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+#glimpse(WineTrain)
+#colnames(WineTrain[-1])<-"INDEX"
+WineTrainVars <- WineTrain[-1]
+WineTrainFeatures <- WineTrain[-c(1:2)]
+kable_styling(kable(summary(WineTrainVars)))
+
+var_stats<- function(WineTrainVars){
+  wt <- WineTrainVars
+  wine1 <- describe(wt) 
+  wine1$na_count <- sapply(wt, function(y) sum(is.na(y)))
+  wine1$neg_count <- sapply(wt, function(y) sum(y<0))
+  wine1$zero_count <- sapply(wt, function(y) sum(as.integer(y)==0))
+  wine1$unique_count <- sapply(wt, function(y) sum(n_distinct(y)))
+  
+  return(wine1)
+}
+```
+
+We also calculate the counts for NA's, 0, negative, and unique values. 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+wine_desc <- var_stats(WineTrainFeatures)
+
+wine_desc %>% as.data.frame()
+ 
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+colsTrain<-ncol(WineTrain)
+colsEval<-ncol(WineEval)
+missingCol<-colnames(WineTrain)[!(colnames(WineTrain) %in% colnames(WineEval))]
+#missingCol
+```
+
+The dataset consists of two data files: training and evaluation. The training dataset contains `r colsTrain` columns, and the evaluation dataset also contains `r colsEval` columns. 
+
+## Missing Data
+
+An important aspect of any dataset is to determine how much, if any, data is missing. We look at all the variables to see which if any have missing data. We look at the basic descriptive statistics as well as the missing data and percentages. 
+
+We start by looking at the dataset as a whole and determine how many complete rows, that is rows with data for all predictors we have.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+cc<-summary(complete.cases(WineTrainVars))
+cWineTrain<-subset(WineTrainVars, complete.cases(WineTrainVars))
+cc
+vis_miss(WineTrainVars)
+gg_miss_upset(WineTrainVars)
+```
+
+With these results, if we remove all rows with incomplete rows, there will be a total of `r as.integer(cc[3])` rows out of `r nrow(WineTrain)`, or `r round(as.integer(cc[3])/nrow(WineTrain),2)*100`% of the total dataset. We create a subset of data with complete cases if needed later in our analysis.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+glimpse(cWineTrain)
+#WineTrain1$INDEX <- NULL
+```
+
+## Visualization
+We consider each variable
+
+### Target Variable 
+The distribution of our target variable is normal with the exception of many 0 Wine count entries. At such a high percentage, the zero scores likely reflect lack of popularity rather than error, especially if they get low human ratings.
+
+####  Histogram
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+hist(WineTrainVars$TARGET, col='darkblue', xlab = " Target ", main = "Wine Counts") 
+```
+ 
+#### Integers
+The integer variables have a small range and look normal, similar to TARGET. Stars has the least number of values and has many 0 entries. We will treat these as meaningful due to the percentage of NA's. Decision makers who buy wine are similar to the population who creates the integer variables and the range of values is small, so we choose not to impute these. 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ 
+WineTrainVars %>%
+  keep(is.integer) %>% 
+  gather() %>% 
+  ggplot(aes(value), main="") +
+  facet_wrap(~ key, scales = "free") +
+  geom_histogram(color='darkblue') + 
+  plot_layout(ncol = 1)
+```
+
+
+#### Doubles
+The Double variable types look very similar to one another, and look somewhat normal. These look okay to impute after we've run our diagnostic plots.
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+WineTrainFeatures %>%
+  keep(is.double) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_density(color='purple', fill='purple') +
+  plot_layout(ncol = 1)
+```
+
+### Outliers
+####  Boxplot
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(melt(WineTrainVars), aes(x=as.factor(variable), y=value, fill=as.factor(variable))) + facet_wrap(~variable, scale="free") + geom_boxplot()
+```
+
+#### Boxplot Without outliers
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(melt(WineTrainVars), aes(x=as.factor(variable), y=value, fill=as.factor(variable))) + facet_wrap(~variable, scale="free") + geom_boxplot(outlier.shape=NA)
+```
+
+#### Correlation
+We note that the human ratings all have high correlations than do our chemical features. 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+corrplot(as.matrix(cor(WineTrainVars, use = "pairwise.complete")),method = "shade")
+```
+
+#### Abnormal Data 
+
+Finally, we can visualize data abnormalities by visualizing our previously calculated vNA, Negative, Zero, and Unique counts. 
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ab_wine_desc <- wine_desc[,c(-1:-13)] 
+stat_chart_data <- ab_wine_desc %>% t() %>% as.data.frame() %>% mutate(.,Stat=rownames(.))
+stat_chart_data %>%
+  gather("Type", "Value", -Stat) %>%
+  ggplot(aes(Stat, Value, fill = Type)) +
+  geom_bar(position = "dodge", stat = "identity", na.rm=TRUE) + 
+  plot_layout(ncol = 1) +
+  theme_bw()
+```
+
+
+# DATA PREPERATION
+
+To begin data preparation, we look at some of our abnormal data and consider transformations.
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+WineTrainTrans <- WineTrain[-c(1)]
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ab_wine_desc <- var_stats(WineTrainTrans)[-c(1),c(-1:-13)] 
+print(ab_wine_desc[order(-ab_wine_desc$na_count),]) 
+```
+
+## NAs
+
+We recall that STARS has a high correlation with TARGET and we see that it has r`(wine1["STARS","na_count"]/nrow(WineTrain))*100`% NA's and no zero's. We change NA to 0 for STARS.
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+WineTrainTrans$STARS <- sapply(WineTrainTrans$STARS,function(x) ifelse(is.na(x),0,x))
+#WineTrain<-as.factor(WineTrain)
+```
+
+The remaining NA counts include continuous variables which we can impute via a statistical method. 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+WineTrainTrans<-complete(mice(WineTrainTrans, m=1, maxit=1),1)
+
+```
+
+## Negatives 
+While the negative ratings make the data irregular to work with, it is unlikely that so many people (r`(wine1["STARS","neg_count"]/nrow(WineTrain))*100`% ) accidentally used a negative rating. We can consider these for normalization only. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ab_wine_desc <- var_stats(WineTrainTrans)[-c(1),c(-1:-13)] 
+print(ab_wine_desc[order(-ab_wine_desc$neg_count),]) 
+```
+
+## Zeros
+
+By the same logic we will leave the zero counts alone. We can exclude the TARGET variable unless we will be normalizing it specifically in our later analysis. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ab_wine_desc <- var_stats(WineTrainTrans)[-c(1),c(-1:-13)]  
+print(ab_wine_desc[order(-ab_wine_desc$zero_count),])
+```
+## Uniques
+
+We want to take a look at the least unique counts next, and by a large margin LabelAppeal, STARS, and AcidIndex show low unique counts. We see that AcidIndex is a proprietary weighted method for measuring Acid, so we decide not to perform any transformation on AcidIndex.   
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ab_wine_desc <- var_stats(WineTrainTrans)[-c(1),c(-1:-13)] 
+print(ab_wine_desc[order(ab_wine_desc$unique_count),]) 
+#WineTrainTrans$STARS<-as.factor(WineTrainTrans$LabelAppeal)
+#WineTrainTrans$STARS<-as.factor(WineTrainTrans$STARS)
+#WineTrainTrans$STARS<-as.factor(WineTrainTrans$AcidIndex)
+```
+## Data Finalization
+We've finalized our dataset for analysis. 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+WineTrain<-WineTrainTrans
+summary(WineTrain)
+
+ 
+WineTrain %>%
+  keep(is.numeric) %>%
+  gather() %>% 
+  ggplot(aes(value), main="") +
+  facet_wrap(~ key, scales = "free") +
+  geom_histogram(color='darkblue') + 
+  plot_layout(ncol = 1)
+
+
+corrplot(as.matrix(cor(WineTrain %>% keep(is.numeric), use = "pairwise.complete")),method = "shade")
+
+```
+
+# BUILD MODEL
+
+## Model 1: Poisson Regression (all predictors)
+
+For the first model, we used the Poisson regression and all of the predictors.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+m1 <- glm(TARGET ~ ., family = poisson, data = WineTrain)
+#m1 <- glm(TARGET ~ ., family = poisson, data = WineTrain)
+summary(m1)
+par(mfrow = c(2,2))
+plot(m1)
+```
+
+## Model 2: Poisson Regression (reduced predictors)
+
+For the second model, based on model 1, we reduced the number of predictors. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+m2 <- glm(TARGET ~ VolatileAcidity + CitricAcid + Chlorides + FreeSulfurDioxide
+                        + TotalSulfurDioxide + Density + pH + Sulphates + Alcohol + LabelAppeal
+             + AcidIndex + STARS, family = poisson, data = WineTrain)
+summary(m2)
+par(mfrow = c(2,2))
+plot(m2)
+```
+
+
+## Model 3: Gaussian Regression (significant predictors)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+m3 <- glm(TARGET ~ VolatileAcidity + FreeSulfurDioxide + TotalSulfurDioxide + Chlorides + Density + pH + Sulphates + LabelAppeal + AcidIndex + STARS, family=gaussian, data = WineTrain)
+summary(m3)
+par(mfrow = c(2,2))
+plot(m3)
+```  
+
+Model 3 shows a better Q-Q plot than the previous two models.
+
+## Model 4: Negative Binomial Regression
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+m4 <- glm(TARGET ~ VolatileAcidity + TotalSulfurDioxide + 
+     pH + Sulphates + LabelAppeal + AcidIndex + STARS, family = negative.binomial(1), 
+     data = WineTrain)
+summary(m4)
+par(mfrow = c(2,2))
+plot(m4)
+```
+
+
+# SELECT MODEL
+## Pick the best regression model
+
+```{r echo=FALSE,message=FALSE,warning=FALSE, paged.print=FALSE}
+m1AIC <- AIC(m1)
+m1BIC <- BIC(m1)
+m2AIC <- AIC(m2)
+m2BIC <- BIC(m2)
+m3AIC <- AIC(m3)
+m3BIC <- BIC(m3)
+m4AIC <- AIC(m4)
+m4BIC <- BIC(m4)
+
+AIC <- list(m1AIC, m2AIC, m3AIC, m4AIC)
+BIC <- list(m1BIC, m2BIC, m3BIC, m4BIC)
+kable(rbind(AIC, BIC), col.names = c("Model 1", "Model 2", "Model 3", "Model 4"))  %>% 
+  kable_styling(full_width = T)
+
+```
+
+With 4 models computed, we select the model with the lowest combination of AIC and BIC. From the table, we can see the model to pick is model 3
+
+#CONCLUSION
+
+```{r echo=FALSE, message=FALSE}
+eval_p<-predict(m3,WineEval, type = "response")
+write.csv(eval_p,"predicted_eval_values.csv")
+```
+
+Model 3 showed the best result. We can observe its performance by plotting the datasets TARGET values agaisnt the predicted values. One thing we observe is that the model doesn't predict a TARGET of 8.
+
+```{r echo=FALSE, message=FALSE}
+train_p<-predict(m3,WineTrain, type = "response")
+plot(train_p,WineTrain$TARGET)
+```
+
+Other models, although of worse performace according to our selection metric, do show results of TARGET 8, but as can be seen in the graph below, they do not corresponde to real TARGET 8 classifications.
+
+```{r echo=FALSE, message=FALSE}
+train_p<-predict(m2,WineTrain, type = "response")
+plot(train_p,WineTrain$TARGET)
+```
+
+
+# APPENDIX
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```

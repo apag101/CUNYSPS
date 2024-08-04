@@ -1,0 +1,46 @@
+---
+title: "Data 605 Week 13 Discussion"
+author: "Anthony Pagan"
+date: "April 24, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+10. A boat is being pulled into a dock at a constant rate of
+30/min by a winch located 10 above the deck of the
+boat. At what rate is the boat approaching the dock when the
+boat is:
+
+```{r}
+ratep <-function (b)
+{
+    a <-30
+    c <- sqrt(a^2 + b^2)
+    t <-10
+    p<-round((c*(c/t)-a*(a/t))/b,2)
+    p
+}
+```
+
+
+(a) 50 feet out
+
+**`r ratep(50)` feet per minute**
+
+(b) 15 feet out?
+
+**`r ratep(15)` feet per minute**
+
+(c) 1 foot from the dock
+
+**`r ratep(1)` feet per minute**
+
+(d) What happens when the length of rope pulling in the
+boat is less than 10 feet long?
+
+**At less than 10 feet long it will go less than 3 feet/min**
+
+
+

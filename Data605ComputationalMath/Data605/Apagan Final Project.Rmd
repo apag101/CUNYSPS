@@ -1,0 +1,462 @@
+---
+title: "Data 605 Final Project Assignment 13"
+author: "Anthony Pagan"
+date: "May 26, 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 4
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+####Final Exam Project
+
+#Problem 1 (Probability)
+Using R, generate a random variable X that has 10,000 random uniform numbers from 1 to N, where N can be any number of your choosing greater than or equal to 6.  Then generate a random variable Y that has 10,000 random normal numbers with a mean of ${\mu}$=${\sigma}$=(N+1)/2
+
+**The below histogram uses Runif to generate random uniform numbers where frequencies are close to even. The histogram shows a uniform distribution while Rnorm whows the  random distritubion**
+
+
+```{r message=FALSE, warning=FALSE}
+N <- 6
+mean = (N+1)/2
+sd = (N+1)/2
+X <- runif(10000, 1, N)
+hist(X)
+Y <- rnorm(X, mean, sd)
+hist(Y)
+```
+
+
+
+##Minimums  
+Calculate as a minimum the below probabilities a through c.  Assume the small letter "x" is estimated as the median of the X variable, and the small letter "y" is estimated as the 1st quartile of the Y variable.  
+
+
+```{r message=FALSE, warning=FALSE}
+x<-median(X)
+y<-quantile(Y)[2]
+```
+
+Interpret the meaning of all probabilities. 5 points
+
+ * ${P(X>x | X>y)}$	
+ 
+
+
+```{r message=FALSE, warning=FALSE}
+a<-min(pnorm(X>x | X>y))
+```
+
+**The minimum probabilty of random uniform number X being greater than median number x given X is greater than the 1st quartile value in y is `r round(a,2)`**
+ 
+ * ${P(X>x, Y>y)}$
+
+
+
+```{r message=FALSE, warning=TRUE}
+b<-min(pnorm(X>x ,Y>y))
+
+```
+
+**The minimum probabilty of random uniform number X being greater than median number x and random normal number Y is greater than the 1st quartile value in y is `r round(b,2)`** 
+ 
+ * ${P(X<x, X>y)}$
+ 
+
+```{r message=FALSE, warning=FALSE}
+c<-min(pnorm(X<x, X>y))
+
+```
+
+ **The minimum probabilty of random uniform number X being less than median number x and X is greater than the 1st quartile value in y is `r round(c,2)`**
+
+##Marginal/Joint
+
+Investigate whether P(X>x and Y>y)=P(X>x)P(Y>y) by building a table and evaluating the marginal and joint probabilities. 5 points.
+
+**The probability table for X>x * Y>y and X>x + Y>y show that joint probability differ. **
+
+```{r message=FALSE, warning=FALSE}
+a<-pnorm(X>x)*pnorm(Y>y)
+#a<-rbinom(n=6, size = 10000, prob =dnorm((X>x)*(Y>y)))/10000
+b<-pnorm((X>x)*(Y>y))
+#b<-rbinom(n=6, size = 10000, prob =dnorm(X>x)*dnorm(Y>y))/10000
+r<-rbind(table(a),table(b))
+#r<-rbind(a[1:6],b[1:6])
+row.names(r)<-c('P(X>x and Y>y)','P(X>x)P(Y>y)')
+colnames(r)<-names(table(round(a,2)))
+#colnames(r)<-c(1,2,3,4,5,6)
+rp<-round(addmargins(prop.table(r)),2)
+ftable(round(a,2))
+ftable(round(b,2))
+rp
+```
+
+##Independence
+ 
+Check to see if independence holds by using Fisher's Exact Test and the Chi Square Test. What is the difference between the two? Which is most appropriate? 5 points. 
+
+**Chisq.test and fisher.test checks for independence when comparing categorical data. Fisher.test can be used for smaller datasets < 10. In our test the Chisq.test has a pvalue of ~.24 and Fisther.test has a pvalue of 1. The fisher.test fits the data better  as both values are equal and fisher.test value is equal to 1**
+
+```{r message=FALSE, warning=FALSE}
+ft<-fisher.test(rp[1,],rp[2,])
+ct<-chisq.test(rp[1,],rp[2,])
+print(ft$p.value)
+print(ct$p.value)
+```
+
+
+#Problem 2 (Kaggle)
+You are to register for Kaggle.com (free) and compete in the House Prices: Advanced Regression Techniques competition.  https://www.kaggle.com/c/house-prices-advanced-regression-techniques .  I want you to do the following.
+
+5 points.  Descriptive and Inferential Statistics. Provide univariate descriptive statistics and appropriate plots for the training data set. Provide a scatterplot matrix for at least two of the independent variables and the dependent variable. Derive a correlation matrix for any three quantitative variables in the dataset. Test the hypotheses that the correlations between each pairwise set of variables is 0 and provide an 80% confidence interval. Discuss the meaning of your analysis. Would you be worried about familywise error? Why or why not?
+
+```{r message=FALSE, warning=FALSE}
+#Qulatative: Neighborhood, YearBuilt, KitchenQual
+#Quantitative: GrLivArea,FullBath, BedroomAbvGr
+library(dplyr) 
+library(tidyr) 
+library(readxl)
+library(ggplot2)
+library(plotly)
+library(corrplot)
+
+tr<-read.csv('C:/Users/apagan/OneDrive - BizoIT, Inc/Desktop/GitHub/CUNYSPS/Data605/finalsData/train.csv')
+#head(tr)
+#glimpse(tr))
+```
+
+**As a start we remove columns and rows with NA values**
+
+```{r}
+
+tr.1<-tr%>%
+    select(Id,SalePrice,YearBuilt, KitchenQual,GrLivArea,FullBath, BedroomAbvGr, Neighborhood) %>%
+    na.omit()
+
+#select( -Alley,-PoolQC,-Fence,-MiscFeature)%>%
+```
+
+##Summary of data points
+
+**The summaries show the basic statistical data points for all variables**
+
+```{R}
+summary(tr.1$SalePrice)
+summary(tr.1$GrLivArea)
+summary(tr.1$YearBuilt)
+summary(tr.1$KitchenQual)
+summary(tr.1$Neighborhood)
+```
+
+
+**The GGPlots below will show that all independent variables have a positive correlation excpet for Kitchen Quality. The Kitchen Quality is bimodal**
+
+###GrLiveArea vs Saleprice
+
+**The GrLiveArea vs Saleprice show some positive linearity in the qqplot when grlivearea is less than 3k. 
+
+```{r}
+
+qqplot(tr.1$GrLivArea,tr.1$SalePrice)
+lm1<-lm(tr.1$SalePrice~tr.1$GrLivArea+tr.1$Neighborhood)
+summary(lm1)
+```
+
+**The GGplots show a positive correlation for each separate plot that break down by category variables Neighborhood , Year Built and Ktichent Quality**
+
+```{r}
+ggplot(tr.1, aes(GrLivArea, SalePrice,
+    width = 800, height = 300)) +
+    geom_point(aes(group=Neighborhood,size = SalePrice, color = Neighborhood), alpha = 0.2)+
+    stat_smooth(method = "lm", col = "red")
+
+lm2<-lm(tr.1$SalePrice~tr.1$GrLivArea+tr.1$YearBuilt)
+summary(lm2)
+ggplot(tr.1, aes(GrLivArea, SalePrice,
+    width = 800, height = 300)) +
+    geom_point(aes(group=YearBuilt,size = SalePrice, color = YearBuilt), alpha = 0.2)+
+    stat_smooth(method = "lm", col = "red")
+
+lm3<-lm(tr.1$SalePrice~tr.1$GrLivArea+tr.1$KitchenQual)
+summary(lm3)
+ggplot(tr.1, aes(GrLivArea, SalePrice,
+    width = 800, height = 300)) +
+    geom_point(aes(group=KitchenQual,size = SalePrice, color = KitchenQual), alpha = 0.2)+
+    stat_smooth(method = "lm", col = "red")
+```
+
+###FullBath vs Saleprice
+
+**The Full Baths vs Sale Price also show a positive linearity. When Neighborhood and Kitchen quality are added to the linear model it has a positive correlation. However, when Year built is added there is a negative y intercept estimate.**
+
+```{r}
+qqplot(tr.1$FullBath,tr.1$SalePrice)
+lm1<-lm(tr.1$SalePrice~tr.1$FullBath+tr.1$Neighborhood)
+summary(lm1)
+ggplot(data= tr.1) +
+    geom_bar(mapping = aes(x = FullBath, y = SalePrice, fill= Neighborhood), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(size=9))+
+    geom_abline(intercept = lm1$coefficients[1], slope = lm1$coefficients[2])
+
+lm2<-lm(tr.1$SalePrice~tr.1$FullBath+tr.1$YearBuilt)
+summary(lm2)
+ggplot(data= tr.1) +
+    geom_bar(mapping = aes(x = FullBath, y = SalePrice, fill= YearBuilt), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(size=9))+
+    geom_abline(intercept = lm2$coefficients[1], slope = lm2$coefficients[2])
+
+lm3<-lm(tr.1$SalePrice~tr.1$FullBath+tr.1$KitchenQual)
+summary(lm3)
+ggplot(data= tr.1) +
+    geom_bar(mapping = aes(x = FullBath, y = SalePrice, fill= KitchenQual), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(size=9))+
+    geom_abline(intercept = lm3$coefficients[1], slope = lm3$coefficients[2])
+```
+
+###BedroomAbvGr vs Saleprice
+
+**The Bedroom Above Ground Vs Salesprice is bimodal. There is no correlation. Here also, when year built is added to the linear model it results in a negative y intercept estimate.**
+
+```{r}
+qqplot(tr.1$BedroomAbvGr,tr.1$SalePrice)
+lm1<-lm(tr.1$SalePrice~tr.1$BedroomAbvGr+tr.1$Neighborhood)
+lm1
+ggplot(data= tr.1) +
+    geom_bar(mapping = aes(x = BedroomAbvGr, y = SalePrice, fill= Neighborhood), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(size=9))+
+    geom_abline(intercept = lm1$coefficients[1], slope = lm1$coefficients[2])
+
+lm2<-lm(tr.1$SalePrice~tr.1$BedroomAbvGr+tr.1$YearBuilt)
+lm2
+ggplot(data= tr.1) +
+    geom_bar(mapping = aes(x = BedroomAbvGr, y = SalePrice, fill= YearBuilt), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(size=9))+
+    geom_abline(intercept = lm2$coefficients[1], slope = lm2$coefficients[2])
+
+lm3<-lm(tr.1$SalePrice~tr.1$BedroomAbvGr+tr.1$KitchenQual)
+lm3
+ggplot(data= tr.1) +
+    geom_bar(mapping = aes(x = BedroomAbvGr, y = SalePrice, fill= KitchenQual), stat = "identity", position = "identity")+
+    theme(axis.text.x=element_text(size=9))+
+    geom_abline(intercept = lm3$coefficients[1], slope = lm3$coefficients[2])
+```
+
+
+##Correlation Test
+
+**The correlation confirms that there is an above average correlation between Ground Living Area  and .71and Full Bath at .56 vs Sale price and the Bedroom Above ground has a lower correlation at .17**
+
+```{r}
+tr.2<-tr.1%>%
+    select(SalePrice,GrLivArea,FullBath, BedroomAbvGr)
+tr.c<-round(cor(tr.2),2)
+tr.c
+
+tr.g<-cor.test(tr.2$SalePrice,tr.2$GrLivArea,conf.level = .8)
+tr.f<-cor.test(tr.2$SalePrice,tr.2$FullBath,conf.level = .8)
+tr.b<-cor.test(tr.2$SalePrice,tr.2$BedroomAbvGr,conf.level = .8)
+
+tr.g
+tr.f
+tr.b
+
+```
+
+**With a 80% probability GrLiveArea is between `r round(tr.g$conf.int[1],2)` and `r round(tr.g$conf.int[2],2)`,  FullBath are betwen `r round(tr.f$conf.int[1],2)` and `r round(tr.f$conf.int[2],2)` and BedroomAbvGr is `r round(tr.b$conf.int[1],2)` and `r round(tr.b$conf.int[2],2)`**
+
+##Invert Corr/LU
+
+5 points. Linear Algebra and Correlation.  Invert your correlation matrix from above. (This is known as the precision matrix and contains variance inflation factors on the diagonal.) Multiply the correlation matrix by the precision matrix, and then multiply the precision matrix by the correlation matrix. Conduct LU decomposition on the matrix.  
+
+**In the LU decomposition we are using matlib to multiply the inverse of the cor.test times the cor test to get the precision matrix. We use the Upper.tri and lower.tri functions to get the upper and lower triangles of the matrix.**
+
+```{r message=FALSE, warning=FALSE}
+library(matlib)
+tr.p<-round(inv(tr.c),2)
+tr.p
+tr.m<-round(tr.c%*%tr.p,2)
+tr.m
+tr.m2<-round(tr.p%*%tr.c,2)
+tr.m2
+tr.m%*%tr.m2
+```
+
+**Multiplying correlation by percision matrix then multplying percision by correlation matrix give inverse of each other**
+
+```{r}
+tr.c
+lower<-tr.c
+lower[lower.tri(tr.c, diag=TRUE)]<-0
+#lower<-as.data.frame(lower)
+lower
+
+upper<-tr.c
+upper[upper.tri(tr.c, diag=TRUE)]<-0
+#upper<-as.data.frame(upper)
+upper
+```
+
+**The Lu decomposition of the matrix**
+
+##Calc Prob/Stats
+
+5 points.  Calculus-Based Probability & Statistics.  Many times, it makes sense to fit a closed form distribution to data.  Select a variable in the Kaggle.com training dataset that is skewed to the right, shift it so that the minimum value is absolutely above zero if necessary.  Then load the MASS package and run fitdistr to fit an exponential probability density function.  (See  https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/fitdistr.html ). Find the optimal value of ${\lambda}$ for this distribution, and then take 1000 samples from this exponential distribution using this value (e.g., rexp(1000, ${\lambda}$)).  Plot a histogram and compare it with a histogram of your original variable.   Using the exponential pdf, find the 5th and 95th percentiles using the cumulative distribution function (CDF).   Also generate a 95% confidence interval from the empirical data, assuming normality.  Finally, provide the empirical 5th percentile and 95th percentile of the data.  Discuss.
+
+```{r message=FALSE, warning=FALSE}
+library(MASS)
+hist(tr.1$GrLivArea)
+```
+
+**Salesprice shows it is shifted to the right in this histogram**
+
+```{r}
+tr.log10<-log10(tr.1$GrLivArea)
+hist(tr.log10)
+```
+
+**Using log 10 the histogram shifts to the center**
+
+```{r message=FALSE, warning=FALSE}
+fs<-fitdistr(tr.log10,"Poisson")
+tr.rlog10<-rexp(1000,fs$estimate)
+hist(tr.rlog10)
+```
+
+**Applying fitdistr estimates gives similar right skew. For the Mass functions we used the Ground Living Area values. . The histogram shows the data is right skewed. Using log10 the new histogram is shifted to the right and is closer to a more normal distribution.  Applying the fitdstr estimate the histogram shifts to the right again. Applying the exponential PDF to the original data vs the log10 data at .05 and .95 percentail there is not much of a difference.  The original Log10 values were .149 , .941 respectively while the new values were .162 and .939.**
+
+```{r}
+tr.e<-ecdf(tr.rlog10)
+tr.e(.95)
+tr.e(.05)
+
+tr.1e<-rexp(1000,tr.log10)
+tr.1ec<-ecdf(tr.1e)
+tr.1ec(.95)
+tr.1ec(.05)
+```
+
+**Comparision does not show much of a difference**
+
+10 points.  Modeling.  Build some type of multiple regression  model and submit your model to the competition board.  Provide your complete model summary and results with analysis.  Report your Kaggle.com user name and score.
+
+##Modeling
+
+**We begin with ggpairss data and compare the Saleprice to year built, Kitchen Quality, Ground Living Area, Full bath and Bedroom Abover ground. The ggpairs plots hint that Ground living area and bath have the highest correlation to sale price. **
+
+```{r message=FALSE, warning=FALSE}
+library(GGally)
+ggpairs(data=tr.1, columns = 2:7)
+```
+
+**For all of the linear models we are extracting the coeficients, r squared values, adjusted r squared, sigma and f statistics.  Coeficients provide y intercept, slope , p value which probability the null hypothesis is true and the t value which gives the standard deviations the estimated coefficients are from zero. The multiple r-squred and adjusted r squared lets us know how close our data are close to the linear regression model. The F-statistic gives us the relationship between dependent and independent variables. A large F-statistics means a strong relationship.**
+
+**We begin with linear model summary stats for each variable vs sale price.  Summary of Linear model show low Pr values for each independent variable. All variable except Kitchen Quality have a p value below .05.**
+
+```{r}
+s<-summary(lm(SalePrice~Neighborhood, tr.1, na.action = na.fail))
+c(s$coefficients[1,1:4],s$r.squared,s$adj.r.squared,s$sigma,s$fstatistic)
+y<-summary(lm(SalePrice~YearBuilt, tr.1, na.action = na.fail))
+c(y$coefficients[1,1:4],y$r.squared,y$adj.r.squared,y$sigma,y$fstatistic)
+k<-summary(lm(SalePrice~KitchenQual, tr.1, na.action = na.fail))
+c(k$coefficients[1,1:4],k$r.squared,k$adj.r.squared,k$sigma,k$fstatistic)
+g<-summary(lm(SalePrice~GrLivArea, tr.1, na.action = na.fail))
+c(g$coefficients[1,1:4],g$r.squared,g$adj.r.squared,g$sigma,g$fstatistic)
+f<-summary(lm(SalePrice~FullBath, tr.1, na.action = na.fail))
+c(f$coefficients[1,1:4],f$r.squared,f$adj.r.squared,f$sigma,f$fstatistic)
+b<-summary(lm(SalePrice~BedroomAbvGr, tr.1, na.action = na.fail))
+c(b$coefficients[1,1:4],b$r.squared,b$adj.r.squared,b$sigma,b$fstatistic)
+```
+
+**Our first multiple linear model stat includes all variables vs sale prices. So we are including Neighborhood, YearBuilt, Kitchen Quality, Ground Living Area and bedroom abover ground. It shows a pvalue below .05 collectively and a negative y intercept. However, individually FullBath p-value is .88.**
+
+```{r}
+nykgfb<-summary(lm(SalePrice~Neighborhood+YearBuilt+KitchenQual+GrLivArea+FullBath+BedroomAbvGr, tr.1, na.action = na.fail))
+nykgfb
+#c(nykgfb$coefficients[1,1:4],nykgfb$r.squared,nykgfb$adj.r.squared,nykgfb$sigma,nykgfb$fstatistic)
+```
+
+**The next multiple linear model removes the FullBath. All variables p-values are below .05 except FullBath at .68. **
+
+```{r}
+nkgb<-summary(lm(SalePrice~Neighborhood+KitchenQual+GrLivArea+BedroomAbvGr, tr.1, na.action = na.fail))
+nkgb
+#c(nkg$coefficients[1,1:4],nkg$r.squared,nkg$adj.r.squared,nkg$sigma,nkg$fstatistic)
+```
+
+**When comparing SalePrice to Ground Living Area and Bedroom or Full bath  the p values are under .05 for Bedrooms but over .05 with Full bath. However, if you compare both full bath and Bedrooms the combined P value is below .05.**
+
+```{r}
+gb<-summary(lm(SalePrice~GrLivArea+BedroomAbvGr, tr.1, na.action = na.fail))
+gb
+#c(gb$coefficients[1,1:4],gb$r.squared,gb$adj.r.squared,gb$sigma,gb$fstatistic)
+
+gf<-summary(lm(SalePrice~GrLivArea+FullBath, tr.1, na.action = na.fail))
+gf
+#c(gf$coefficients[1,1:4],gf$r.squared,gf$adj.r.squared,gf$sigma,gf$fstatistic)
+
+gfb<-summary(lm(SalePrice~GrLivArea+FullBath+BedroomAbvGr, tr.1, na.action = na.fail))
+gfb
+#c(gfb$coefficients[1,1:4],gfb$r.squared,gfb$adj.r.squared,gfb$sigma,gfb$fstatistic)
+```
+
+**My fist submission to Kaggle  was a comparison of Sale Price to GrLivArea+FullBath+BedroomAbvGr the p-value was the lowest of the 4 at 5.512411e-18 while the F stat vaule was high at 679. Howerver, the Kaggle score was the highest at .28.**
+
+```{r}
+tst<-read.csv('C:/Users/apagan/OneDrive - BizoIT, Inc/Desktop/GitHub/CUNYSPS/Data605/finalsData/train.csv')
+
+sm<-lm(SalePrice~GrLivArea+FullBath+BedroomAbvGr, tr.1, na.action = na.fail)
+sms<-summary(sm)
+c(sms$coefficients[1,1:4],sms$r.squared,sms$adj.r.squared,sms$sigma,sms$fstatistic)
+
+p<-data.frame(tst$Id,predict(sm, new=tst))
+colnames(p)<-c('Id','SalePrice')
+head(p)
+write.csv(file = "C:/Users/apagan/OneDrive - BizoIT, Inc/Desktop/GitHub/CUNYSPS/Data605/finalsData/predict.csv", x=p, row.names = FALSE)
+#.28
+```
+
+**The submission for Sale Price to GrLivArea+FullBath as expected had a high Pvalue of  5.078456e-01 and the highst f-stat of 801, the Kaggle was also ~.28. The addition of Fullbath and Neighborhood reduced the pvalue significantly to 3.142946e-14. The F-stat value was 155 showing a weaker relationship between dependent an independent variables. The Kaggle score improved to a lower value of .215.**
+
+```{r}
+sm2<-lm(SalePrice~GrLivArea+FullBath, tr.1, na.action = na.fail)
+sms2<-summary(sm2)
+c(sms2$coefficients[1,1:4],sms2$r.squared,sms2$adj.r.squared,sms2$sigma,sms2$fstatistic)
+
+p<-data.frame(tst$Id,predict(sm2, new=tst))
+colnames(p)<-c('Id','SalePrice')
+head(p)
+write.csv(file = "C:/apag101/OneDrive/Desktop/GitHub/CUNYSPS/Data605/finalsData/predict2.csv", x=p, row.names = FALSE)
+#.28
+
+sm3<-lm(SalePrice~GrLivArea+FullBath+Neighborhood, tr.1, na.action = na.fail)
+sms3<-summary(sm3)
+c(sms3$coefficients[1,1:4],sms3$r.squared,sms3$adj.r.squared,sms3$sigma,sms3$fstatistic)
+
+p<-data.frame(tst$Id,predict(sm3, new=tst))
+colnames(p)<-c('Id','SalePrice')
+head(p)
+write.csv(file = "C:/apag101/OneDrive/Desktop/GitHub/CUNYSPS/Data605/finalsData/predict3.csv", x=p, row.names = FALSE)
+#.215
+
+```
+
+**Finally, i swapped the FullBath and BedroomAbvGr reducing the p-value to 1.318023e-17 with a f-stat of 164 and a Kaggle score of .210**
+
+```{r}
+sm4<-lm(SalePrice~Neighborhood+GrLivArea+BedroomAbvGr, tr.1, na.action = na.fail)
+sms4<-summary(sm4)
+c(sms4$coefficients[1,1:4],sms4$r.squared,sms4$adj.r.squared,sms4$sigma,sms4$fstatistic)
+
+p<-data.frame(tst$Id,predict(sm4, new=tst))
+colnames(p)<-c('Id','SalePrice')
+head(p)
+write.csv(file = "C:/apag101/OneDrive/Desktop/GitHub/CUNYSPS/Data605/finalsData/predict4.csv", x=p, row.names = FALSE)
+#.210
+
+```
+

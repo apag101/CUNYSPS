@@ -1,0 +1,48 @@
+---
+title: "Data 605 Week 12 Discussion"
+author: "Anthony Pagan"
+date: "Apriln 17, 2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+Using R, build a multiple regression model for data that interests you.  Include in this model at least one quadratic term, one dichotomous term, and one dichotomous vs. quantitative interaction term.  Interpret all coefficients. Conduct residual analysis.  Was the linear model appropriate? Why or why not?
+
+$\color{red}{\text{Pairs char shows ratings and complaints very likely have the strongest correlation}}$
+
+```{r}
+data("attitude")
+pairs(attitude)
+```
+
+$\color{red}{\text{The linear p values for each variable are higher than the preselected threshold of .05. Residuals are balanced}}$
+
+```{r}
+c.lm<-lm(attitude$rating~attitude$complaints + attitude$privileges + attitude$learning + attitude$raises)
+summary(c.lm)
+```
+
+$\color{red}{\text{Using backward elimination we remove the variable with the highest p value above the threshold, which is this case is raises. $\\$ Residuals, RSquared and Adjusted RSquared stays close to original range. Coefficents are:}}$ `r c.lm$coefficients[1]` + `r c.lm$coefficients[2]` x complaints + `r c.lm$coefficients[3]` x privileges + `r c.lm$coefficients[4]` x learning + ` r c.lm$coefficients[5]` x raises
+
+```{r}
+c.lm<-lm(attitude$rating~attitude$complaints + attitude$privileges + attitude$learning)
+summary(c.lm)
+```
+
+$\color{red}{\text{Continuing backward elimination we remove the variable with the highest p value above the threshold, which is this case is privileges. $\\$ Residuals, RSquared and Adjusted RSquared stays close to original range. Coefficents are:}}$ `r c.lm$coefficients[1]` + `r c.lm$coefficients[2]` x complaints + `r c.lm$coefficients[4]` x learning
+
+```{r}
+c.lm<-lm(attitude$rating~attitude$complaints + attitude$learning)
+summary(c.lm)
+```
+
+$\color{red}{\text{Continuing backward elimination we remove the variable with the highest p value above the threshold, which is this case is learning. $\\$ Residuals, RSquared and Adjusted RSquared stays has a steeper decrease. Coefficents raised by 30%:}}$ `r c.lm$coefficients[1]` + `r c.lm$coefficients[2]` x complaints
+
+```{r}
+c.lm<-lm(attitude$rating~attitude$complaints)
+summary(c.lm)
+```
+
+$\color{red}{\text{In this data, the pairs view was enough to determine the best value to use. The first lm summary already showed that ratings and complaints were the best variables to use as complaints was the only variable with a p value below .05}}$ 

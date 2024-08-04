@@ -1,0 +1,92 @@
+---
+title: "Graph Database"
+author: "Anthony Pagan"
+date: "November 18, 2018"
+output: 
+  html_document:
+      toc: TRUE
+      css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Objective
+
+Use a relational DB and migrate to a NO SQL DB. In this assignment I reuse partial code from Project 3. 
+
+## Source Project 3 Code
+
+```{r message=FALSE, warning=FALSE}
+source('project3.r')
+```
+
+##  Connect to Project 3 DB
+
+Connect to Project 3 DB and extract 1000 rows.
+
+```{r message=FALSE, warning=FALSE}
+library(RMySQL)
+mydb = dbConnect(MySQL(), user='root', password='123456', dbname='education', host='localhost')
+
+joineddata<-dbGetQuery(mydb, "select d.DISTRICT_NAME as districtname,  s.School_name as schoolname, d.overall_score as overallscore from apprdstr d
+inner join apprsch s on  d.district_beds = s.district_beds limit 1000")
+dbDisconnect(mydb)
+```
+
+## Use RNeo4j to connect MySQL to Rneo NoSQl DB
+
+Use RNeo4j to migrate Mysql data to RNEO. The package is in an archive repo and was installed by pointing to a locally downloaded copy of the packaged files.
+
+    Downloaded file from repo archive
+    https://cran.r-project.org/src/contrib/Archive/RNeo4j/
+
+    Link shows how install archive from gz file
+    https://stackoverflow.com/questions/30989027/how-to-install-a-package-from-a-download-zip-file
+
+```{r message=FALSE, warning=FALSE}
+install.packages(list.files(pattern="RNeo4j_1.6.4.tar.gz"), repos = NULL)
+```
+
+##Migrate data
+
+Here we are beggining the migration. I used the links below as a reference:
+
+    Sample RPubs on how to use RNeo with MYSqL
+    https://rstudio-pubs-static.s3.amazonaws.com/175345_f97da0204f2540f1b9d679ae09cd3407.html
+
+```{r}
+library(RNeo4j)
+neo <- startGraph("http://localhost:7474/db/data", username="neo4j", password="neo4j")
+clear(neo, input = FALSE)
+
+query = "CREATE (s:schools {district: {districtname}, school: {schoolname}, overallscore:{overallscore}})"
+```
+
+## Match data
+
+Here we are using Match data to display data in Neo and loop through the joinneddata from the MySQl Db with query statement to migrate data over to Neo via the neo DB connection
+
+    Example on how to match data:
+    https://neo4j.com/developer/guide-importing-data-and-etl/
+
+```{r}
+tx = newTransaction(neo)
+for (i in 1:nrow(joineddata)) {
+  appendCypher(tx, 
+               query, 
+               districtname = joineddata$districtname[i],
+               schoolname = joineddata$schoolname[i],
+               overallscore = joineddata$overallscore[i])
+}
+
+commit(tx)
+```
+
+Execute Neo browser
+
+```{r}
+browse(neo)
+```
+

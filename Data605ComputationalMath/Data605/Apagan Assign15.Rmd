@@ -1,0 +1,106 @@
+---
+title: "Data 605 Assignment 15"
+author: "Anthony Pagan"
+date: "May 09 2019"
+output: 
+      html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW15
+
+#Regression
+
+Find the equation of the regression line for the given points. Round any final values to the nearest hundredth, if necessary.
+
+( 5.6, 8.8 ), ( 6.3, 12.4 ), ( 7, 14.8 ), ( 7.7, 18.2 ), ( 8.4, 20.8 )
+
+```{r}
+x <-c(5.6,6.3,7,7.7,8.4)
+y<-c(8.8,12.4,14.8,18.2,20.8)
+l<-lm(y~x)
+plot(x,y)
+abline(l)
+```
+
+**Regression Line: Y = `r l$coefficients[1]` + `r round(l$coefficients[2],2)`x**
+
+#Maxima/Minima
+
+Find all local maxima, local minima, and saddle points for the function given below. Write your answer(s) in the form( x, y, z ). Separate multiple points with a comma.
+
+${f(x,y)=24x-6xy^2-8y^3}$
+
+ * ${f(x)= x -6y^2= 0}$ = ${x = 6y^2}$
+ * ${f(y)= 12y - 24y = 0}$ = ${y = -12y = \frac{-1}{12}}$
+
+```{r}
+y <--1/12
+x <- 6*y^2
+z <- 12*x-6*x*y^2-8*y^3
+a <- c(x,y,z)
+```
+
+**The local maxima, minima, and saddle points are (`r a`)**
+
+#Functions
+
+A grocery store sells two brands of a product, the "house" brand and a "name" brand. The manager estimates that if she sells the "house" brand for x dollars and the "name" brand for y dollars, she will be able to sell 81 - 21x + 17y units of the "house" brand and 40 + 11x - 23y units of the "name" brand.
+
+Step 1. Find the revenue function R ( x, y ).
+
+```{r}
+uh <- 81 - 21*x + 17*y
+un <- 40 + 11*x - 23*y
+
+```
+
+**Revenue function = (81 - 21*x + 17*y) + (40 + 11*x - 23*y) **
+
+Step 2. What is the revenue if she sells the "house" brand for $2.30 and the "name" brand for $4.10?
+
+```{r}
+
+x <- 2.30
+y <- 4.10
+R <- uh+un
+```
+
+**If she sells the "house" brand for $2.30 and the "name" brand for $4.10 the revenue will be $`r round((R),2)`**
+
+#Minimize Cost
+
+A company has a plant in Los Angeles and a plant in Denver. The firm is committed to produce a total of 96 units of a product each week. The total weekly cost is given by ${C(x, y) = \frac{1}{6}x^2 + \frac{1}{6}y^2+ 7x + 25y + 700}$, where x is the number of units produced in Los Angeles and y is the number of units produced in Denver. How many units should be produced in each plant to minimize the total weekly cost?
+
+ * ${f(x)= 2\frac{1}{6}x+7 = 0}$ 
+ * ${f(y)= 2\frac{1}{6}x+25 = 0}$
+
+```{r}
+x<-7/(2/6)
+y<-25/(2/6)
+
+```
+
+**To minmize weekly cost `r x` units should be produced in Los Angeles and `r y` units should be producded in Denver**
+
+#Integral
+
+Evaluate the double integral on the given region.
+
+${\int\int_R e^{8x+3y}dA:R:2\le{x}\le{4}}$ and ${2\le{y}\le{4}}$
+
+Write your answer in exact form without decimals.
+
+```{r}
+f<-function(x) { exp(8*x+3*y) }
+f2<- function(y) { sapply(y, 
+function(z) { integrate(f, 2, 4)$value }) }
+v<- integrate(f2 , 2, 4)
+```
+
+**value is `r v$value`**

@@ -1,0 +1,38 @@
+---
+title: "Data 605 Week 2 Discussion"
+author: "Anthony Pagan"
+date: "February 6, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+Excercise C10 Page 249
+
+C10y Find a basis for S, where S =
+
+```{r}
+ss <- matrix(c(1,3,2,1,1,2,1,1,1,1,0,1,1,2,2,1,3,4,1,3),nrow=4, ncol=5)
+ss
+```
+
+
+Set to reduce row echelon form:
+```{r}
+s<-ss
+s[2,]<-(3*s[1,]-s[2,])
+s
+s[3,]<-(2*s[1,]-s[3,])
+s
+s[3,]<-(s[2,]-s[3,])
+s
+s[4,]<-(s[1,]-s[4,])
+s
+
+```
+
+Basis for S are our pivot columns which are vectors 1 and 2:
+
+```{r}
+ss[,1:2]
+```

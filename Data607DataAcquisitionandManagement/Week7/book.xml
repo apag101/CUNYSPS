@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<books>
+	<book id ="1">
+		<Title>The Black Swan</Title>
+		<Authors>Nassim Nicholas Taleb</Authors>
+		<Type>Non-Fiction</Type>
+		<Copyright>2010</Copyright>
+	</book>
+	<book id ="2">
+		<Title>Thinking Fast and Slow</Title>
+		<Authors>Daniel Kahneman</Authors>
+		<Type>Non-Fiction</Type>
+		<Copyright>2011</Copyright>
+	</book>
+	<book id ="3">
+		<Title>Sapiens A Brief History of Humankind</Title>
+		<Authors>Yuval Noah Harari</Authors>
+		<Type>Non-Fiction</Type>
+		<Copyright>2015</Copyright>
+	</book>
+	<book id ="1">
+		<Title>How to Create a Mind</Title>
+		<Authors>"Ray Kurzweil" "Terry Grossman"</Authors>
+		<Type>Non-Fiction</Type>
+		<Copyright>2012</Copyright>
+	</book>
+</books>
+
+		

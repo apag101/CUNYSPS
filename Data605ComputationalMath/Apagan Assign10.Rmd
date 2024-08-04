@@ -1,0 +1,66 @@
+---
+title: "Data 605 Assignment 10"
+author: "Anthony Pagan"
+date: "April 06, 2019"
+output: 
+      html_document:
+        toc: false
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+        highlight: pygments
+        theme: cerulean
+---
+
+HW10
+
+#Bets
+
+Smith is in jail and has 1 dollar; he can get out on bail if he has 8 dollars.
+A guard agrees to make a series of bets with him. If Smith bets A dollars,
+he wins A dollars with probability .4 and loses A dollars with probability .6.
+Find the probability that he wins 8 dollars before losing all of his money if:
+
+Equations:
+
+* N Number of Wins: ${\frac{1-(\frac{q}{p})^i}{1-(\frac{q}{p})^N}}$
+* Inf Win= 1 - ${(\frac{q}{p})^i}$
+* Losing all = 1 - ${(\frac{q}{p})}$
+
+```{r message=FALSE, warning=FALSE}
+
+f<-function(i)
+{
+p <- .6
+q <- .4
+N<-8
+iw <- round((1-(q/p)^i),2)
+nw <- round((iw/(1-(q/p)^N)),2)
+l<- 1-iw
+pa<-c(iw,nw,l)
+}
+
+``` 
+
+```{r message=FALSE, warning=FALSE}
+a<-f(1)
+```     
+
+
+**Bets 1 dollar each time (timid strategy).**
+
+$\color{red}{\text{The probability he wins \$8 before losing if he bets \$1 is `r a[2]`}}$
+
+
+**He bets, each time, as much as possible but not more than necessary to bring his fortune up to 8 dollars (bold strategy).**
+
+$\color{red}{\text{The probability he wins \$8 before losing if he bets as much as possible is `r a[1]`}}$
+
+**Which strategy gives Smith the better chance of getting out of jail?**
+
+$\color{red}{\text{The best strategy is to bet \$1 at a time. Below shows probability of winning \$8 is slighly higher per .01}}$
+
+```{r}
+sapply(seq(0,1, by=.01), f)
+```
+

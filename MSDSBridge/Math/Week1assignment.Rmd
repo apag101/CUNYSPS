@@ -1,0 +1,268 @@
+---
+title: "Week1AssignmentMath"
+author: "Anthony Pagan"
+date: "July 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Week1 Assignment Calculus
+
+
+```
+Test Name: homework1(Test)
+
+1. 	It costs a toy retailer $10 to purchase a certain doll.  He estimates that, if he charges x dollars per doll, he can sell 80 - 2x  dolls per week.  Find a function for his weekly profit. 
+
+Cost = 10x
+Revenue = x(80-2x)
+Profit = Revenue - Cost = x(80-2x)-10x = -2x^2-70x
+ 
+
+2. 	Given the following function:
+	 f (x)  = 8x^3  + 7x^2  - 5
+	 
+	 <- function(x)
+{
+    a <- 8 * x ^ 3 + 7 * x ^ 2 -5
+    print (a)
+}
+
+
+Step 1. Find  f (3).  
+
+= 274
+
+
+Step 2. Find  f (-2).  
+
+= -41
+
+
+Step 3. Find  f (x + c).  
+
+= 8(x + c)^3 + 7(x+c)^-5
+
+3. 	Use the graph to find the indicated limits.  If there is no limit, state "Does not exist".  
+
+Step 1. Find
+(lim)┬(〖x→1〗^- )a├  f (x)┤. 
+
+= 2
+
+
+Step 2. Find
+(lim)┬(〖x→1〗^+ )a├  f (x)┤.  
+
+= -5
+
+
+Step 3. Find
+(lim)┬(x→1)a├  f (x)┤.  
+
+=DNE
+
+ 
+4. 	Find the derivative for the following function.
+	 f (x)  = -2x^3 
+	 
+	 = -6x^2
+
+ 
+
+5. 	Find the derivative for the following function.
+	 f (x)  =  (-8)/x^2 
+	 
+	 = 16x
+
+ 
+
+6. 	Find the derivative for the following function.
+	g(x)  = 5∛x 
+	
+	= 5/3(x)^-2/3
+ 
+
+7. 	Find the derivative for the following function.
+	y = -2x^(9/8)
+	
+	= 0
+
+
+8. 	Consider the graph of f (x).  What is the average rate of change of f (x)  from x_1  = 0  to x_2  = 4 ?  Please write your answer as an integer or simplified fraction. 
+
+35-40/4-0 = -5/4
+
+
+
+9. 	The cost of producing x baskets is given by C(x)  = 630 + 2.4x.  Determine the average cost function.   
+
+ c(x ) = (630 + 2.4x)/2.4
+ 
+10. 	Use the Product Rule or Quotient Rule to find the derivative.
+	 f (x)  = (-2x^(-2)  + 1)  (-5x + 9)
+
+ (4x^-3)(-5x+9)+(-2x^(-2)-5)
+
+11. 	Use the Product Rule or Quotient Rule to find the derivative.
+	 f (x)  =  (5x^(1/2)  + 7)/(-x^3  + 1)
+
+ ((2.3x^1/2)(x^3+1)-(5x^1/2 + 7)(-3x^2))/(-x^3 +1)^2
+
+12. 	Find the derivative for the given function.  Write your answer using positive and negative exponents and fractional exponents instead of radicals.
+	 f (x)  = (3x^(-3)  - 8x + 6)^(4/3)
+
+4/3(3x^-3-8x+6)(4x^-4 - 32/3x) 
+
+13. 	After a sewage spill, the level of pollution in Sootville is estimated by  f (t)  =  (550t^2)/√( &t^2  + 15), where t  is the time in days since the spill occurred.  How fast is the level changing after 3  days?  Round to the nearest whole number. 
+
+4950/4.8989 ~ 1010
+
+14. 	The average home attendance per week at a Class AA baseball park varied according to the formula N(t)  = 1000(6 + 0.1t)^(1/2) where  t is the number of weeks into the season (0 £ t £ 14) and  N represents the number of people.
+
+
+
+Step 1. What was the attendance during the third week into the season?  Round your answer to the nearest whole number. 
+
+1000(6 + 0.1(3))^(1/2) ~ 2510
+
+Step 2. Determine  N ´(5) and interpret its meaning.  Round your answer to the nearest whole number.  
+
+1000(6 + 0.1(3)(25))^(1/2)(5) ~ 1453
+
+15. 	Consider the following function:
+	3x^3  + 4y^3  = 77
+
+Step 1. Use implicit differentiation to find dy/dx.  
+= 9x^2 + 12y^2 . dy/dx = -9x^2/12y^2 = dy/dx
+
+Step 2. Find the slope of the tangent line at (3,-1). 
+
+-9(3)^2/12(-1)^2 = -81/12
+
+16. 	Find the intervals on which the following function is increasing and on which it is decreasing.
+	f (x)  =  (x + 3)/(x - 8)
+
+ f(1) = 1, -4/7 decreasing
+ f(0) = 0, -3/8 decreasing
+ f(-1) = -1, -2/9 decreasing
+ f(-2) = -2, -1/10 decreasing
+ f(-3) = -3, 0 decreasing
+ ...
+ f(8) = 8,ND not defined
+ f(9) = 9, 12 increasing
+ 
+
+17. 	A frozen pizza is placed in the oven at t = 0.  The function F(t)  = 14 +  (367t^2)/(t^2  + 100)  approximates the temperature (in degrees Fahrenheit) of the pizza at time t . 
+
+Step 1. Determine the interval for which the temperature is increasing and the interval for which it is decreasing.  Please express your answers as open intervals. 
+
+
+Step 2. Over time, what temperature is the pizza approaching? 
+
+18. 	A study says that the package flow in the East during the month of November follows  f (x)  =  x^3/3340000  -  (7x^2)/9475  +  42417727x/1265860000  +  1/33, where 1 £ x £ 30  is the day of the month and  f (x)  is in millions of packages.  What is the maximum number of packages delivered in November?  On which day are the most packages delivered?  Round your final answer to the nearest hundredth. 
+
+ 
+
+19. 	Use the Second Derivative Test to find all local extrema, if the test applies.  Otherwise, use the First Derivative Test.  Write any local extrema as an ordered pair.
+	f (x)  = 7x^2  + 28x - 35 =
+	
+    14x + 28 = 0 
+    x = -2
+    y= 0
+ 
+
+20. 	Use the Second Derivative Test to find all local extrema, if the test applies.  Otherwise, use the First Derivative Test.  Write any local extrema as an ordered pair.
+	f (x)  = -6x^3  + 27x^2  + 180x
+
+ -18x^2+54x+180 = 18(x2+3x+10) = 18(x-2)(x+5)
+x=2
+x=-5
+
+21. 	A beauty supply store expects to sell 120 flat irons during the next year.  It costs $1.60 to store one flat iron for one year.  To reorder, there is a fixed cost of $6 , plus $4.50  for each flat iron ordered.  In what lot size and how many times per year should an order be placed to minimize inventory costs? 
+
+6 + 4.5x + 1.6x = 6 + 6.1x
+deriv = 6.1 
+120/6.1 ~ 20/month
+
+22. 	A shipping company must design a closed rectangular shipping crate with a square base.  The volume is 18432 ft^3.  The material for the top and sides costs $3 per square foot and the material for the bottom costs $5 per square foot.  Find the dimensions of the crate that will minimize the total cost of material. 
+
+v = 18432 ft^3
+d = v^2 = 2^(18432^-3)= 6*18432^-5= 5.254
+
+
+23. 	A farmer wants to build a rectangular pen and then divide it with two interior fences.  The total area inside of the pen will be 1056 square yards.  The exterior fencing costs $14.40 per yard  and the interior fencing costs $12.00 per yard .  Find the dimensions of the pen that will minimize the cost. 
+
+
+
+
+
+
+24. 	It is determined that the value of a piece of machinery declines exponentially.  A machine that was purchased 7 years ago for $67000 is worth $37000 today.  What will be the value of the machine 9 years from now?  Round your answer to the nearest cent.
+
+(37000/67000)*7 = (x/67000)*9
+x= 28777
+ 
+
+25. 	The demand function for a television is given by p = D(x)  = 23.2 - 0.4x dollars.  Find the level of production for which the revenue is maximized. 
+
+ 
+
+26. 	The amount of goods and services that costs $400 on January 1, 1995  costs $426.80  on January 1, 2006 .  Estimate the cost of the same goods and services on  January 1, 2017.  Assume the cost is growing exponentially.  Round your answer to the nearest cent.
+
+ 
+
+27. 	A manufacturer has determined that the marginal profit from the production and sale of x  clock radios is approximately 380 - 4x dollars per clock radio.   
+
+Step 1. Find the profit function if the profit from the production and sale of 38  clock radios is $1700. 
+
+
+Step 2. What is the profit from the sale of 56 clock radios? 
+ 
+
+28. 	Use integration by substitution to solve the integral below.
+	
+∫▒├ (-5(lna(y) )^3)/y┤dy
+
+ 
+
+29. 	It was discovered that after t years a certain population of wild animals will increase at a rate of P´(t)  = 75 - 9t^(1/2) animals per year.  Find the increase in the population during the first 9 years after the rate was discovered.  Round your answer to the nearest whole animal. 
+
+ 
+
+30. 	Find the area of the region bounded by the graphs of the given equations.
+	y = 6x^2,y = 6√x
+
+Enter your answer below. 
+
+31. 	Solve the differential equation given below.
+	dy/dx  = x^3 y
+
+ 
+
+32. 	Use integration by parts to evaluate the definite integral below.
+	
+∫_(-7)^2▒├ x√( &x + 7) dx┤ 
+
+Write your answer as a fraction. 
+
+33. 	The following can be answered by finding the sum of a finite or infinite geometric sequence.  Round the solution to 2 decimal places.
+	A rubber ball is dropped from a height of 46 meters, and on each bounce it rebounds up 22 %  of its previous height.
+
+Step 1. How far has it traveled vertically at the moment when it hits the ground for the 20^th time?  
+
+
+Step 2. If we assume it bounces indefinitely, what is the total vertical distance traveled? 
+
+34. 	Find the Taylor polynomial of degree 5 near x = 4  for the following function.
+	y = 3e^(5x - 3) 
+
+ 
+
+
+ 
+```
+

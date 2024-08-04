@@ -1,0 +1,801 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+```{r}
+#knitr::opts_chunk$set(echo = TRUE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(mlbench)
+library(e1071)
+library(fpp2)
+library(mlr)
+library(ISLR)
+attach(Smarket)
+library(psych)
+library(mda)
+library(ROCR)
+library(nnet)
+```
+
+ISLR- An Introduction to Statistical Learning
+
+Chapter 1 Introduction
+
+```{r}
+NULL
+```
+
+Chapter 2 Statistical Learning
+
+```{r}
+
+```
+
+Chapter 3 Linear Regression
+
+```{r}
+
+```
+
+Chapter 4 Classification
+
+```{r}
+#BOOK
+
+#LDA
+
+library(MASS)
+attach(Smarket)
+trainm<-Year<2005
+Smarket.2005<-Smarket[!trainm,]
+lda.fit<-lda(Direction~Lag1+Lag2, data=Smarket, subset=trainm)
+lda.fit
+plot(lda.fit)
+lda.pred<-predict(lda.fit, Smarket.2005)
+names(lda.pred)
+lda.class<-lda.pred$class
+table(lda.class, Direction.2005)
+mean(lda.class==Direction.2005)
+sum(lda.pred$posterior[,1]>=.5)
+sum(lda.pred$posterior[,1]<=.5)
+lda.pred$posterior[1:20,1]
+lda.class[1:20]
+sum(lda.pred$posterior[,1]>.9)
+
+#Video https://www.youtube.com/watch?v=OUqMjCfWKiQ&t=29s
+
+#KNN
+require("class")
+require("ISLR")
+attach(Smarket)
+Xlog<-cbind(Lag1,Lag2)
+trainm<-Year<2005
+knn.pred<-knn(Xlog[trainm,],Xlog[!trainm,],Direction[trainm],k=1)
+table(knn.pred,Direction[!trainm])
+mean(knn.pred==Direction[!trainm])
+summary(knn.pred)
+plot(knn.pred)
+
+#Logistic Regression with GLM
+pairs(Smarket, col=Smarket$Direction)
+glm.fit<-glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume,data=Smarket,family=binomial)
+summary(glm.fit)
+glm.prob<-predict(glm.fit, type="response")
+glm.prob[1:5]
+glm.pred<-ifelse(glm.prob>.5,"Up","Down")
+attach(Smarket)
+table(glm.pred,Direction)
+mean(glm.pred==Direction)
+
+trainy<-Year<2005
+glm.fit<-glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume,data=Smarket, family=binomial, subset=trainy)
+glm.probs<-predict(glm.fit,newdata=Smarket[!trainy,],type="response")
+glm.pred<-ifelse(glm.probs>.5,"Up","Down")
+Direction.2005<-Smarket$Direction[!trainy]
+table(glm.pred,Direction.2005)
+mean(glm.pred==Direction.2005)
+
+glm.fit<-glm(Direction~Lag1+Lag2,data=Smarket, family=binomial, subset=trainy)
+glm.probs<-predict(glm.fit,newdata=Smarket[!trainy,],type="response")
+glm.pred<-ifelse(glm.probs>.5,"Up","Down")
+Direction.2005<-Smarket$Direction[!trainy]
+table(glm.pred,Direction.2005)
+mean(glm.pred==Direction.2005)
+summary(glm.fit)
+
+```
+
+Chapter 5 Resampling Methods
+
+```{r}
+
+```
+
+Chapter 6 Linear Model Selection and Regularization
+
+```{r}
+
+```
+
+Chapter 7 Moving Beyond Linearity
+
+```{r}
+#BOOK
+#Neural Network
+
+
+
+##Videos: https://www.youtube.com/watch?v=u-rVXhsFyxo&t=450s
+
+# Orthonogal Polynomial models
+require(ISLR)
+attach(Wage)
+fit<-lm(wage~poly(age,4),data=Wage)
+#or can use summary(lm(wage~age+I(age^2)+I(age^3)+I(age^4),data=Wage)) get same fitted values although p-values are different
+summary(fit)
+agelims<-range(age)
+age.grid<-seq(from=agelims[1],to=agelims[2])
+preds<-predict(fit, newdata=list(age=age.grid),se=TRUE)
+
+se.bands<-cbind(preds$fit+2*preds$se,preds$fit-2*preds$se)
+plot(age,wage,col="darkgrey")
+lines(age.grid,preds$fit,lwd=2,col="blue")
+matlines(age.grid,se.bands,col="blue",lty=2)
+
+#GLM
+fit<-glm(I(wage>250)~poly(age,3), data=Wage, family=binomial)
+summary(fit)
+preds<-predict(fit,list(age=age.grid),se=T)
+se.bands<-preds$fit + cbind(fit=0, lower=-2*preds$se,upper=2*preds$se)
+se.bands[1:5,]
+
+prob.bands<-exp(se.bands)/(1+exp(se.bands)) #logit probabilities
+matplot(age.grid,prob.bands,col="blue",lwd=c(2,1,1), lty=c(1,2,2),type="l", ylim=c(0,.1))
+points(jitter(age),I(wage>250)/10,pch="l",cex=.5)
+
+#Splines
+require(splines)
+fit<-lm(wage~bs(age,knots=c(25,40,60)), data=Wage) #cubic polynomials
+summary(fit)
+plot(age, wage,col="grey")
+lines(age.grid,predict(fit, list(age=age.grid)),col="darkgreen",lwd=2)
+abline(v=c(25,40,60),lty=2,col="darkgreen")
+fit<-smooth.spline(age, wage, df=16)#smoothing spline, degrees of freedom
+lines(fit, col="red",lwd=2)
+fit<-smooth.spline(age,wage,cv=TRUE)#leave one out cross validatiaon LOCV
+lines(fit, col="purple", lwd=2)
+fit
+
+#GAM
+require(gam)
+gam1<-gam(wage~s(age,df=4)+s(year,df=4)+education,data=Wage)#s= smoothing spline
+par(mfrow=c(1,3))
+plot(gam1,se=T)
+gam2<-gam(I(wage>250)~s(age,df=4)+s(year,df=4)+education,data=Wage,family=binomial)#GAM for logistic regression
+plot(gam2)
+gam2a<-gam(I(wage>250)~s(age,df=4)+year+education,data=Wage,family=binomial)
+anova(gam2a, gam2, test="Chisq")#compare 2 gams with Anova
+
+par(mfrow=c(1,3))
+lm1<-lm(wage~ns(age,df=4)+education, data=Wage)#ns = natural spline
+plot.Gam(lm1,se=T) # use plot.Gam to plot lm in GAM
+```
+
+Chapter 8 Tree-Based Methods
+
+```{r}
+
+#BOOk
+#Decision Tree
+library(tree)
+library(ISLR)
+require(tree)
+attach(Carseats)
+High<-ifelse(Sales<=8,"No","Yes")
+Carseats<-data.frame(Carseats,High)
+tree.carseats<-tree(High~.-Sales, Carseats)
+summary(tree.carseats)
+
+plot(tree.carseats)
+text(tree.carseats,pretty=0)
+
+tree.carseats
+
+set.seed(2)
+train<-sample(1:nrow(Carseats), 200)
+Carseats.test<-Carseats[-train,]
+High.test<-High[-train]
+tree.carseats<-tree(High~.-Sales,Carseats,subset=train)
+tree.pred<-predict(tree.carseats,Carseats.test,type="class")
+table(tree.pred,High.test)
+
+set.seed(3)
+cv.carseats<-cv.tree(tree.carseats, FUN=prune.misclass)
+names(cv.carseats)
+cv.carseats
+par(mfrow=c(1,2))
+plot(cv.carseats$size,cv.carseats$dev, type="b")
+plot(cv.carseats$k, cv.carseats$dev, type="b")
+
+
+prune.carseats<-prune.misclass(tree.carseats, best=9)
+plot(prune.carseats)
+text(prune.carseats,pretty=0)
+
+test.pred<-predict(prune.carseats, Carseats.test, type="class")
+table(tree.pred,High.test)
+
+prune.carseats<-prune.misclass(tree.carseats,best=15)
+plot(prune.carseats)
+text(prune.carseats,prett=0)
+tree.pred<-predict(prune.carseats,Carseats.test,type="class")
+table(tree.pred,High.test)
+
+library(MASS)
+set.seed(1)
+train<-sample(1:nrow(Boston), nrow(Boston)/2)
+tree.boston<-tree(medv~.,Boston,subset=train)
+summary(tree.boston)
+
+plot(tree.boston)
+text(tree.boston,pretty=0)
+cv.boston<-cv.tree(tree.boston)
+plot(cv.boston$size, cv.boston$dev, type='b')
+
+prune.boston<-prune.tree(tree.boston,best=5)
+plot(prune.boston)
+text(prune.boston,pretty=0)
+
+yhat<-predict(tree.boston,newdata=Boston[-train,])
+boston.test<-Boston[-train,"medv"]
+plot(yhat,boston.test)
+abline(0,1)
+mean((yhat-boston.test)^2)
+
+library(randomForest)
+set.seed(1)
+bag.boston<-randomForest(medv~.,data=Boston, subset=train,mtry=13,importance=TRUE)
+bag.boston
+yhat.bat<-predict(bag.boston,newdata=Boston[-train,])
+plot(yhat.bat, boston.test)
+abline(0,1)
+mean((yhat.bat-boston.test)^2)
+
+set.seed(1)
+rf.boston<-randomForest(medv~.,data=Boston,subset=train,mtry=6,importance=TRUE)
+yhat.rf<-predict(rf.boston,newdata=Boston[-train,])
+mean((yhat.rf-boston.test)^2)
+importance(rf.boston)
+varImpPlot(rf.boston)
+
+library(gbm)
+set.seed(1)
+boost.boston<-gbm(medv~.,data=Boston[train,],distribution="gaussian",n.trees=5000,interaction.depth=4)
+summary(boost.boston)
+
+par(mfrow=c(1,2))
+plot(boost.boston,i="rm")
+plot(boost.boston,i="lstat")
+
+yhat.boost<-predict(boost.boston,newdata=Boston[-train,],n.trees=5000)
+mean((yhat.boost-boston.test)^2)
+
+boost.boston<-gbm(medv~.,data=Boston[train,],distribution="gaussian",n.trees=5000,interaction.depth=4, shrinkage = 0.2,verbose=F)
+yhat.boost<-predict(boost.boston,newdata=Boston[-train,],n.trees=5000)
+mean((yhat.boost-boston.test)^2)
+
+#Video https://www.youtube.com/watch?v=tU3Adlru1Ng&t=29s
+
+require("class")
+require("ISLR")
+attach(Smarket)
+data<-read.csv('Cardiotocographic.csv', header=TRUE)
+str(data)
+data$NSPF<-factor(data$NSP)
+
+set.seed(1234)
+pd<-sample(2,nrow(data),replace = TRUE,prob=c(.8,.2))
+train<-data[pd==1,]
+validate<-data[pd==2,]
+
+library(party)
+tree<-ctree(NSPF~LB+AC+FM,data=train, controls=ctree_control(mincriterion = .99, minsplit=500)) #Minimize data treee with contols and min criterias,This is call pruning the tree
+tree
+plot(tree) #Most important on top, bottom or leaf nodes give final probabilities
+predict(tree, validate, type="prob") #Prob of class classes. Total sum of row prob=1
+
+library(rpart)
+tree1<-rpart(NSPF~LB+AC+FM,train)
+library(rpart.plot)
+rpart.plot(tree1, extra=4)
+predict(tree1,validate)
+
+tab<-table(predict(tree),train$NSPF)
+print(tab)
+1-sum(diag(tab)/sum(tab))#Missclassification error basesd on training data
+
+testpred<-predict(tree,newdata=validate)
+tab<-table(testpred,validate$NSPF)
+print(tab)
+1-sum(diag(tab)/sum(tab))
+
+#COVID Example
+library(naniar)
+library(psych)
+covid<-read.csv("covid19Spectrum.csv", header=TRUE)
+summary(covid)
+gg_miss_upset(covid)
+cov1 <- describe(covid)
+cov1$na_count <- sapply(covid, function(y) sum(length(which(is.na(y)))))
+cov1$na_count_perc <- sapply(covid, function(x) round(sum(is.na(x))/nrow(covid)*100,1))
+cov3<-as.data.frame(rownames(subset(cov1, na_count_perc==0)))
+cov4<-subset(covid , select =cov3$`rownames(subset(cov1, na_count_perc == 0))`)
+
+set.seed(1234)
+pd<-sample(2,nrow(cov4),replace = TRUE,prob=c(.8,.2))
+train<-cov4[pd==1,]
+validate<-cov4[pd==2,]
+
+library(party)
+tree<-ctree(sars_cov_2_exam_result~.,data=train, controls=ctree_control(mincriterion = .99, minsplit=500)) #Minimize data treee with contols and min criterias,This is call pruning the tree
+tree
+plot(tree) #Most important on top, bottom or leaf nodes give final probabilities
+predict(tree, validate, type="prob") #Prob of class classes. Total sum of row prob=1
+
+library(rpart)
+tree1<-rpart(sars_cov_2_exam_result~.,train)
+library(rpart.plot)
+rpart.plot(tree1, extra=4)
+predict(tree1,validate)
+
+tab<-table(predict(tree),train$sars_cov_2_exam_result)
+print(tab)
+1-sum(diag(tab)/sum(tab))#Missclassification error basesd on training data
+
+testpred<-predict(tree,newdata=validate)
+tab<-table(testpred,validate$sars_cov_2_exam_result)
+print(tab)
+1-sum(diag(tab)/sum(tab))
+
+#BB EXAMPLE
+#play_data<-read.csv("play.csv", header=TRUE)
+admit_data<-read.csv("binary.csv", header=TRUE)
+head(admit_data)
+head(play_data)
+
+#make some columns factors
+fad<-data.frame(as.factor(admit_data$admit),admit_data$gre,
+admit_data$gpa,as.factor(admit_data$rank))
+names(fad)<-names(admit_data)
+# create test and training set
+set.seed(43)
+tstset<-sample(400,120,replace=FALSE) # 30% hold out test set
+admit_trdata<-fad[-tstset,]
+admit_tstdata<-fad[tstset,]
+# generate model
+library(C50)
+library(ROCR)
+C50_model<-C5.0(admit~.,data=admit_trdata)
+
+predicted_admit<-predict(C50_model,admit_tstdata[,-1])
+head(predicted_admit)
+pradmit.number<-as.numeric(predicted_admit)
+actual.number<-as.numeric(admit_tstdata$admit)
+pr<-prediction(pradmit.number,actual.number)
+auc_data<-performance(pr,"tpr","fpr")
+plot(auc_data,main="ROC Curve for C50 ADMIT data")
+aucval<-performance(pr,measure="auc")
+aucval@y.values[[1]]
+
+#Visualizing the treee
+plot(C50_model)
+admit_trdata[admit_trdata$gpa>3.34&admit_trdata$rank==1,]
+dim(admit_trdata[admit_trdata$gpa>3.34&admit_trdata$rank==1,])
+nrow(admit_trdata[admit_trdata$rank==1,])
+table(admit_trdata$rank)
+sum(table(admit_trdata$rank))-nrow(admit_trdata[admit_trdata$rank==1,])
+
+entropy<-function(p)
+{
+  return(-1 * (p * log(p) + (1-p) * log(1-p)))
+}
+
+x <- seq(.01, 1,.01)
+el<-lapply(x,FUN=entropy)
+plot(x,el)
+eln<-as.numeric(el)
+maxe<-max(eln[!is.nan(eln)])
+slbl<-as.character(round(max(eln[1:99]),2))
+text(x=0.45, y=0.9*maxe,slbl)
+vertical_y<-seq(0,maxe,maxe/10)
+vertical_x<-rep(0.5,length(vertical_y))
+lines(vertical_x,vertical_y[1:length(vertical_x)])
+horizontal_x<-seq(0,1,.1)
+horizontal_y<-rep(round(maxe,2),11)
+lines(horizontal_x, horizontal_y)
+
+require(rpart)
+model<-rpart(admit~ .,data=admit_data,method="class")
+plot(model)
+text(model,use.n=TRUE,all=TRUE,cex=0.8)
+
+require(party)
+party.model<-ctree(admit~ .,data=admit_data)
+plot(party.model)
+
+
+```
+
+Chapter 9 Support Vector Machines
+
+```{r}
+#BOOK
+
+#Linear SVM
+set.seed(1)
+x<-matrix(rnorm(20*2),ncol=2)
+y<-c(rep(-1,10),rep(1,10))
+x[y==1,]=x[y==1,]+1
+
+plot(x, col=(3-y))
+
+dat<-data.frame(x=x, y=as.factor(y))
+
+svmfit<-svm(y~., data=dat, kernel="linear", cost=10, scale=FALSE)
+plot(svmfit, dat)
+svmfit$index
+summary(svmfit)
+
+svmfit<-svm(y~., data=dat, kernel="linear", cost=.01, scale=FALSE)
+plot(svmfit, dat)
+svmfit$index
+summary(svmfit)
+
+set.seed(1)
+tune.out<-tune(svm,y~.,data=dat, kernel="linear",
+               ranges=list(cost=c(.001,.01, 1, 5,10, 100))) #get best model with tune
+summary(tune.out)
+bestmod<-tune.out$best.model
+summary(bestmod)
+
+xtest<-matrix(rnorm(20*2), ncol=2)
+ytest<-sample(c(-1,1), 20, rep=TRUE)
+xtest[ytest==1,]=xtest[ytest==1,]+1
+testdat<-data.frame(x=xtest, y=as.factor(ytest))
+
+ypred<-predict(bestmod, testdat)
+table(predict=ypred, truth=testdat$y)
+
+ypred<-predict(svmfit, testdat)
+table(predict=ypred, truth=testdat$y)
+
+x[y==1,]=x[y==1,]+.5
+plot(x, col=(y+5)/2, pch=19)
+
+dat<-data.frame(x=x, y=as.factor(y))
+svmfit<-svm(y~., data=dat, kernel="linear", cost=1e5)
+summary(svmfit)
+plot(svmfit,dat)
+svmfit<-svm(y~., data=dat, kernel="linear", cost=1)
+summary(svmfit)
+plot(svmfit,dat)
+
+#Non-Linear SVM
+set.seed(1)
+x<-matrix(rnorm(200*2),ncol=2)
+x[1:100,]<-x[1:100,]+2
+x[101:150,]<-x[101:150,]-2
+y<-c(rep(1,150),rep(2,50))
+dat=data.frame(x=x, y=as.factor(y))
+
+plot(x, col=y)
+
+train<-sample(200,100)
+svmfit<-svm(y~., data=dat[train,], kernel="radial", gamma=1, cost=1)
+plot(svmfit, dat[train,])
+summary(svmfit)
+svmfit<-svm(y~., data=dat[train,], kernel="radial", gamma=1, cost=1e5)
+plot(svmfit, dat[train,])
+summary(svmfit)
+
+set.seed(1)
+tune.out<-tune(svm,y~.,data=dat[train,], kernel="radial",
+               ranges=list(cost=c(.1, 1, 10, 100,1000), 
+                           gamma=c(.5, 1,2,3,4))) #get best model with tune
+summary(tune.out)
+bestmod<-tune.out$best.model
+summary(bestmod)
+
+table(true=dat[-train,"y"],pred=predict(tune.out$best.model,newx=dat[-train,]))
+
+#ROC Curves
+rocplot<-function(pred, truth, ...){
+  predob = prediction(pred,truth)
+  perf = performance(predob, "tpr", "fpr")
+  plot(perf,...)}
+
+svmfit.opt<-svm(y~., data=dat[train,], kernel="radial", gamma=2, cost=1, decision.values=T)
+fitted<-attributes(predict(svmfit.opt, dat[train,],decision.values=TRUE))$decision.values
+rocplot(fitted,dat[train,"y"],main="Training Data")
+
+svmfit.flex<-svm(y~., data=dat[train,], kernel="radial", gamma=50, cost=1, decision.values=T)
+fitted<-attributes(predict(svmfit.flex, dat[train,],decision.values=T))$decision.values
+rocplot(fitted,dat[train,"y"],col="red")
+
+fitted<-attributes(predict(svmfit.opt, dat[-train,],decision.values=TRUE))$decision.values
+rocplot(fitted,dat[-train,"y"],main="Test Data")
+fitted<-attributes(predict(svmfit.flex, dat[-train,],decision.values=TRUE))$decision.values
+rocplot(fitted,dat[-train,"y"],main="Train Data")
+
+set.seed(1)
+x<-rbind(x, matrix(rnorm(50*2), ncol=2))
+y<-c(y, rep(0,50))
+x[y==0,2]=x[y==0,2]+2
+dat<-data.frame(x=x,y=as.factor(y))
+par(mfrow=c(1,1))
+plot(x,col=(y+1))
+
+svmfit<-svm(y~.,data=dat, kernel="radial", cost=10, gamma=1)
+plot(svmfit, dat)
+
+names(Khan)
+dim(Khan$xtrain)
+dim(Khan$xtest)
+length(Khan$ytrain)
+length(Khan$ytest)
+table(Khan$ytrain)
+table(Khan$ytest)
+
+dat<-data.frame(x=Khan$xtrain, y=as.factor(Khan$ytrain))
+out<-svm(y~., data=dat, kernal="linear", cost=10)
+summary(out)
+table(out$fitted, dat$y)
+
+dat.te<-data.frame(x=Khan$xtest, y=as.factor(Khan$ytest))
+pred.te<-predict(out, newdata=dat.te)
+table(pred.te, dat.te$y)
+```
+
+
+Chapter 10 Unsupervised Learning
+
+```{r}
+
+
+
+```
+
+Blackboard
+
+BB Week 7
+
+https://datascienceplus.com/how-to-perform-logistic-regression-lda-qda-in-r/
+
+```{r}
+
+
+#Check Dimensions
+dim(Smarket)
+
+#Check for missing values
+apply(Smarket, 2, function(x) {length(unique(x))})
+apply(Smarket, 2, function(x) {sum(is.na(x))})
+apply(Smarket, 2, function(x) {sum(x==" ")})
+
+
+
+```
+
+
+ 
+#LDA
+
+```{r message=FALSE, warning=FALSE}
+
+#split data
+
+set.seed(1)
+row.number = sample(1:nrow(Smarket), 0.6*nrow(Smarket))
+train = Smarket[row.number,]
+test = Smarket[-row.number]
+dim(train)
+dim(test)
+
+model1 <- lda(factor(Direction)~., data=Smarket)
+
+premodel.train.lda <- predict(model1, data=train)
+table(Predicted = premodel.train.lda$class, Direction=Direction)
+ldahist(premodel.train.lda$x[,1], g=premodel.train.lda$class)
+
+
+premodel.test.lda<- predict(model1, newdata = test)
+table(Predicted = premodel.test.lda$class, Direction=test$Direction)
+ldahist(premodel.test.lda$posterior[,2], g=premodel.test.lda$class)
+par(mfrow=c(1,1))
+plot(premodel.test.lda$posterior[,2], premodel.test.lda$class, col=test$Direction)
+```
+
+#QDA
+
+```{r}
+
+
+model2 <- qda(factor(Direction)~., data=Smarket)
+
+premodel.train.qda <- predict(model2, data=train)
+table(Predicted = premodel.train.qda$class, Direction=Direction)
+
+premodel.test.qda<- predict(model2, newdata = test)
+
+par(mfrow=c(1,1))
+plot(premodel.test.qda$posterior[,2], premodel.test.qda$class, col=Direction)
+```
+
+
+BB Week 8
+#NAIVE Bayes
+https://www.r-bloggers.com/understanding-naive-bayes-classifier-using-r/
+
+```{r}
+#Install the package
+#install.packages(“e1071”)
+#Loading the library
+library(e1071)
+?naiveBayes #The documentation also contains an example implementation of Titanic dataset
+#Next load the Titanic dataset
+data("Titanic")
+#Save into a data frame and view it
+Titanic_df=as.data.frame(Titanic)
+#Creating data from table
+repeating_sequence=rep.int(seq_len(nrow(Titanic_df)), Titanic_df$Freq) #This will repeat each combination equal to the frequency of each combination
+ 
+#Create the dataset by row repetition created
+Titanic_dataset=Titanic_df[repeating_sequence,]
+#We no longer need the frequency, drop the feature
+Titanic_dataset$Freq=NULL
+ 
+#Fitting the Naive Bayes model
+Naive_Bayes_Model=naiveBayes(Survived ~., data=Titanic_dataset)
+#What does the model say? Print the model summary
+Naive_Bayes_Model
+ 
+#Prediction on the dataset
+NB_Predictions=predict(Naive_Bayes_Model,Titanic_dataset)
+#Confusion matrix to check accuracy
+table(NB_Predictions,Titanic_dataset$Survived)
+ 
+#Getting started with Naive Bayes in mlr
+#Install the package
+#install.packages(“mlr”)
+#Loading the library
+library(mlr)
+ 
+#Create a classification task for learning on Titanic Dataset and specify the target feature
+task = makeClassifTask(data = Titanic_dataset, target = "Survived")
+ 
+#Initialize the Naive Bayes classifier
+selected_model = makeLearner("classif.naiveBayes")
+ 
+#Train the model
+NB_mlr = train(selected_model, task)
+ 
+#Read the model learned  
+NB_mlr$learner.model
+ 
+#Predict on the dataset without passing the target feature
+predictions_mlr = as.data.frame(predict(NB_mlr, newdata = Titanic_dataset[,1:3]))
+ 
+##Confusion matrix to check accuracy
+table(predictions_mlr[,1],Titanic_dataset$Survived)
+```
+
+```{r}
+library(e1071)
+attr<- read.csv("WA_Fn-UseC_-HR-Employee-Attrition.csv", header = TRUE)
+attr_nb<-naiveBayes(Attrition~., data=attr)
+
+#pairs.panels(attr[3:8])
+attr_pred<-predict(attr_nb,attr)
+#Confusion matrix to check accuracy
+attr_t<-table(attr_pred,attr$Attrition)
+
+confusionMatrix(attr_t)
+
+
+plot(attr_t)
+plot(attr_pred)
+
+```
+
+BB Week 10
+## Split/Subset Data
+
+```{r message=FALSE, warning=FALSE}
+covid<- read.csv("data\\covid-19-survey-responses-sample.csv", header = TRUE)
+covid<-subset(covid,select=(names(covid[12:ncol(covid)-2])))
+intrain<- createDataPartition(y = covid$q03_symptoms, p=.7, list=FALSE)
+training <- covid[intrain,]
+test<- covid[-intrain, ]
+dim(training)
+dim(test)
+anyNA(covid)
+glimpse(covid)
+
+## Train/Test/Predict
+trctrl<- trainControl(method="repeatedcv", number=10,repeats=3)
+svm_lin<- caret::train(q03_symptoms~., data=training, method="svmLinear", 
+                trControl=trctrl, preProcess=c("center","scale"),
+                tuneLength =10)
+svm_lin
+
+test_pred<- predict(svm_lin, newdata=test)
+test_pred
+confusionMatrix(table(test_pred,test$q03_symptoms))
+
+
+## Tune for best model
+set.seed(1)
+tune.out<-tune(svm,q03_symptoms~.,data=covid, kernel="linear",
+               ranges=list(cost=c(.00001,.0001, .001, .01, 1,10), 
+                           gamma=c(1,2,3,4,5))) #get best model with tune
+summary(tune.out)
+bestmod<-tune.out$best.model
+summary(bestmod)
+
+
+## Plot Data
+grid <- expand.grid(C = c(1,10,100, 1000, 10000))
+svm_Linear_Grid <- caret::train(q03_symptoms ~., data = training, method = "svmLinear", trControl=trctrl, preProcess = c("center", "scale"),tuneGrid = grid, tuneLength = 10, cost=bestmod$cost,gamma=bestmod$gamma)
+
+svm_Linear_Grid
+
+plot(svm_Linear_Grid)
+
+```
+
+BB Week 12
+## Split/Subset Data
+
+```{r message=FALSE, warning=FALSE}
+library('adabag')
+covid<- read.csv("data\\COVID19Spectrum.csv", header = TRUE)
+intrain<- createDataPartition(y = covid$sars_cov_2_exam_result, p=.7, list=FALSE)
+training <- covid[intrain,]
+test<- covid[-intrain, ]
+dim(training)
+dim(test)
+anyNA(covid)
+glimpse(covid)
+
+require(caret)
+require(gbm)
+set.seed(43)
+bag <- train(sars_cov_2_exam_result~., data=training, method="treebag", 
+                trControl=trctrl, preProcess=c("center","scale"),
+                tuneLength =10)
+#Tree Bag Model
+bagPred <- predict(bag, newdata = test)
+postResample(pred = bagPred, obs = test$sars_cov_2_exam_result)
+
+```
+
+

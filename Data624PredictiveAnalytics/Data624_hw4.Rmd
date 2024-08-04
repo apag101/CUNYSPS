@@ -1,0 +1,184 @@
+---
+title: "Data 624 Homework 4"
+author: "Anthony Pagan"
+date: "2/29/2020"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+        css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+#knitr::opts_chunk$set(echo = TRUE)
+require(knitr)
+library(ggplot2)
+library(tidyr)
+library(MASS)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(faraway)
+library(gridExtra)
+library(reshape2)
+library(leaps)
+library(pROC)
+library(caret)
+library(naniar)
+library(pander)
+library(pROC)
+library(mlbench)
+library(e1071)
+```
+
+## 3.1
+
+The UC Irvine Machine Learning Repository6 contains a data set related
+to glass identification. The data consist of 214 glass samples labeled as one
+of seven class categories. There are nine predictors, including the refractive
+index and percentages of eight elements: Na, Mg, Al, Si, K, Ca, Ba, and Fe.
+The data can be accessed via:
+
+```{r}
+data(Glass)
+str(Glass)
+```
+
+### A
+
+Using visualizations, explore the predictor variables to understand their
+distributions as well as the relationships between predictors.
+
+```{r message=FALSE}
+
+plot(Glass)
+Glass2 <-subset(Glass, select = -c(Type))
+GlassCor<-cor(Glass2)
+corrplot::corrplot(GlassCor)
+par(mfrow=c(3,3))
+sapply(Glass2,hist)
+
+
+```
+
+### B
+
+Do there appear to be any outliers in the data? Are any predictors skewed?
+
+The skew values show that RI,Mg, K, CA, BA and Fe are skewed more than 1 or -1. The halfnorm plots show some outliers but do not seem to have high leverage as the are in the same direction as the trends. 
+
+```{r}
+skewvalues<-sapply(Glass2,skewness)
+skewvalues
+
+m1<-glm(Type~.,data=Glass,family="binomial"(link="logit"))
+#summary(m1)
+halfnorm(hatvalues(m1))
+
+par(mfrow = c(2,2))
+plot(Glass2)
+
+```
+
+
+### C
+
+Are there any relevant transformations of one or more predictors that
+might improve the classification model?
+
+The boxplot show that Si has a different magnitude then the other varialbes and a transformation my help. The box transformation data gives us some possible transformation values for RI(-2),Na(-.1),AL(.5),SI(2) and Ca(-1.1)
+
+```{r}
+boxplot(Glass)
+m1<-glm(Type~.,data=Glass,family="binomial"(link="logit"))
+sapply(Glass2,BoxCoxTrans)
+```
+
+## 3.2
+
+The soybean data can also be found at the UC Irvine Machine Learning
+Repository. Data were collected to predict disease in 683 soybeans. The 35
+predictors are mostly categorical and include information on the environmental
+conditions (e.g., temperature, precipitation) and plant conditions (e.g., left
+spots, mold growth). The outcome labels consist of 19 distinct classes.
+
+```{r}
+data(Soybean, package = 'mlbench')
+```
+
+
+### A
+
+Investigate the frequency distributions for the categorical predictors. Are
+any of the distributions degenerate in the ways discussed earlier in this
+chapter?
+
+`r round(20/36,2)`% of the predictors are right skewed 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+#names(Soybean)
+#str(Soybean)
+
+boxplot(Soybean[3:36], las=2)
+
+ggplot(Soybean, aes(Class))+
+    geom_bar()+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+data.frame(table(Soybean$Class))
+
+par(mfrow = c(6,6),mar=c(2,2,2,2))
+plot(Class~., data = Soybean, las = 1)
+
+par(mfrow = c(6,6),mar=c(2,2,2,2))
+lapply(Soybean[3:36], plot)
+
+```
+
+### B
+
+Roughly 18% of the data are missing. Are there particular predictors that
+are more likely to be missing? Is the pattern of missing data related to
+the classes
+
+The appears to several variables that are missing more data than others including germ, hail, server, seed and logding.
+
+```{r}
+summary(complete.cases(Soybean))
+vis_miss(Soybean)
+gg_miss_upset(Soybean)
+sapply(Soybean, function(x) round(sum(is.na(x))/nrow(Soybean)*100,1))
+```
+
+### C
+
+Develop a strategy for handling missing data, either by eliminating
+predictors or imputation.
+
+I first run a GLM on all the data with Class as the predicted value. I ran the step mode then reran after removing the 4 columns with most missing data.
+
+```{r message=FALSE, warning=FALSE}
+lmod<-glm(Class~.,data=Soybean,family="binomial"(link="logit"))
+summary(lmod)
+
+slmod<-step(lmod)
+summary(slmod)
+
+
+lmod2<-update(slmod, .~.-seed-hail-lodging-germ-sever)
+summary(lmod2)
+```
+
+## APPENDIX
+
+**Code used in analysis**
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
+
